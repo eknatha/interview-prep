@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git in Production Environments — Interview Guide</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1.25rem 2rem; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+header h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+header span { font-size: 12px; background: #E1F5EE; color: #085041; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+.search-bar { position: relative; margin-bottom: 1.25rem; }
+.search-bar input { width: 100%; padding: 11px 18px 11px 42px; border: 1px solid #ddd; border-radius: 10px; background: #fff; color: #1a1a1a; font-size: 14px; outline: none; transition: border-color 0.15s; }
+.search-bar input:focus { border-color: #1D9E75; }
+.search-bar svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; opacity: 0.4; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.chip { padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #555; transition: all 0.15s; user-select: none; }
+.chip:hover { border-color: #1D9E75; color: #0F6E56; }
+.chip.active { background: #E1F5EE; color: #085041; border-color: #1D9E75; font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.stat { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e8e8e0; }
+.stat-n { font-size: 24px; font-weight: 600; }
+.stat-l { font-size: 12px; color: #666; margin-top: 3px; }
+.n-teal { color: #0F6E56; } .n-blue { color: #185FA5; } .n-amber { color: #854F0B; } .n-red { color: #A32D2D; }
+.count-bar { font-size: 12px; color: #888; margin-bottom: 10px; }
+.q-list { display: flex; flex-direction: column; gap: 8px; }
+.q-card { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; overflow: hidden; transition: border-color 0.15s; }
+.q-card:hover { border-color: #c8c8c0; }
+.q-header { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; cursor: pointer; user-select: none; }
+.q-num { font-size: 11px; font-weight: 600; color: #aaa; min-width: 30px; padding-top: 2px; flex-shrink: 0; }
+.q-title { font-size: 14px; font-weight: 600; color: #1a1a1a; flex: 1; line-height: 1.5; }
+.q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+.badge.fundamentals  { background: #E1F5EE; color: #085041; }
+.badge.branching     { background: #E6F1FB; color: #0C447C; }
+.badge.merging       { background: #EEEDFE; color: #3C3489; }
+.badge.history       { background: #FAEEDA; color: #633806; }
+.badge.workflows     { background: #EAF3DE; color: #27500A; }
+.badge.recovery      { background: #FCEBEB; color: #791F1F; }
+.badge.collaboration { background: #F1EFE8; color: #444441; }
+.badge.cicd          { background: #FBEAF0; color: #72243E; }
+.badge.security      { background: #FAC775; color: #412402; }
+.badge.advanced      { background: #E6F1FB; color: #185FA5; }
+.chevron { font-size: 12px; color: #bbb; transition: transform 0.2s; flex-shrink: 0; margin-top: 2px; }
+.chevron.open { transform: rotate(180deg); }
+.q-body { display: none; padding: 0 18px 18px 60px; border-top: 1px solid #f0f0e8; }
+.q-body.open { display: block; }
+.q-body p { font-size: 13px; line-height: 1.75; color: #555; margin-bottom: 10px; margin-top: 12px; }
+.q-body p:last-child { margin-bottom: 0; }
+.sec { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin: 14px 0 6px; }
+.cmds { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.cmd { background: #f8f7f3; border-radius: 6px; padding: 7px 12px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; color: #1a1a1a; border-left: 3px solid #1D9E75; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+.tip  { background: #FAEEDA; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #412402; border-left: 3px solid #BA7517; margin-top: 10px; line-height: 1.6; }
+.warn { background: #FCEBEB; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #501313; border-left: 3px solid #E24B4A; margin-top: 10px; line-height: 1.6; }
+.good { background: #EAF3DE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #173404; border-left: 3px solid #639922; margin-top: 10px; line-height: 1.6; }
+.info { background: #EEEDFE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #26215C; border-left: 3px solid #7F77DD; margin-top: 10px; line-height: 1.6; }
+.tip b, .warn b, .good b, .info b { font-weight: 700; }
+@media (max-width: 600px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .q-body { padding-left: 18px; }
+  header { padding: 1rem; }
+  header h1 { font-size: 15px; }
+  .container { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Git in Production Environments — Interview Guide</h1>
+  <span>50 questions</span>
+</header>
+
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#555" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+  </div>
+
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (50)</div>
+    <div class="chip" onclick="setFilter('fundamentals',this)">Fundamentals</div>
+    <div class="chip" onclick="setFilter('branching',this)">Branching</div>
+    <div class="chip" onclick="setFilter('merging',this)">Merging &amp; rebasing</div>
+    <div class="chip" onclick="setFilter('history',this)">History &amp; commits</div>
+    <div class="chip" onclick="setFilter('workflows',this)">Workflows</div>
+    <div class="chip" onclick="setFilter('recovery',this)">Recovery &amp; undo</div>
+    <div class="chip" onclick="setFilter('collaboration',this)">Collaboration</div>
+    <div class="chip" onclick="setFilter('cicd',this)">CI/CD &amp; GitOps</div>
+    <div class="chip" onclick="setFilter('security',this)">Security</div>
+    <div class="chip" onclick="setFilter('advanced',this)">Advanced &amp; internals</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n n-teal">50</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n n-blue">22</div><div class="stat-l">Core concepts</div></div>
+    <div class="stat"><div class="stat-n n-amber">28</div><div class="stat-l">Production scenarios</div></div>
+    <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
+  </div>
+
+  <div class="count-bar" id="count-bar">Showing 50 questions</div>
+  <div class="q-list" id="q-list"></div>
+</div>
+
+<script>
+var QS = [
+
+// ── FUNDAMENTALS ──────────────────────────────────────────────────────────
+{n:1, tag:'fundamentals', q:'How does Git store data internally — what is the object model?',
+body:'<p>Git is a content-addressable filesystem. Every piece of data is stored as an object identified by its SHA-1 (now SHA-256 in new repos) hash of its content. There are four object types.</p>'
++'<div class="sec">Object types</div>'
++'<div class="cmds">'
++'<div class="cmd">blob    — stores file content (not filename, not path)</div>'
++'<div class="cmd">tree    — stores directory listing: blob/tree references + names + permissions</div>'
++'<div class="cmd">commit  — stores tree pointer + parent commit(s) + author + message</div>'
++'<div class="cmd">tag     — annotated tag: pointer to commit + tagger + message</div>'
++'<div class="cmd">git cat-file -t &lt;sha&gt;          # show object type</div>'
++'<div class="cmd">git cat-file -p &lt;sha&gt;          # print object content</div>'
++'<div class="cmd">git cat-file -p HEAD           # inspect current commit</div>'
++'<div class="cmd">git cat-file -p HEAD^{tree}    # inspect current tree</div>'
++'<div class="cmd">find .git/objects -type f      # see all stored objects</div>'
++'</div>'
++'<p>A commit is a snapshot, not a diff. It stores a pointer to the full tree at that moment. The efficiency comes from sharing: if 99% of files are unchanged, those blobs are reused. Git computes diffs on the fly when you run git diff — it is not stored. This immutable, content-addressed model is what makes branching and merging cheap, and what makes rewriting history (rebase, amend) create new objects rather than modifying existing ones.</p>'
++'<div class="tip"><b>Interview depth:</b> Understanding that a branch is just a file in .git/refs/heads/ containing a SHA, and HEAD is just a file containing either a branch name or a SHA (detached HEAD), reveals you understand Git at the plumbing level — not just the porcelain commands.</div>'},
+
+{n:2, tag:'fundamentals', q:'What is the difference between git fetch, git pull, and git pull --rebase?',
+body:'<div class="cmds">'
++'<div class="cmd">git fetch origin              # download remote changes, do NOT modify working tree</div>'
++'<div class="cmd">git fetch origin main         # fetch specific branch only</div>'
++'<div class="cmd">git pull                      # fetch + merge (creates merge commit if diverged)</div>'
++'<div class="cmd">git pull --rebase             # fetch + rebase local commits on top of remote</div>'
++'<div class="cmd">git pull --rebase=interactive # fetch + interactive rebase (squash/reorder)</div>'
++'<div class="cmd"># Set rebase as default pull strategy:</div>'
++'<div class="cmd">git config --global pull.rebase true</div>'
++'<div class="cmd"># See divergence before pulling:</div>'
++'<div class="cmd">git fetch origin &amp;&amp; git log --oneline HEAD..origin/main</div>'
++'</div>'
++'<p>git fetch is always safe — it updates remote-tracking branches (origin/main) but never touches your working directory or local branches. git pull = fetch + merge: if your local branch has diverged, it creates a merge commit, producing an ugly history. git pull --rebase replays your local commits on top of the fetched remote, keeping history linear. For feature branch development, --rebase is almost always preferred. Set pull.rebase=true globally to make this the default and avoid accidental merge commits.</p>'
++'<div class="warn"><b>Never rebase shared branches:</b> git pull --rebase on a branch others are working on rewrites commit SHAs. Anyone else who has pulled that branch now has diverged history. Only rebase local commits that have not been pushed, or use rebase on your private feature branch before merging to main.</div>'},
+
+{n:3, tag:'fundamentals', q:'Explain HEAD, staging area, and working tree — what are the three trees of Git?',
+body:'<div class="cmds">'
++'<div class="cmd">Working Tree  — files on disk as you see them in your editor</div>'
++'<div class="cmd">Index (Stage) — snapshot prepared for next commit (.git/index)</div>'
++'<div class="cmd">HEAD          — pointer to last commit on current branch</div>'
++'<div class="cmd">git status    # compares all three trees</div>'
++'<div class="cmd">git diff                 # working tree vs index (unstaged changes)</div>'
++'<div class="cmd">git diff --staged        # index vs HEAD (staged, what will be committed)</div>'
++'<div class="cmd">git diff HEAD            # working tree vs HEAD (all uncommitted changes)</div>'
++'<div class="cmd">cat .git/HEAD            # see what HEAD points to</div>'
++'<div class="cmd">git ls-files --stage     # show index contents</div>'
++'</div>'
++'<p>The three-tree model explains every Git operation: git add moves changes from working tree to index. git commit creates a new commit from the index and advances HEAD. git checkout branch moves HEAD to the branch and updates both index and working tree to match that commit. git reset --soft HEAD~1 moves HEAD back but leaves index and working tree untouched. git reset --hard HEAD~1 moves HEAD back AND resets index AND working tree — destructive. Understanding which trees each command touches is the key to avoiding data loss.</p>'
++'<div class="tip"><b>The mental model:</b> Every Git command moves data between these three trees. Before running any destructive operation, ask: which of the three trees does this affect? git reset --hard affects all three (dangerous). git reset --soft affects only HEAD (safe). This framework prevents most common Git mistakes.</div>'},
+
+{n:4, tag:'fundamentals', q:'What is a detached HEAD state — how do you get into it and how do you get out?',
+body:'<div class="cmds">'
++'<div class="cmd">git checkout v1.2.3         # checking out a tag → detached HEAD</div>'
++'<div class="cmd">git checkout abc1234        # checking out a commit SHA → detached HEAD</div>'
++'<div class="cmd">cat .git/HEAD               # shows SHA instead of ref: refs/heads/branch</div>'
++'<div class="cmd">git status                  # "HEAD detached at abc1234"</div>'
++'<div class="cmd"># Recover: create a branch to save your work</div>'
++'<div class="cmd">git checkout -b my-experiment   # create branch at current detached HEAD</div>'
++'<div class="cmd">git switch -c my-experiment     # modern syntax</div>'
++'<div class="cmd"># Or discard: go back to a branch</div>'
++'<div class="cmd">git checkout main           # HEAD re-attaches to main branch</div>'
++'<div class="cmd">git switch main             # modern syntax</div>'
++'</div>'
++'<p>Detached HEAD means HEAD points directly to a commit SHA instead of a branch name. You can make commits in this state, but they are not on any branch — when you switch away, they become unreachable and will eventually be garbage collected (git gc). Any work done in detached HEAD state must be saved to a branch before switching away. Detached HEAD is not an error — it is intentional when inspecting historical commits, checking out tags for a build, or doing temporary experiments.</p>'
++'<div class="good"><b>Recovering lost commits:</b> If you made commits in detached HEAD and switched away, use git reflog to find the SHA of your last commit in that state, then git checkout -b rescue &lt;sha&gt; to create a branch at that point. git reflog keeps all recent HEADs for 30-90 days.</div>'},
+
+{n:5, tag:'fundamentals', q:'What is git stash — how do you use it effectively in a team environment?',
+body:'<div class="cmds">'
++'<div class="cmd">git stash                       # stash tracked changes (index + working tree)</div>'
++'<div class="cmd">git stash push -u               # include untracked files</div>'
++'<div class="cmd">git stash push -m "WIP: auth refactor"  # named stash</div>'
++'<div class="cmd">git stash list                  # show all stashes</div>'
++'<div class="cmd">git stash show -p stash@{0}    # show diff of top stash</div>'
++'<div class="cmd">git stash pop                   # apply top stash + remove from stash list</div>'
++'<div class="cmd">git stash apply stash@{2}      # apply specific stash (keep in list)</div>'
++'<div class="cmd">git stash drop stash@{0}       # remove specific stash</div>'
++'<div class="cmd">git stash branch feature/new stash@{0}  # create branch from stash</div>'
++'<div class="cmd">git stash clear                 # drop ALL stashes (destructive)</div>'
++'</div>'
++'<p>Stash is a stack of partial work saves. Use it when you need to switch context quickly without committing incomplete work. In team environments, stash is local — stashes are not pushed to remote and are not visible to teammates. Stash pop can conflict if the stashed changes conflict with the current state of the branch — treat it like any other merge conflict. For longer-term WIP storage, create a WIP commit (git commit -m "WIP: [description]") and push it to a remote branch — this backs up work and is visible to the team.</p>'
++'<div class="warn"><b>Stash is not a backup:</b> Stashes are stored in .git/refs/stash and are lost if you delete the repo or if something corrupts .git. For work you care about, commit to a branch and push. Never rely on stash as long-term storage for important work.</div>'},
+
+// ── BRANCHING ────────────────────────────────────────────────────────────
+{n:6, tag:'branching', q:'What is a Git branch internally — how do branches and tags differ?',
+body:'<div class="cmds">'
++'<div class="cmd">cat .git/refs/heads/main       # branch file: just a 40-char SHA</div>'
++'<div class="cmd">cat .git/refs/tags/v1.0.0      # lightweight tag: same as branch</div>'
++'<div class="cmd">git cat-file -p v1.0.0         # annotated tag: separate tag object</div>'
++'<div class="cmd">git branch                     # list local branches</div>'
++'<div class="cmd">git branch -vv                 # show tracking info + last commit</div>'
++'<div class="cmd">git branch -a                  # local + remote-tracking branches</div>'
++'<div class="cmd">git branch --merged main       # branches merged into main (safe to delete)</div>'
++'<div class="cmd">git branch --no-merged main    # branches NOT yet merged (caution deleting)</div>'
++'<div class="cmd">git tag -a v1.2.0 -m "Release 1.2.0"  # annotated tag (recommended)</div>'
++'<div class="cmd">git tag v1.2.0                 # lightweight tag (just a pointer)</div>'
++'</div>'
++'<p>A branch is simply a file containing a 40-character commit SHA. When you commit, Git updates that file to point to the new commit. Creating a branch costs almost nothing — one file write. Tags also point to commits, but annotated tags are tag objects (with tagger identity, date, message) pointing to the commit. The key difference: branches move automatically with new commits; tags are permanently fixed to a specific commit. Use annotated tags for releases (they have metadata), lightweight tags for private/temporary markers.</p>'
++'<div class="tip"><b>Branch naming conventions:</b> Consistent naming enables automation. Common patterns: feature/TICKET-123-description, fix/TICKET-456-bug-name, chore/update-dependencies, release/v1.2.0, hotfix/critical-payment-bug. CI/CD pipelines can use these patterns: deploy to staging on feature/*, deploy to production on release/*, auto-create GitHub releases on tags matching v*.*.*.</div>'},
+
+{n:7, tag:'branching', q:'What branching strategies exist — GitFlow vs trunk-based development vs GitHub Flow?',
+body:'<div class="sec">Strategy comparison</div>'
++'<div class="cmds">'
++'<div class="cmd">GitFlow:       main + develop + feature/* + release/* + hotfix/*</div>'
++'<div class="cmd">GitHub Flow:   main + feature/* (PR → merge → deploy)</div>'
++'<div class="cmd">Trunk-Based:   main only + short-lived feature branches (merge daily)</div>'
++'<div class="cmd">Release Flow:  main + release/vX.Y branches for production fixes</div>'
++'</div>'
++'<p>GitFlow: well-defined for teams releasing versioned software (mobile apps, desktop software). Drawback: complex, long-lived branches cause integration pain, release branches create merge debt. GitHub Flow: simple two-tier model ideal for continuous deployment teams — branch off main, PR, merge, deploy. Every merge to main triggers a deployment. Trunk-Based Development: developers commit directly to main (or merge short-lived branches within 1-2 days). Requires feature flags to hide incomplete work. Enables true continuous integration — the most advanced practice used by Google, Facebook, Microsoft.</p>'
++'<div class="good"><b>Platform Engineer recommendation:</b> For a Platform Engineering team deploying infrastructure and tooling, trunk-based development or GitHub Flow is usually best — they enable fast iteration and simple CI/CD pipelines. GitFlow is overkill unless you have strict versioned releases or multiple concurrent release streams (like SonicWall firmware versions). Match the strategy to release cadence: continuous delivery = trunk-based, versioned releases = GitFlow.</div>'},
+
+{n:8, tag:'branching', q:'How do you protect the main branch in production — what branch protection rules matter?',
+body:'<div class="cmds">'
++'<div class="cmd"># GitHub Branch Protection Rules (Settings → Branches → Add rule):</div>'
++'<div class="cmd">Require pull request before merging</div>'
++'<div class="cmd">Require approvals: minimum 1 (production: 2)</div>'
++'<div class="cmd">Dismiss stale pull request approvals when new commits are pushed</div>'
++'<div class="cmd">Require review from Code Owners (CODEOWNERS file)</div>'
++'<div class="cmd">Require status checks to pass before merging:</div>'
++'<div class="cmd">  - CI tests (unit, integration)</div>'
++'<div class="cmd">  - Security scan (Trivy, Snyk)</div>'
++'<div class="cmd">  - Lint / code quality</div>'
++'<div class="cmd">Require branches to be up to date before merging</div>'
++'<div class="cmd">Require signed commits</div>'
++'<div class="cmd">Do not allow bypassing the above settings (even admins)</div>'
++'<div class="cmd">Restrict who can push to matching branches</div>'
++'</div>'
++'<p>Branch protection rules enforce your deployment gates at the VCS level — they cannot be bypassed by individuals (when "do not allow bypassing" is checked). CODEOWNERS file maps paths to required reviewers: infrastructure changes require the platform team, security-sensitive files require the security team. "Dismiss stale approvals" prevents the attack where code is approved, then bad commits are added after approval. Require status checks ensures no merge without passing CI — this is the first line of defense against broken deployments.</p>'
++'<div class="warn"><b>Admin bypass:</b> Repository admins can bypass branch protection by default. Enable "Do not allow bypassing the above settings" to protect even from admin push. For compliance (SOC2, PCI-DSS), this setting is required — auditors look for it specifically. Create a separate break-glass procedure for genuine emergencies that is logged and reviewed.</div>'},
+
+{n:9, tag:'branching', q:'How do you handle long-running feature branches — what problems do they create?',
+body:'<div class="cmds">'
++'<div class="cmd"># Long-lived branch problems:</div>'
++'<div class="cmd">git log --oneline main..feature/big-refactor | wc -l  # 200 commits behind main</div>'
++'<div class="cmd">git diff main...feature/big-refactor --stat             # massive diff</div>'
++'<div class="cmd"># Keep feature branch updated:</div>'
++'<div class="cmd">git fetch origin</div>'
++'<div class="cmd">git rebase origin/main                  # replay feature commits on latest main</div>'
++'<div class="cmd"># Or merge main into feature (creates merge commits but is safer):</div>'
++'<div class="cmd">git merge origin/main                   # merge latest main into feature</div>'
++'<div class="cmd"># Feature flags to ship incomplete code:</div>'
++'<div class="cmd">if feature_enabled("new-payment-flow", user_id):</div>'
++'<div class="cmd">    return new_payment_flow()</div>'
++'<div class="cmd">return legacy_payment_flow()</div>'
++'</div>'
++'<p>Long-lived feature branches accumulate merge debt — the longer a branch lives, the more diverged it becomes from main, and the harder the eventual merge. Problems: large conflict resolution effort, integration surprises (your feature works alone but not with other merged features), delayed feedback (bugs discovered late). Solutions: sync the feature branch with main daily (rebase or merge), break large features into smaller mergeable increments, and use feature flags to merge incomplete code to main safely while hiding it from users. Feature flags decouple deployment from feature release — the ultimate solution to long-lived branches.</p>'
++'<div class="tip"><b>Branch age SLO:</b> Set a team agreement: no feature branch lives longer than 2-3 days without being merged or rebased onto main. A branch older than 1 week is a smell — the feature should be broken down smaller or feature-flagged. Enforcing this SLO prevents the "big bang" merge nightmare.</div>'},
+
+{n:10, tag:'branching', q:'What are Git worktrees — how do they help when working on multiple branches simultaneously?',
+body:'<div class="cmds">'
++'<div class="cmd">git worktree add ../hotfix-123 hotfix/payment-crash  # checkout branch in new dir</div>'
++'<div class="cmd">git worktree add -b feature/new-api ../new-api origin/main  # new branch + dir</div>'
++'<div class="cmd">git worktree list                         # show all worktrees</div>'
++'<div class="cmd">git worktree remove ../hotfix-123         # remove worktree</div>'
++'<div class="cmd">git worktree prune                        # clean up stale worktree metadata</div>'
++'</div>'
++'<p>Worktrees let you check out multiple branches simultaneously in different directories, all sharing the same .git repository (no duplicate .git overhead). Use cases: context switching between a feature branch and an urgent hotfix without stashing, comparing two branches side by side, running tests on two branches concurrently. Without worktrees, you would need to stash, switch, work, switch back, unstash — error-prone and slow. With worktrees, each branch is a separate directory you can switch between instantly.</p>'
++'<div class="good"><b>Practical pattern:</b> Keep your main working directory on the main branch (for reference). Create worktrees for each active feature. Your editor can open multiple directories. When you finish a worktree, run git worktree remove to clean up. This workflow eliminates stash entirely for multi-branch work.</div>'},
+
+// ── MERGING & REBASING ───────────────────────────────────────────────────
+{n:11, tag:'merging', q:'What is the difference between merge and rebase — which do you use when?',
+body:'<div class="cmds">'
++'<div class="cmd"># Merge: preserves history, creates merge commit</div>'
++'<div class="cmd">git checkout main</div>'
++'<div class="cmd">git merge feature/login         # creates merge commit (two parents)</div>'
++'<div class="cmd"># Rebase: rewrites history, linear result</div>'
++'<div class="cmd">git checkout feature/login</div>'
++'<div class="cmd">git rebase main                 # replay feature commits on top of main</div>'
++'<div class="cmd">git checkout main</div>'
++'<div class="cmd">git merge feature/login         # now fast-forward only (no merge commit)</div>'
++'<div class="cmd"># Fast-forward merge (when no divergence):</div>'
++'<div class="cmd">git merge --ff-only feature     # fail if not fast-forwardable</div>'
++'<div class="cmd"># No-ff merge (always create merge commit):</div>'
++'<div class="cmd">git merge --no-ff feature       # preserves feature branch boundary</div>'
++'</div>'
++'<p>Merge preserves the true history — you can see when branches diverged and merged. Merge commits are noise in a linear history but accurately represent what happened. Rebase rewrites history to be linear — all commits appear as if they were made sequentially on main. Rebase produces cleaner git log output but obscures the true timeline. Rule of thumb: rebase your private feature branch before merging to main (clean history), never rebase commits already pushed to shared branches (rewrites history others depend on). Many teams use squash-and-merge for PRs (one clean commit per feature) as a middle ground.</p>'
++'<div class="info"><b>The golden rule of rebase:</b> Never rebase commits that exist outside your local repository. If others have based work on those commits, rebasing creates parallel histories with the same changes under different SHAs — the definition of a nightmare merge situation.</div>'},
+
+{n:12, tag:'merging', q:'How do you resolve merge conflicts — what is your systematic approach?',
+body:'<div class="cmds">'
++'<div class="cmd">git merge feature/payments      # triggers conflict</div>'
++'<div class="cmd">git status                      # see conflicting files (both modified)</div>'
++'<div class="cmd">git diff                        # show conflict markers in files</div>'
++'<div class="cmd"># Conflict markers in file:</div>'
++'<div class="cmd">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD (current branch)</div>'
++'<div class="cmd">current branch version</div>'
++'<div class="cmd">=======</div>'
++'<div class="cmd">incoming branch version</div>'
++'<div class="cmd">&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/payments</div>'
++'<div class="cmd"># Use a merge tool:</div>'
++'<div class="cmd">git mergetool                   # opens configured diff tool (vimdiff, VS Code, etc.)</div>'
++'<div class="cmd">git config merge.tool vscode</div>'
++'<div class="cmd"># Accept one side entirely:</div>'
++'<div class="cmd">git checkout --ours   file.txt  # keep current branch version</div>'
++'<div class="cmd">git checkout --theirs file.txt  # keep incoming branch version</div>'
++'<div class="cmd">git add file.txt</div>'
++'<div class="cmd">git merge --continue</div>'
++'<div class="cmd"># Abort and start over:</div>'
++'<div class="cmd">git merge --abort</div>'
++'</div>'
++'<p>Systematic conflict resolution: (1) understand what each side is trying to do (read the commits, not just the diff), (2) decide on the correct semantics (not just text), (3) resolve with proper understanding of both changes, (4) run tests after resolution. Mechanical resolution (accept all ours/theirs) is dangerous — the result may compile but be logically wrong. Configure a visual merge tool (VS Code, IntelliJ, vimdiff) — three-way diff showing base/ours/theirs makes resolution faster and safer.</p>'
++'<div class="tip"><b>rerere (Reuse Recorded Resolution):</b> git config --global rerere.enabled true — Git records how you resolved conflicts and automatically reapplies the same resolution if the same conflict occurs again (common during long rebases). Essential for large rebases with recurring conflict patterns.</div>'},
+
+{n:13, tag:'merging', q:'What is a squash merge — when is it appropriate vs a regular merge?',
+body:'<div class="cmds">'
++'<div class="cmd">git merge --squash feature/login    # stage all feature changes as one commit</div>'
++'<div class="cmd">git commit -m "feat: add login with OAuth2 (#PR-456)"</div>'
++'<div class="cmd"># GitHub/GitLab: Squash and Merge button in PR UI</div>'
++'<div class="cmd"># Check if PR was squashed:</div>'
++'<div class="cmd">git log --oneline main | head -5    # clean single commits per feature</div>'
++'<div class="cmd"># Squash local commits before pushing:</div>'
++'<div class="cmd">git rebase -i HEAD~5                # interactive rebase last 5 commits</div>'
++'<div class="cmd"># then change pick to squash/s for commits to collapse</div>'
++'</div>'
++'<p>Squash merge collapses all commits from a feature branch into a single commit on main. Advantages: clean linear history on main (one meaningful commit per feature), individual commits on feature branches can be messy WIP commits without polluting main. Disadvantages: you lose the detailed commit history of the feature (all those "fix typo" and "WIP" commits are gone), making blame/bisect less granular. Use squash-and-merge for: small features where the PR is the unit of change, teams with messy commit discipline. Use regular merge with --no-ff for: large features where individual commits provide meaningful history, or when you want to preserve detailed blame information.</p>'
++'<div class="good"><b>Team consistency:</b> Pick one merge strategy and enforce it. If you use squash-and-merge, every PR becomes one commit — consistent and clean. If you use regular merge, require conventional commits (feat:, fix:, chore:) so the history is meaningful. Mixing strategies makes the history confusing.</div>'},
+
+{n:14, tag:'merging', q:'How does git cherry-pick work — what are its risks in production?',
+body:'<div class="cmds">'
++'<div class="cmd">git cherry-pick abc1234         # apply single commit to current branch</div>'
++'<div class="cmd">git cherry-pick abc1234..def5678 # apply range of commits</div>'
++'<div class="cmd">git cherry-pick -x abc1234      # add "(cherry picked from commit abc)" to message</div>'
++'<div class="cmd">git cherry-pick --no-commit abc1234  # stage changes without committing</div>'
++'<div class="cmd">git cherry-pick --abort         # abort if conflicts</div>'
++'<div class="cmd"># Common use: backport a fix to a release branch</div>'
++'<div class="cmd">git checkout release/v1.2</div>'
++'<div class="cmd">git cherry-pick &lt;fix-commit-sha&gt;</div>'
++'<div class="cmd">git push origin release/v1.2</div>'
++'</div>'
++'<p>Cherry-pick copies a commit to another branch, creating a new commit with the same changes but a different SHA. Production use cases: backporting a security fix to multiple release branches, hotfixing production without pulling in other in-progress changes, picking a fix from a feature branch before the full feature is ready. Risks: cherry-picked commits create duplicate history — the same logical change exists as two different SHAs in two branches, causing confusion in git log and git blame. If the cherry-picked commit depends on other commits for context, applying it in isolation can cause subtle bugs.</p>'
++'<div class="warn"><b>Cherry-pick debt:</b> Heavy cherry-pick usage across multiple release branches creates significant merge debt. Backports must be carefully tracked — use the -x flag to leave a trail in the commit message. Some teams use a bot (like GitHub\'s backport action) to automate cherry-picks to release branches when a fix is merged to main.</div>'},
+
+{n:15, tag:'merging', q:'How do you perform an interactive rebase — what operations does it support?',
+body:'<div class="cmds">'
++'<div class="cmd">git rebase -i HEAD~5            # interactive rebase last 5 commits</div>'
++'<div class="cmd">git rebase -i origin/main       # rebase commits not yet on main</div>'
++'<div class="cmd"># Interactive rebase operations:</div>'
++'<div class="cmd">pick    — use commit as-is</div>'
++'<div class="cmd">reword  — use commit, edit message only</div>'
++'<div class="cmd">edit    — pause to amend commit (add/remove files)</div>'
++'<div class="cmd">squash  — meld into previous commit (keep both messages)</div>'
++'<div class="cmd">fixup   — meld into previous commit (discard this message)</div>'
++'<div class="cmd">drop    — remove this commit entirely</div>'
++'<div class="cmd">exec    — run shell command after this commit (for testing)</div>'
++'<div class="cmd">break   — pause here (for manual inspection)</div>'
++'<div class="cmd"># Reorder commits by reordering lines in the editor</div>'
++'<div class="cmd"># After editing: git rebase --continue or git rebase --abort</div>'
++'</div>'
++'<p>Interactive rebase lets you rewrite the last N commits before pushing. Use it to: squash WIP/fixup commits before a PR, reorder commits for logical clarity, edit commit messages to follow conventions, remove a commit that was accidentally included, or split a large commit into smaller ones (edit, then unstage and recommit in parts). Run it only on commits that haven\'t been pushed to shared branches. Many developers run git rebase -i origin/main before every PR to clean up their commit history.</p>'
++'<div class="tip"><b>exec for safety:</b> Add exec make test between commits during a rebase to verify tests pass at each step. If a test fails mid-rebase, Git pauses and lets you fix it before continuing. This is invaluable when rebasing complex branches where order matters.</div>'},
+
+// ── HISTORY & COMMITS ────────────────────────────────────────────────────
+{n:16, tag:'history', q:'How do you write good commit messages — what conventions matter in production?',
+body:'<div class="cmds">'
++'<div class="cmd"># Conventional Commits format:</div>'
++'<div class="cmd">type(scope): short description (50 chars max)</div>'
++'<div class="cmd"></div>'
++'<div class="cmd">Longer body explaining WHAT and WHY (not HOW), 72 chars per line.</div>'
++'<div class="cmd">HOW is in the code. WHY is in the commit message.</div>'
++'<div class="cmd"></div>'
++'<div class="cmd">Closes #123</div>'
++'<div class="cmd"># Types: feat, fix, docs, style, refactor, test, chore, ci, perf</div>'
++'<div class="cmd"># Examples:</div>'
++'<div class="cmd">feat(auth): add OAuth2 login with Google provider</div>'
++'<div class="cmd">fix(payments): prevent double-charge on network timeout</div>'
++'<div class="cmd">chore(deps): upgrade axios from 0.27 to 1.6.0</div>'
++'<div class="cmd">ci(github-actions): add matrix build for node 18 and 20</div>'
++'<div class="cmd"># Breaking change:</div>'
++'<div class="cmd">feat!: remove deprecated v1 API endpoints</div>'
++'<div class="cmd">BREAKING CHANGE: /api/v1 endpoints removed, use /api/v2</div>'
++'</div>'
++'<p>Good commit messages are engineering documentation. The subject line answers "what does this commit do?" — use imperative mood ("add feature" not "added feature"). The body answers "why was this change made?" — context that cannot be inferred from the code. Conventional Commits enables automation: semantic-release auto-generates changelogs and version bumps based on commit type (feat → minor bump, fix → patch, BREAKING CHANGE → major). CI/CD pipelines can enforce message format with commitlint.</p>'
++'<div class="good"><b>The "why" is priceless:</b> "Fix off-by-one error in loop" describes what. "Fix off-by-one error in loop causing silent data loss when processing batches at partition boundaries (found via Datadog alert at 2024-01-15 02:30 UTC)" tells you why anyone should care. Three months later, that context is gold for whoever bisects a regression to this commit.</div>'},
+
+{n:17, tag:'history', q:'How do you use git log effectively to navigate project history?',
+body:'<div class="cmds">'
++'<div class="cmd">git log --oneline --graph --all --decorate  # visual branch graph</div>'
++'<div class="cmd">git log --since="2 weeks ago" --author="Eknatha"</div>'
++'<div class="cmd">git log --grep="payment" --oneline  # search commit messages</div>'
++'<div class="cmd">git log -S "function processPayment"  # search for code added/removed (pickaxe)</div>'
++'<div class="cmd">git log -G "processPayment"          # search using regex (pickaxe)</div>'
++'<div class="cmd">git log --follow -p -- src/auth.ts   # history of a specific file (follows renames)</div>'
++'<div class="cmd">git log main..feature/login          # commits on feature not yet on main</div>'
++'<div class="cmd">git log feature/login..main          # commits on main not yet on feature</div>'
++'<div class="cmd">git log --merges --oneline           # only merge commits</div>'
++'<div class="cmd">git shortlog -sn                     # contributor commit count summary</div>'
++'<div class="cmd">git log --format="%H %ai %ae %s" --since="1 month ago" &gt; audit.log</div>'
++'</div>'
++'<p>git log -S (the "pickaxe") is one of the most powerful debugging tools — it finds every commit that added or removed a specific string, even across renames and moves. Use it to answer "when did this function first appear?" or "which commit deleted this configuration key?". git log --follow tracks a file through renames. Two-dot notation (A..B) shows commits reachable from B but not A — what\'s unique to one branch relative to another. Three-dot (A...B) shows commits reachable from either but not both — symmetric difference.</div>'
++'<div class="tip"><b>git log aliases:</b> Add to ~/.gitconfig: alias.lg = log --oneline --graph --all --decorate. Then git lg gives a beautiful branch graph. Share aliases across the team via a dotfiles repo to standardize the Git experience.</div>'},
+
+{n:18, tag:'history', q:'What is git blame — how do you use it productively for incident investigation?',
+body:'<div class="cmds">'
++'<div class="cmd">git blame src/payments/processor.go           # annotate each line with last commit</div>'
++'<div class="cmd">git blame -L 45,60 src/payments/processor.go  # specific line range</div>'
++'<div class="cmd">git blame -w src/payments/processor.go        # ignore whitespace changes</div>'
++'<div class="cmd">git blame -M src/payments/processor.go        # detect moved lines within file</div>'
++'<div class="cmd">git blame -C src/payments/processor.go        # detect lines copied from other files</div>'
++'<div class="cmd"># If blame shows a refactor commit (not the original change):</div>'
++'<div class="cmd">git log -p &lt;refactor-commit&gt; -- src/payments/processor.go</div>'
++'<div class="cmd"># Then blame at the parent of that commit:</div>'
++'<div class="cmd">git blame &lt;refactor-commit&gt;^ -- src/payments/processor.go</div>'
++'<div class="cmd"># GitHub: "View blame" then "View as of this commit" to walk back through history</div>'
++'</div>'
++'<p>git blame is most useful for incident investigation: "which commit introduced this behavior?" and "who can explain this code?". The -w flag prevents refactoring commits (whitespace/formatting changes) from obscuring the actual logic author. -M and -C detect when code was moved or copied, attributing to the original author rather than whoever moved it. When blame shows a trivial commit (formatting, rename), use git log on that commit to trace back to the original change.</p>'
++'<div class="warn"><b>Blame culture:</b> git blame is a code archaeology tool, not a blame assignment tool. Use it to understand context and find the person who can explain the code — not to assign fault. "Who wrote this?" should lead to "let me ask them about the context" not "I found who broke it."</div>'},
+
+{n:19, tag:'history', q:'What is git bisect — how do you use it to find which commit introduced a bug?',
+body:'<div class="cmds">'
++'<div class="cmd">git bisect start</div>'
++'<div class="cmd">git bisect bad                   # current commit has the bug</div>'
++'<div class="cmd">git bisect good v1.2.0           # last known good version</div>'
++'<div class="cmd"># Git checks out the middle commit — test it:</div>'
++'<div class="cmd">make test                        # does the bug exist?</div>'
++'<div class="cmd">git bisect good                  # no bug here</div>'
++'<div class="cmd">git bisect bad                   # bug present</div>'
++'<div class="cmd"># Repeat until Git identifies the first bad commit</div>'
++'<div class="cmd">git bisect reset                 # return to original HEAD when done</div>'
++'<div class="cmd"># Automated bisect with a test script:</div>'
++'<div class="cmd">git bisect start HEAD v1.2.0</div>'
++'<div class="cmd">git bisect run ./test-for-bug.sh # 0=good, non-zero=bad</div>'
++'</div>'
++'<p>git bisect uses binary search through commit history to find the first bad commit. With 1000 commits between good and bad, it takes only ~10 steps (log2(1000)). The automated form (git bisect run) is the most powerful: provide a script that returns 0 if the bug is absent, non-zero if present, and Git binary-searches automatically. This reduces what would be hours of manual investigation to minutes. Essential for production incident root cause analysis when you know the bug was introduced between two versions.</p>'
++'<div class="good"><b>Production use:</b> When a Kubernetes cluster upgrade introduces a regression, or a dependency update breaks behavior, git bisect against a tag range (git bisect start HEAD v1.8.0) with an automated test script finds the exact commit. Even complex bugs become tractable — the exponential reduction in search space is transformative.</div>'},
+
+{n:20, tag:'history', q:'How do you amend commits — what is the difference between amend, fixup, and reset?',
+body:'<div class="cmds">'
++'<div class="cmd"># Amend last commit (message or content):</div>'
++'<div class="cmd">git add forgotten-file.txt</div>'
++'<div class="cmd">git commit --amend              # opens editor for message change</div>'
++'<div class="cmd">git commit --amend --no-edit    # keep message, just add staged changes</div>'
++'<div class="cmd"># Fixup commit (for interactive rebase cleanup):</div>'
++'<div class="cmd">git commit --fixup abc1234      # create "fixup! &lt;original message&gt;" commit</div>'
++'<div class="cmd">git rebase -i --autosquash origin/main  # auto-squashes fixups into targets</div>'
++'<div class="cmd"># Reset to unstage or undo commits:</div>'
++'<div class="cmd">git reset HEAD~1                # undo last commit, keep changes staged (--mixed)</div>'
++'<div class="cmd">git reset --soft HEAD~1         # undo last commit, keep changes staged</div>'
++'<div class="cmd">git reset --hard HEAD~1         # undo last commit, DISCARD changes (destructive)</div>'
++'<div class="cmd">git reset HEAD file.txt         # unstage a specific file</div>'
++'</div>'
++'<p>Amend rewrites the last commit — creates a new SHA. Use it before pushing; after pushing requires force-push. Fixup commits are WIP commits meant to be squashed into a specific earlier commit — they follow a naming convention ("fixup! original commit message") that --autosquash understands. Reset --soft is the safest reset: undoes the commit but keeps all changes staged for recommitting. Reset --mixed (default) unstages changes but keeps them in working tree. Reset --hard destroys changes — use with extreme care and verify with git diff HEAD first.</p>'
++'<div class="warn"><b>After pushing:</b> git commit --amend followed by git push rewrites published history. Force-push is required. On shared branches this is catastrophic — anyone who has pulled the original commit now has a diverged history. Only amend commits that exist only in your local repository or on a private feature branch no one else has pulled.</div>'},
+
+// ── WORKFLOWS ────────────────────────────────────────────────────────────
+{n:21, tag:'workflows', q:'How does the pull request / merge request workflow work in practice — what makes a good PR?',
+body:'<div class="cmds">'
++'<div class="cmd"># PR workflow steps:</div>'
++'<div class="cmd">1. Create feature branch from main</div>'
++'<div class="cmd">2. Make focused commits (one logical change per commit)</div>'
++'<div class="cmd">3. Push branch, open PR with descriptive title and body</div>'
++'<div class="cmd">4. CI runs automatically (tests, lint, security scan)</div>'
++'<div class="cmd">5. Reviewers approve (check required status checks pass)</div>'
++'<div class="cmd">6. Author addresses feedback with new commits or rebases</div>'
++'<div class="cmd">7. Squash or merge to main</div>'
++'<div class="cmd">8. CD pipeline deploys automatically</div>'
++'<div class="cmd"># Keep PRs small:</div>'
++'<div class="cmd">Ideal PR: under 400 lines changed, single concern, reviewable in 20 min</div>'
++'<div class="cmd">Large PR: split into a stacked PR series or use feature flags</div>'
++'</div>'
++'<p>A good PR has: a clear title (conventional commit format), a description explaining what changed and why (not how), screenshots/recordings for UI changes, a link to the ticket/issue, and a testing notes section. Small PRs get reviewed faster, merged sooner, and have fewer conflicts. Studies show review quality degrades sharply above 400 lines of diff. Large PRs often signal either a feature that wasn\'t broken down small enough, or a refactoring that should be done incrementally. Review latency (time from PR opened to first review) is a key developer experience metric.</p>'
++'<div class="tip"><b>PR description template:</b> Create a .github/pull_request_template.md with sections for: What does this PR do, Why is it needed, How to test, Screenshots (if applicable), Related issues. A template nudges contributors toward completeness without requiring it.</div>'},
+
+{n:22, tag:'workflows', q:'What are Git hooks — how do you use them in a team environment?',
+body:'<div class="cmds">'
++'<div class="cmd"># Client-side hooks (run locally):</div>'
++'<div class="cmd">.git/hooks/pre-commit          # run before committing (lint, test)</div>'
++'<div class="cmd">.git/hooks/commit-msg           # validate commit message format</div>'
++'<div class="cmd">.git/hooks/pre-push             # run before pushing (integration tests)</div>'
++'<div class="cmd">.git/hooks/post-checkout        # run after checkout (install deps?)</div>'
++'<div class="cmd"># Server-side hooks (run on remote):</div>'
++'<div class="cmd">pre-receive                     # validate pushes before accepting</div>'
++'<div class="cmd">post-receive                    # trigger deployments after push</div>'
++'<div class="cmd">update                          # per-branch validation</div>'
++'<div class="cmd"># Share hooks with the team using husky (Node.js):</div>'
++'<div class="cmd">npx husky init</div>'
++'<div class="cmd">echo "npx lint-staged" &gt; .husky/pre-commit</div>'
++'<div class="cmd">echo "npx commitlint --edit" &gt; .husky/commit-msg</div>'
++'<div class="cmd"># Or pre-commit (Python, language-agnostic):</div>'
++'<div class="cmd">pip install pre-commit &amp;&amp; pre-commit install</div>'
++'</div>'
++'<p>Client-side hooks are not pushed to remote (they live in .git/hooks which is not tracked). Use husky or pre-commit framework to share hooks via package.json or .pre-commit-config.yaml. Pre-commit hooks: run linters (fast, targeted — only on changed files using lint-staged), validate commit message format with commitlint (enforces conventional commits). Pre-push hooks: run tests (heavier, only on push). Server-side hooks on GitHub/GitLab: use branch protection required status checks instead — they cannot be bypassed by clients.</p>'
++'<div class="warn"><b>Slow hooks hurt DX:</b> A pre-commit hook that runs the full test suite makes every commit painful. Run only fast checks in pre-commit (lint, format, type-check — under 30 seconds). Run tests in pre-push or CI. Developers will git commit --no-verify to bypass slow hooks, defeating their purpose entirely.</div>'},
+
+{n:23, tag:'workflows', q:'What is a monorepo — what are the Git-specific challenges and how do you address them?',
+body:'<div class="cmds">'
++'<div class="cmd"># Monorepo: all services/packages in one repository</div>'
++'<div class="cmd">repo/</div>'
++'<div class="cmd">  services/api/</div>'
++'<div class="cmd">  services/worker/</div>'
++'<div class="cmd">  libraries/shared/</div>'
++'<div class="cmd">  infrastructure/terraform/</div>'
++'<div class="cmd"># Sparse checkout (only clone what you need):</div>'
++'<div class="cmd">git clone --no-checkout --filter=blob:none &lt;url&gt;</div>'
++'<div class="cmd">git sparse-checkout set services/api libraries/shared</div>'
++'<div class="cmd"># Git LFS for large files:</div>'
++'<div class="cmd">git lfs track "*.pkl" "*.bin" "infrastructure/certificates/*.pem"</div>'
++'<div class="cmd">git lfs ls-files</div>'
++'<div class="cmd"># Shallow clone for CI (faster, less history):</div>'
++'<div class="cmd">git clone --depth=1 &lt;url&gt;</div>'
++'<div class="cmd"># CODEOWNERS for monorepo path-based ownership:</div>'
++'<div class="cmd">services/api/         @api-team</div>'
++'<div class="cmd">infrastructure/       @platform-team</div>'
++'<div class="cmd">libraries/shared/     @core-team</div>'
++'</div>'
++'<p>Monorepo challenges: large repository size (slow clones, deep history), cross-service CI (every commit triggers every service\'s tests), and ownership conflicts (who approves changes to shared libraries?). Solutions: sparse checkout (only materialize needed paths), Git LFS for binary files, shallow clones in CI (--depth=1 is sufficient for most CI tasks), path-based CODEOWNERS for automated review assignment, and affected-service detection (only run tests for services with changed files). Tools like Nx, Turborepo, and Bazel provide monorepo-aware build and test systems.</p>'
++'<div class="good"><b>Affected-change detection:</b> git diff --name-only origin/main HEAD | xargs -I{} dirname {} | sort -u gives changed directories. A CI pipeline can use this to only test and deploy the services whose code actually changed — reducing CI time from 30 minutes to 3 minutes on a monorepo with 20 services.</div>'},
+
+{n:24, tag:'workflows', q:'How do you manage Git submodules in production — what are the pitfalls?',
+body:'<div class="cmds">'
++'<div class="cmd">git submodule add &lt;url&gt; vendor/lib  # add submodule</div>'
++'<div class="cmd">git submodule update --init --recursive  # initialize after clone</div>'
++'<div class="cmd">git clone --recurse-submodules &lt;url&gt;   # clone with all submodules</div>'
++'<div class="cmd">git submodule update --remote           # update to latest remote</div>'
++'<div class="cmd">git submodule foreach git pull origin main  # update all submodules</div>'
++'<div class="cmd">cat .gitmodules                          # submodule config</div>'
++'<div class="cmd">git submodule status                     # show SHA each submodule is at</div>'
++'<div class="cmd"># Check for uncommitted submodule changes:</div>'
++'<div class="cmd">git submodule foreach git status</div>'
++'</div>'
++'<p>Submodules pin a specific commit of another repository inside your repo. Use cases: vendoring third-party code at a known version, sharing infrastructure modules between repos. Pitfalls: forgetting --recurse-submodules on clone (submodule directories are empty), updating the submodule SHA without pushing the change (others get empty directories), detached HEAD confusion (submodules always check out a specific commit, not a branch), and two-step push requirement (push submodule changes before pushing parent). Most teams prefer Git subtree or package management (npm, pip, go modules) over submodules for dependency management.</p>'
++'<div class="warn"><b>Submodule footgun:</b> After git submodule update --remote, you must commit the updated SHA in the parent repo. If you forget, everyone else who pulls your commit gets the old submodule version. The submodule SHA embedded in the parent is what controls which version everyone gets — not the remote submodule\'s default branch.</div>'},
+
+// ── RECOVERY & UNDO ──────────────────────────────────────────────────────
+{n:25, tag:'recovery', q:'What is git reflog — how does it save you from disasters?',
+body:'<div class="cmds">'
++'<div class="cmd">git reflog                      # every HEAD movement in last 90 days</div>'
++'<div class="cmd">git reflog show main            # reflog for specific branch</div>'
++'<div class="cmd">git reflog --date=iso           # with timestamps</div>'
++'<div class="cmd"># Recover from accidental reset --hard:</div>'
++'<div class="cmd">git reflog                      # find the SHA before the reset</div>'
++'<div class="cmd">git reset --hard HEAD@{3}       # go back to that point</div>'
++'<div class="cmd"># Recover accidentally deleted branch:</div>'
++'<div class="cmd">git reflog                      # find last commit SHA on the branch</div>'
++'<div class="cmd">git checkout -b recovered-branch abc1234  # recreate branch at that SHA</div>'
++'<div class="cmd"># Recover dropped stash:</div>'
++'<div class="cmd">git fsck --lost-found           # find dangling commits (stash objects)</div>'
++'<div class="cmd">git show dangling-sha           # inspect the recovered stash content</div>'
++'</div>'
++'<p>git reflog is the ultimate safety net — it records every position HEAD has been, including commits on deleted branches, before resets, before rebases. The reflog is local only (not pushed to remote) and expires after 90 days (configurable). Before running any destructive operation (reset --hard, rebase, branch deletion), note the current SHA — you can always return to it via reflog. "I accidentally reset --hard and lost my work" is recoverable within 90 days. "I force-pushed and others have no local copy" is trickier but often still recoverable via their reflogs.</p>'
++'<div class="tip"><b>Before any dangerous operation:</b> Run git log --oneline -5 and note the current SHA. Then run the operation. If something goes wrong, git reset --hard &lt;noted-sha&gt; is your escape hatch. This 5-second habit has saved countless hours of lost work.</div>'},
+
+{n:26, tag:'recovery', q:'How do you undo a bad commit that has already been pushed to main?',
+body:'<div class="cmds">'
++'<div class="cmd"># Option 1: git revert (SAFE — adds new commit undoing changes)</div>'
++'<div class="cmd">git revert abc1234              # create new commit that reverses abc1234</div>'
++'<div class="cmd">git revert HEAD~3..HEAD         # revert last 3 commits</div>'
++'<div class="cmd">git revert --no-commit abc1234  # stage the revert without committing</div>'
++'<div class="cmd">git push origin main            # normal push (no force needed)</div>'
++'<div class="cmd"># Option 2: git reset + force push (DANGEROUS on shared branches)</div>'
++'<div class="cmd">git reset --hard HEAD~1         # undo last commit locally</div>'
++'<div class="cmd">git push --force-with-lease origin main  # force push (safer than --force)</div>'
++'<div class="cmd"># --force-with-lease: fails if remote has commits you haven\'t fetched</div>'
++'<div class="cmd"># Option 3: revert a merge commit</div>'
++'<div class="cmd">git revert -m 1 &lt;merge-commit-sha&gt;  # -m 1 = keep the mainline parent</div>'
++'</div>'
++'<p>Revert is the only safe option for shared branches — it adds a new commit that inverts the bad commit, preserving history. Reset + force-push rewrites history: anyone who has pulled the bad commit now has a diverged history and will need to reset or rebase. Use force-push only on private branches you own entirely. --force-with-lease is safer than --force: it refuses to push if someone else has pushed since your last fetch, preventing you from overwriting their work. For a bad merge commit, revert -m 1 specifies which parent (mainline = first parent) to keep.</p>'
++'<div class="warn"><b>Force-push on main:</b> Even with --force-with-lease, force-pushing to main in a team causes pain for everyone. If you must force-push main: (1) communicate to the team, (2) have everyone run git fetch origin && git reset --hard origin/main afterward. Better: prevent it with branch protection "Do not allow force pushes."</div>'},
+
+{n:27, tag:'recovery', q:'How do you recover a deleted branch that was not merged?',
+body:'<div class="cmds">'
++'<div class="cmd"># Step 1: find the last commit SHA on the deleted branch</div>'
++'<div class="cmd">git reflog | grep "branch-name"     # if you remember the branch name</div>'
++'<div class="cmd">git reflog | head -30               # scan recent HEADs</div>'
++'<div class="cmd">git fsck --lost-found               # find unreferenced commits (dangling)</div>'
++'<div class="cmd"># Step 2: recreate the branch</div>'
++'<div class="cmd">git checkout -b recovered-branch &lt;sha&gt;</div>'
++'<div class="cmd">git switch -c recovered-branch &lt;sha&gt;</div>'
++'<div class="cmd"># If branch was remote-only and locally pulled:</div>'
++'<div class="cmd">git checkout -b recovered origin/deleted-branch  # if remote still has it</div>'
++'<div class="cmd"># If deleted from GitHub PR:</div>'
++'<div class="cmd"># GitHub keeps deleted PR branches — Restore Branch button in PR</div>'
++'<div class="cmd"># Or: GitHub API: POST /repos/{owner}/{repo}/git/refs</div>'
++'</div>'
++'<p>A "deleted" branch just removes the pointer file — the commits are still in the object database until garbage collected. As long as git gc has not run and the commits are in the reflog (within 90 days), recovery is straightforward. GitHub retains deleted branch commits for the lifetime of the repository and provides a "Restore branch" button on closed PRs — use this for recently deleted remote branches. The nuclear recovery option is git fsck --lost-found which writes all unreferenced objects to .git/lost-found/ — parse through the dangling commits to find your branch tip.</p>'
++'<div class="good"><b>Prevention:</b> Configure GitHub to never auto-delete branches after merge (uncheck "Automatically delete head branches" in repo settings). Instead, delete branches manually after confirming the merge is stable in production. This gives a window to restore if the deployment reveals a problem.</div>'},
+
+{n:28, tag:'recovery', q:'How do you handle a corrupted Git repository — what are recovery steps?',
+body:'<div class="cmds">'
++'<div class="cmd">git fsck --full                 # check object database integrity</div>'
++'<div class="cmd">git fsck --lost-found           # find dangling objects</div>'
++'<div class="cmd"># Common corruption: corrupted pack file</div>'
++'<div class="cmd">cd .git/objects/pack</div>'
++'<div class="cmd">ls -la                         # find .pack and .idx files</div>'
++'<div class="cmd">git verify-pack -v pack-*.idx  # verify pack integrity</div>'
++'<div class="cmd"># Rebuild pack from loose objects:</div>'
++'<div class="cmd">git gc --aggressive             # repack all objects</div>'
++'<div class="cmd"># If pack is corrupt: remove and re-fetch from remote</div>'
++'<div class="cmd">rm .git/objects/pack/pack-*.pack .git/objects/pack/pack-*.idx</div>'
++'<div class="cmd">git fetch --all                 # re-download all objects from remote</div>'
++'<div class="cmd"># Nuclear option: fresh clone</div>'
++'<div class="cmd">git clone &lt;remote-url&gt; repo-recovered</div>'
++'<div class="cmd"># Copy uncommitted work from corrupted repo:</div>'
++'<div class="cmd">rsync -av --exclude=".git" corrupted-repo/ repo-recovered/</div>'
++'</div>'
++'<p>Repository corruption is rare in normal operation but can happen due to hardware failure, full disk during a write, or process kill during git gc. git fsck --full validates every object in the database. For pack corruption (most common): delete the corrupt pack files and re-fetch from remote. For missing objects: git fetch restores anything that exists on the remote. The nuclear option (fresh clone + copy working tree) recovers most situations. Prevention: never let the disk fill up during git operations, avoid killing git gc mid-run.</p>'
++'<div class="tip"><b>CI/CD prevention:</b> Configure CI runners to use --depth=1 shallow clones — this uses a single pack file with no history. If it corrupts, rm -rf and clone again. Never reuse CI workspaces between jobs without git clean -fdx — stale objects from previous runs can cause mysterious errors.</div>'},
+
+// ── COLLABORATION ────────────────────────────────────────────────────────
+{n:29, tag:'collaboration', q:'How does Git handle large binary files — what is Git LFS and when do you need it?',
+body:'<div class="cmds">'
++'<div class="cmd">git lfs install                         # initialize LFS in repo</div>'
++'<div class="cmd">git lfs track "*.psd" "*.zip" "*.bin"  # track patterns in LFS</div>'
++'<div class="cmd">git lfs track "models/*.pkl"</div>'
++'<div class="cmd">cat .gitattributes                      # LFS tracking rules</div>'
++'<div class="cmd">git add .gitattributes large-file.psd</div>'
++'<div class="cmd">git lfs ls-files                        # list LFS-tracked files</div>'
++'<div class="cmd">git lfs status                          # LFS file status</div>'
++'<div class="cmd">git lfs fetch --all                     # fetch all LFS objects</div>'
++'<div class="cmd"># Check LFS usage:</div>'
++'<div class="cmd">git lfs env                             # LFS configuration</div>'
++'<div class="cmd">git lfs migrate info                    # analyze what should be in LFS</div>'
++'<div class="cmd">git lfs migrate import --include="*.bin"  # retroactively move to LFS</div>'
++'</div>'
++'<p>Git stores every version of every file — committing a 100MB binary file 100 times uses 10GB of repository storage. Git LFS replaces large files with text pointers in the repository and stores the actual content on a separate server. Without LFS: slow clones (everyone downloads all versions of binaries), repository size bloat, GitHub\'s 100MB file size limit blocks pushes. With LFS: the repository stays small (pointers are tiny), large files are fetched on demand. Use LFS for: ML model files, compiled binaries, design assets, test fixtures with large data files.</p>'
++'<div class="warn"><b>LFS in CI:</b> CI runners must have Git LFS installed and configured. A checkout without LFS support leaves pointer files instead of actual content — builds fail with missing files. Add GIT_LFS_SKIP_SMUDGE=1 to CI environments that don\'t need LFS files to speed up checkouts, and explicitly fetch only needed LFS files.</div>'},
+
+{n:30, tag:'collaboration', q:'What is a CODEOWNERS file — how does it scale code review in large teams?',
+body:'<div class="cmds">'
++'<div class="cmd">cat .github/CODEOWNERS</div>'
++'<div class="cmd"># Global owners (review everything):</div>'
++'<div class="cmd">*                         @core-team</div>'
++'<div class="cmd"># Path-specific owners:</div>'
++'<div class="cmd">infrastructure/           @platform-team</div>'
++'<div class="cmd">security/                 @security-team</div>'
++'<div class="cmd">services/payments/        @payments-team @security-team</div>'
++'<div class="cmd">*.Dockerfile              @platform-team</div>'
++'<div class="cmd">**/terraform/**           @platform-team</div>'
++'<div class="cmd"># Individual file owners:</div>'
++'<div class="cmd">.github/workflows/        @devops-team</div>'
++'<div class="cmd">package.json              @frontend-lead</div>'
++'</div>'
++'<p>CODEOWNERS automatically assigns reviewers based on which files changed in a PR. Combined with branch protection "Require review from Code Owners," changes to critical paths cannot merge without approval from the responsible team. Last matching pattern wins in CODEOWNERS. This scales code review: the security team is automatically notified of changes to payment processing; the platform team reviews all Dockerfiles and Terraform changes; no manual tagging of reviewers needed. Reduces both review latency and the risk of changes slipping through without appropriate domain review.</p>'
++'<div class="tip"><b>Ownership granularity:</b> Start with coarse ownership (teams own directories) and refine as pain points emerge. Over-granular CODEOWNERS (every file has an owner) creates review bottlenecks — every PR needs 10 different approvals. The goal is ensuring the right people see relevant changes, not creating approval bureaucracy.</div>'},
+
+{n:31, tag:'collaboration', q:'How do you handle secrets accidentally committed to a Git repository?',
+body:'<div class="cmds">'
++'<div class="cmd"># IMMEDIATE: revoke/rotate the exposed secret first (before anything else)</div>'
++'<div class="cmd"># Step 1: Remove from history using git-filter-repo (modern tool):</div>'
++'<div class="cmd">pip install git-filter-repo</div>'
++'<div class="cmd">git filter-repo --path secrets.env --invert-paths  # remove file from history</div>'
++'<div class="cmd">git filter-repo --replace-text patterns.txt         # replace secret values</div>'
++'<div class="cmd"># patterns.txt: LITERAL:actual-secret==>REDACTED</div>'
++'<div class="cmd"># Step 2: Force-push all branches and tags:</div>'
++'<div class="cmd">git push origin --force --all</div>'
++'<div class="cmd">git push origin --force --tags</div>'
++'<div class="cmd"># Step 3: Notify all contributors to re-clone (their local copies have the secret)</div>'
++'<div class="cmd"># Step 4: Contact GitHub Support to purge caches</div>'
++'<div class="cmd"># Prevention: pre-commit secrets detection</div>'
++'<div class="cmd">pip install detect-secrets &amp;&amp; detect-secrets scan &gt; .secrets.baseline</div>'
++'<div class="cmd">pip install git-secrets &amp;&amp; git secrets --install</div>'
++'</div>'
++'<p>Assume the secret is compromised the moment it is pushed — GitHub notifications, webhooks, and CI systems may have already processed it. Rotation/revocation is the only true fix; history rewriting is secondary cleanup. git filter-repo is the modern replacement for the deprecated BFG Repo Cleaner and git filter-branch. After rewriting, force-push, and have every contributor re-clone — their local copies still contain the secret in reflog/pack files. GitHub can purge cached views of the old content but the exposed window may have been enough for automated scanners.</p>'
++'<div class="warn"><b>GitHub automatically scans for secrets:</b> GitHub Secret Scanning detects common secret patterns (AWS keys, GCP service account keys, GitHub tokens) and notifies the provider. AWS and GCP will alert you when your credentials are detected. Treat it as a known compromise and rotate immediately — do not wait to finish the history rewrite.</div>'},
+
+{n:32, tag:'collaboration', q:'What is git rebase --onto — how do you use it to transplant a branch?',
+body:'<div class="cmds">'
++'<div class="cmd"># Situation: feature-b was branched off feature-a, but feature-a is delayed</div>'
++'<div class="cmd"># You want to move feature-b commits directly onto main</div>'
++'<div class="cmd">git rebase --onto main feature-a feature-b</div>'
++'<div class="cmd"># Syntax: git rebase --onto &lt;newbase&gt; &lt;upstream&gt; &lt;branch&gt;</div>'
++'<div class="cmd"># Moves commits on feature-b that are NOT on feature-a onto main</div>'
++'<div class="cmd"># Another use: remove a range of commits from a branch</div>'
++'<div class="cmd">git rebase --onto HEAD~5 HEAD~2   # remove commits 3-5 (keep 1-2 and 6+)</div>'
++'<div class="cmd"># Preview what will be rebased:</div>'
++'<div class="cmd">git log --oneline feature-a..feature-b  # commits that will move</div>'
++'</div>'
++'<p>--onto is the Swiss Army knife of rebasing — it lets you specify exactly what commits to move and where to put them. The three-argument form: newbase (where to put them), upstream (defines what commits to move — everything NOT on upstream), branch (the branch to rebase). Use cases: extracting part of a branch into its own PR, moving a branch stacked on another branch to base it directly on main, and surgically removing a range of commits from the middle of a branch history.</p>'
++'<div class="info"><b>Stacked PRs pattern:</b> Teams using stacked PRs (each feature branch built on top of another) use --onto frequently. When the bottom PR merges, use git rebase --onto main old-base next-branch to rebase the dependent branch onto the updated main. Tools like Graphite and ghstack automate this workflow.</div>'},
+
+// ── CI/CD & GITOPS ───────────────────────────────────────────────────────
+{n:33, tag:'cicd', q:'How does Git integrate with CI/CD — what triggers what in a typical pipeline?',
+body:'<div class="cmds">'
++'<div class="cmd"># GitHub Actions trigger patterns:</div>'
++'<div class="cmd">on:</div>'
++'<div class="cmd">  push:</div>'
++'<div class="cmd">    branches: [main, release/**]   # any push to main or release branches</div>'
++'<div class="cmd">  pull_request:</div>'
++'<div class="cmd">    branches: [main]               # any PR targeting main</div>'
++'<div class="cmd">  push:</div>'
++'<div class="cmd">    tags: [v*.*.*]                 # semantic version tags</div>'
++'<div class="cmd">  workflow_dispatch: {}            # manual trigger</div>'
++'<div class="cmd">  schedule:</div>'
++'<div class="cmd">    - cron: "0 2 * * *"            # nightly at 2am UTC</div>'
++'<div class="cmd"># Path filtering (only run when relevant files change):</div>'
++'<div class="cmd">  push:</div>'
++'<div class="cmd">    paths:</div>'
++'<div class="cmd">      - "services/api/**"</div>'
++'<div class="cmd">      - "!**.md"                   # exclude markdown changes</div>'
++'</div>'
++'<p>CI/CD pipelines are triggered by Git events — push, pull_request, tag creation, and schedule. Path filters prevent unnecessary pipeline runs: a docs commit should not redeploy the API. Tag-based triggers enable release workflows: creating a semver tag triggers a production deployment pipeline. The canonical pattern: feature branch push → PR CI (test, scan), main branch push → staging deployment, tag push → production deployment. Separate jobs per service in a monorepo with path filters keep CI fast and cheap.</p>'
++'<div class="good"><b>GitOps pattern:</b> In a GitOps model, the pipeline does not deploy directly. Instead, it updates the image tag in a separate manifests repository. ArgoCD detects the manifest change and deploys. The deployment history is the Git history of the manifests repo. Rollback = git revert in the manifests repo. This separation of application code (app repo) and deployment config (manifests repo) is the production standard for Kubernetes deployments.</div>'},
+
+{n:34, tag:'cicd', q:'What is semantic versioning and how do you automate releases with Git tags?',
+body:'<div class="cmds">'
++'<div class="cmd"># SemVer: MAJOR.MINOR.PATCH (e.g., 2.4.1)</div>'
++'<div class="cmd">MAJOR: breaking change (incompatible API change)</div>'
++'<div class="cmd">MINOR: new feature (backward-compatible)</div>'
++'<div class="cmd">PATCH: bug fix (backward-compatible)</div>'
++'<div class="cmd"># Manual tagging:</div>'
++'<div class="cmd">git tag -a v2.4.1 -m "Release v2.4.1: fix payment timeout"</div>'
++'<div class="cmd">git push origin v2.4.1</div>'
++'<div class="cmd"># Automated: semantic-release (reads conventional commits):</div>'
++'<div class="cmd">npx semantic-release          # determines version bump from commits</div>'
++'<div class="cmd"># feat: → minor bump (1.2.0 → 1.3.0)</div>'
++'<div class="cmd"># fix:  → patch bump (1.2.0 → 1.2.1)</div>'
++'<div class="cmd"># BREAKING CHANGE → major bump (1.2.0 → 2.0.0)</div>'
++'<div class="cmd"># Get latest tag:</div>'
++'<div class="cmd">git describe --tags --abbrev=0</div>'
++'<div class="cmd">git describe --tags            # v2.4.1-3-gabc1234 (tag + commits since + sha)</div>'
++'</div>'
++'<p>Semantic versioning communicates the impact of a release. semantic-release automates the entire release process: reads conventional commits since last release, determines version bump, creates Git tag, generates CHANGELOG.md, publishes to npm/PyPI/etc., and creates a GitHub Release — all from a single CI step. git describe generates version strings for non-release builds: v2.4.1-3-gabc1234 means "3 commits after v2.4.1, current SHA is abc1234" — perfect for Docker image tags in feature branch builds.</p>'
++'<div class="tip"><b>Docker image tagging strategy:</b> Production: v2.4.1 (exact semver tag). Staging: main-abc1234 (branch-sha). Feature: feature-login-def5678. Never use :latest in production. Use git describe --tags for builds that need a version string but aren\'t on a tag yet. This makes every deployed image traceable to an exact Git commit.</div>'},
+
+{n:35, tag:'cicd', q:'How do you use Git in a GitOps workflow — what does the repository structure look like?',
+body:'<div class="cmds">'
++'<div class="cmd"># Two-repo GitOps pattern:</div>'
++'<div class="cmd">app-repo/               # application source code</div>'
++'<div class="cmd">  src/</div>'
++'<div class="cmd">  Dockerfile</div>'
++'<div class="cmd">  .github/workflows/ci.yaml  # builds image, updates manifests repo</div>'
++'<div class="cmd">manifests-repo/         # deployment config (ArgoCD watches this)</div>'
++'<div class="cmd">  apps/</div>'
++'<div class="cmd">    myapp/</div>'
++'<div class="cmd">      base/kustomization.yaml</div>'
++'<div class="cmd">      overlays/</div>'
++'<div class="cmd">        staging/kustomization.yaml   # image: myapp:main-abc1234</div>'
++'<div class="cmd">        production/kustomization.yaml # image: myapp:v2.4.1</div>'
++'<div class="cmd"># CI pipeline update step:</div>'
++'<div class="cmd">cd manifests-repo</div>'
++'<div class="cmd">kustomize edit set image myapp=myregistry/myapp:main-${GITHUB_SHA::8}</div>'
++'<div class="cmd">git commit -m "ci: deploy myapp main-${GITHUB_SHA::8} to staging"</div>'
++'<div class="cmd">git push origin main</div>'
++'<div class="cmd"># ArgoCD detects the push and syncs the cluster</div>'
++'</div>'
++'<p>GitOps treats the Git repository as the single source of truth for cluster state. Benefits: every deployment is a Git commit (full audit trail), rollback is git revert, drift detection (ArgoCD alerts when cluster state diverges from manifests), and no direct kubectl access needed for deployments. The manifests repo should have the same branch protections as the app repo — a push to the manifests repo triggers a production deployment. PR-based changes to manifests provide review gates for infrastructure changes.</p>'
++'<div class="good"><b>Manifests repo access control:</b> The CI pipeline service account has push access to the manifests repo only for the staging overlay path. Production overlay changes require a human PR. This enforces a promotion gate: staging deploys automatically, production requires intentional human action. This is the security model for GitOps in regulated environments.</div>'},
+
+{n:36, tag:'cicd', q:'How do you handle Git in CI/CD runners — what configuration matters for performance and security?',
+body:'<div class="cmds">'
++'<div class="cmd"># Shallow clone for CI (most CI only needs current code, not full history):</div>'
++'<div class="cmd">git clone --depth=1 --single-branch --branch main &lt;url&gt;</div>'
++'<div class="cmd"># Or in GitHub Actions:</div>'
++'<div class="cmd">- uses: actions/checkout@v4</div>'
++'<div class="cmd">  with:</div>'
++'<div class="cmd">    fetch-depth: 1              # shallow (default)</div>'
++'<div class="cmd">    fetch-depth: 0              # full history (for git describe, semantic-release)</div>'
++'<div class="cmd"># Credential management for CI:</div>'
++'<div class="cmd">git config credential.helper store   # use credential store</div>'
++'<div class="cmd">git config url."https://token@github.com/".insteadOf "https://github.com/"</div>'
++'<div class="cmd"># Avoid git gc in CI (slow, not needed per-run):</div>'
++'<div class="cmd">git config gc.auto 0</div>'
++'<div class="cmd"># Cache the repo between runs:</div>'
++'<div class="cmd">- uses: actions/cache@v4</div>'
++'<div class="cmd">  with:</div>'
++'<div class="cmd">    path: .git</div>'
++'<div class="cmd">    key: git-cache-${{ github.sha }}</div>'
++'</div>'
++'<p>CI performance: shallow clones (--depth=1) reduce checkout time from minutes to seconds for large repos with deep history. Full history (fetch-depth: 0) is needed for semantic-release (reads all commits), git describe (walks tags), and coverage reports that diff against base. Disable gc.auto in CI — automatic garbage collection wastes runner time. Cache the .git directory between runs to avoid re-downloading the full pack each time. CI credentials: use short-lived tokens (GITHUB_TOKEN in GitHub Actions, Workload Identity in GCP) rather than long-lived PATs or SSH keys.</p>'
++'<div class="warn"><b>git clean in CI:</b> Always run git clean -fdx before building in a reused workspace — leftover artifacts from previous builds cause non-deterministic failures. Better: use ephemeral runners (each job gets a fresh container) to eliminate workspace state entirely. GitHub Actions hosted runners are ephemeral; self-hosted runners must implement their own cleanup.</div>'},
+
+// ── SECURITY ─────────────────────────────────────────────────────────────
+{n:37, tag:'security', q:'What is GPG commit signing — how and why do you enable it?',
+body:'<div class="cmds">'
++'<div class="cmd">gpg --full-generate-key              # generate GPG key pair</div>'
++'<div class="cmd">gpg --list-secret-keys --keyid-format=long</div>'
++'<div class="cmd">git config --global user.signingkey &lt;KEY-ID&gt;</div>'
++'<div class="cmd">git config --global commit.gpgsign true   # sign all commits</div>'
++'<div class="cmd">git config --global tag.gpgsign true      # sign all tags</div>'
++'<div class="cmd">git commit -S -m "feat: add OAuth2"       # sign a single commit</div>'
++'<div class="cmd">git log --show-signature                  # verify signatures in log</div>'
++'<div class="cmd">git verify-commit &lt;sha&gt;                  # verify specific commit signature</div>'
++'<div class="cmd"># GitHub: upload public key at Settings → SSH and GPG keys</div>'
++'<div class="cmd"># GitHub shows "Verified" badge on signed commits</div>'
++'<div class="cmd"># Modern alternative: SSH commit signing (simpler, same key as auth):</div>'
++'<div class="cmd">git config --global gpg.format ssh</div>'
++'<div class="cmd">git config --global user.signingkey ~/.ssh/id_ed25519.pub</div>'
++'</div>'
++'<p>GPG/SSH signing cryptographically proves that commits were made by the holder of a private key — not just by anyone with the email address set in git config. Without signing, anyone can make commits attributed to your email by running git config user.email "you@company.com". Signed commits provide non-repudiation: you cannot deny making a commit that is signed with your key. Required for compliance in high-security environments (FedRAMP, some PCI-DSS scopes). GitHub\'s "Require signed commits" branch protection setting enforces this at the repository level.</p>'
++'<div class="tip"><b>SSH vs GPG:</b> SSH signing (Git 2.34+) uses the same key you use to authenticate to GitHub — simpler key management, no GPG daemon needed. For most teams, SSH signing is sufficient and easier to set up. GPG provides a stronger trust model (Web of Trust, expiry, revocation certificates) relevant for open-source projects with distributed contributors.</div>'},
+
+{n:38, tag:'security', q:'How do you audit Git repository access and detect suspicious activity?',
+body:'<div class="cmds">'
++'<div class="cmd"># GitHub audit log (organization level):</div>'
++'<div class="cmd">gh api /orgs/{org}/audit-log?phrase=action:git.push --paginate</div>'
++'<div class="cmd"># Key events to monitor:</div>'
++'<div class="cmd">git.push                  # who pushed where, when</div>'
++'<div class="cmd">protected_branch.policy_override  # branch protection bypassed</div>'
++'<div class="cmd">member.added              # new member with write access</div>'
++'<div class="cmd">repository.create/delete  # repo creation or deletion</div>'
++'<div class="cmd">oauth_application.token_revoked   # credential revocation event</div>'
++'<div class="cmd"># GitHub Advanced Security: secret scanning + code scanning alerts</div>'
++'<div class="cmd">gh api /repos/{owner}/{repo}/secret-scanning/alerts</div>'
++'<div class="cmd"># Local: recent pushes and clones</div>'
++'<div class="cmd">git log --all --format="%H %ai %ae %s"  # full commit audit trail</div>'
++'<div class="cmd"># Detect force-push on main:</div>'
++'<div class="cmd"># GitHub webhook on push event: compare forced=true attribute</div>'
++'</div>'
++'<p>Git audit trails answer: who pushed what, when, and from where. GitHub organization audit logs export to SIEM (Splunk, Chronicle) for centralized security monitoring. Key anomaly signals: force-push to main (should never happen if protected), new admin added outside normal IAM process, push outside business hours from unknown IP, secret scanning alert for a new commit, large binary files pushed (possible data exfiltration). For regulated environments, enable GitHub\'s audit log streaming to GCS or S3 for immutable long-term retention.</p>'
++'<div class="good"><b>SOC2 requirement:</b> Demonstrating access control and auditability for the code repository is a core SOC2 CC6.1 and CC6.2 control. The evidence: branch protection rules preventing direct push, required PR reviews, signed commits, and exported audit logs showing all access events. A Platform Engineer owns this evidence collection and retention.</div>'},
+
+{n:39, tag:'security', q:'How do you prevent sensitive data from entering a Git repository — what tools exist?',
+body:'<div class="cmds">'
++'<div class="cmd"># Pre-commit hooks for local detection:</div>'
++'<div class="cmd">pip install detect-secrets</div>'
++'<div class="cmd">detect-secrets scan &gt; .secrets.baseline    # create baseline</div>'
++'<div class="cmd">detect-secrets audit .secrets.baseline      # review findings</div>'
++'<div class="cmd"># Add to .pre-commit-config.yaml:</div>'
++'<div class="cmd">repos:</div>'
++'<div class="cmd">  - repo: https://github.com/Yelp/detect-secrets</div>'
++'<div class="cmd">    hooks: [{id: detect-secrets}]</div>'
++'<div class="cmd"># git-secrets (AWS Labs):</div>'
++'<div class="cmd">git secrets --install</div>'
++'<div class="cmd">git secrets --register-aws    # add AWS pattern detection</div>'
++'<div class="cmd">git secrets --add "PRIVATE KEY"</div>'
++'<div class="cmd"># GitHub Secret Scanning (server-side, automatic):</div>'
++'<div class="cmd">gh api /repos/{owner}/{repo}/secret-scanning/alerts</div>'
++'<div class="cmd"># CI scan:</div>'
++'<div class="cmd">truffleHog git &lt;repo-url&gt; --only-verified  # scan history for secrets</div>'
++'<div class="cmd">gitleaks detect --source . --verbose</div>'
++'</div>'
++'<p>Defense in depth for secret prevention: (1) developer workstation pre-commit hooks (detect-secrets, gitleaks) — fast feedback before commit, (2) CI pipeline scan on every PR (truffleHog, gitleaks) — catches anything that bypassed hooks, (3) GitHub Advanced Security server-side scanning — automatic, no configuration needed, alerts provider directly, (4) periodic full history scans — finds secrets in old commits. .gitignore for .env files and cloud credential files. Developer training: secrets in environment variables or secret managers, never in files committed to Git.</p>'
++'<div class="warn"><b>.gitignore is not security:</b> .gitignore prevents accidental addition of files but can be bypassed with git add -f. A misplaced git add . in the wrong directory commits everything. Pre-commit secret scanning provides a safety net even when .gitignore fails. Neither is a replacement for proper secret management — secrets should never be on the filesystem at all, only fetched from Secret Manager at runtime.</div>'},
+
+// ── ADVANCED & INTERNALS ─────────────────────────────────────────────────
+{n:40, tag:'advanced', q:'What is git gc — how does garbage collection work and when does it matter?',
+body:'<div class="cmds">'
++'<div class="cmd">git gc                          # manual garbage collection</div>'
++'<div class="cmd">git gc --aggressive             # more thorough repacking (slow)</div>'
++'<div class="cmd">git gc --prune=now              # immediately prune unreachable objects</div>'
++'<div class="cmd">git count-objects -v            # show loose object count and size</div>'
++'<div class="cmd">git cat-file --batch-check --batch-all-objects | wc -l  # total object count</div>'
++'<div class="cmd"># Pack files vs loose objects:</div>'
++'<div class="cmd">ls -lh .git/objects/pack/       # pack files (compressed collections)</div>'
++'<div class="cmd">find .git/objects -type f | grep -v pack | wc -l  # loose object count</div>'
++'<div class="cmd"># Auto-gc threshold:</div>'
++'<div class="cmd">git config gc.auto             # default 6700 loose objects triggers auto-gc</div>'
++'<div class="cmd">git config gc.autoPackLimit    # default 50 pack files triggers repacking</div>'
++'</div>'
++'<p>Git gc packs loose objects into pack files, prunes unreachable objects, and compresses pack files. Loose objects are created by every git add, commit, and object operation. Git auto-runs gc when loose objects exceed gc.auto (default 6700). Pack files store delta-compressed objects — a pack of 1000 commits might be smaller than the 1000 loose objects because similar objects (consecutive commits on similar trees) compress together well. git gc --aggressive runs more expensive delta compression, useful for repositories with degraded performance from frequent rebases or large binary file history.</p>'
++'<div class="tip"><b>Performance tuning:</b> On a server-side bare repository receiving many pushes, auto-gc can trigger mid-push and cause timeouts for users. Set gc.auto=0 and schedule gc in a cron job during off-peak hours. Server-side git gc also releases space from large files removed via git filter-repo — the actual space is not freed until gc prunes the unreachable objects.</div>'},
+
+{n:41, tag:'advanced', q:'What is git shallow clone — when and how do you use it safely?',
+body:'<div class="cmds">'
++'<div class="cmd">git clone --depth=1 &lt;url&gt;       # only last commit (fastest)</div>'
++'<div class="cmd">git clone --depth=50 &lt;url&gt;      # last 50 commits</div>'
++'<div class="cmd">git clone --shallow-since="1 month ago" &lt;url&gt;</div>'
++'<div class="cmd">git fetch --depth=1             # deepen or re-shallow an existing clone</div>'
++'<div class="cmd">git fetch --unshallow           # convert shallow back to full clone</div>'
++'<div class="cmd">git log --oneline | wc -l       # count available commits in shallow clone</div>'
++'<div class="cmd"># Check if repo is shallow:</div>'
++'<div class="cmd">cat .git/shallow                # exists if shallow clone</div>'
++'<div class="cmd"># CI: fetch just enough for comparison:</div>'
++'<div class="cmd">git fetch --depth=2 origin main  # enough for git diff HEAD~1</div>'
++'</div>'
++'<p>Shallow clones download only the last N commits, dramatically reducing clone time for repositories with deep history. Use in CI/CD (--depth=1 is sufficient for most builds), local exploration of large repos, or when disk space is limited. Limitations: git log history is truncated, git blame may not show original author, git describe may not find tags, and git bisect cannot traverse beyond the shallow boundary. For operations that need full history: git fetch --unshallow before running semantic-release, git describe, or full git bisect. The grafts mechanism in .git/shallow tells Git where history is artificially truncated.</p>'
++'<div class="good"><b>CI checkout strategy:</b> Use fetch-depth: 1 for build jobs (fastest). Use fetch-depth: 0 for semantic-release, changelog generation, and coverage diff jobs (needs full history). Separate these into different jobs rather than always fetching full history for every CI run. This optimization alone can reduce CI checkout time by 80% on repos with years of history.</div>'},
+
+{n:42, tag:'advanced', q:'What is git sparse-checkout — how do you use it for monorepos?',
+body:'<div class="cmds">'
++'<div class="cmd">git clone --no-checkout --filter=blob:none &lt;url&gt; myrepo</div>'
++'<div class="cmd">cd myrepo</div>'
++'<div class="cmd">git sparse-checkout init --cone         # enable cone mode (recommended)</div>'
++'<div class="cmd">git sparse-checkout set services/api libraries/shared  # only these paths</div>'
++'<div class="cmd">git checkout main                       # now materializes only specified paths</div>'
++'<div class="cmd">git sparse-checkout add services/worker  # add another path</div>'
++'<div class="cmd">git sparse-checkout list                 # show configured paths</div>'
++'<div class="cmd">git sparse-checkout disable              # back to full checkout</div>'
++'<div class="cmd"># Check what files are materialized:</div>'
++'<div class="cmd">git ls-files | head -20</div>'
++'</div>'
++'<p>Sparse-checkout downloads all objects but only materializes (writes to disk) the files in specified paths. Combined with --filter=blob:none (partial clone), even the object database is lazily populated — Git fetches blob content only when needed. This enables working with monorepos containing hundreds of services without checking out the full tree. A monorepo with 10GB of files across 50 services can be worked with as if it were a small single-service repo — only your service\'s files are on disk. CI runners for specific services use sparse-checkout to only test the changed service.</p>'
++'<div class="tip"><b>--filter=blob:none:</b> The partial clone filter tells Git not to download file content (blobs) until they are needed. The repository structure (commits, trees) is downloaded, but file content is lazy-fetched. Combine with sparse-checkout for maximum efficiency in large monorepos: git clone --filter=blob:none --no-checkout. This is how engineers at Google and Meta work with their multi-GB monorepos locally.</div>'},
+
+{n:43, tag:'advanced', q:'How does Git handle line endings across operating systems — what is core.autocrlf?',
+body:'<div class="cmds">'
++'<div class="cmd"># Settings:</div>'
++'<div class="cmd">git config core.autocrlf true    # Windows: CRLF in working tree, LF in repo</div>'
++'<div class="cmd">git config core.autocrlf input   # macOS/Linux: LF everywhere, convert CRLF on add</div>'
++'<div class="cmd">git config core.autocrlf false   # no conversion (if you manage via .gitattributes)</div>'
++'<div class="cmd"># Recommended: use .gitattributes to be explicit (not per-dev settings):</div>'
++'<div class="cmd">cat .gitattributes</div>'
++'<div class="cmd">* text=auto eol=lf              # auto-detect text files, normalize to LF</div>'
++'<div class="cmd">*.sh text eol=lf                # shell scripts must be LF (breaks on CRLF)</div>'
++'<div class="cmd">*.bat text eol=crlf             # batch files must be CRLF</div>'
++'<div class="cmd">*.png binary                    # binary files: no conversion</div>'
++'<div class="cmd"># Fix existing CRLF in repo:</div>'
++'<div class="cmd">git add --renormalize .         # re-apply .gitattributes to all files</div>'
++'</div>'
++'<p>.gitattributes is the right solution — it defines line ending behavior at the repository level, independent of developer OS settings. autocrlf relies on each developer having the right setting, which breaks in mixed teams. text=auto eol=lf normalizes all text files to LF in the repository and on checkout — the modern standard for cross-platform projects. Shell scripts with CRLF line endings will fail on Linux ("command not found" errors from the invisible \r character). Binary files must be marked as such to prevent corruption from line ending conversion.</p>'
++'<div class="warn"><b>CI failures from line endings:</b> A common source of mysterious CI failures: script works on Windows developer machine, fails on Linux CI runner with "/bin/bash: bad interpreter: No such file or directory" because the shebang line has \r appended. Enforce *.sh text eol=lf in .gitattributes to prevent this entirely.</div>'},
+
+{n:44, tag:'advanced', q:'What is git bundle — how do you use it for air-gapped environments?',
+body:'<div class="cmds">'
++'<div class="cmd"># Create a bundle of the full repository:</div>'
++'<div class="cmd">git bundle create repo.bundle --all   # everything: all branches, tags</div>'
++'<div class="cmd">git bundle create incremental.bundle HEAD ^origin/main  # only new commits</div>'
++'<div class="cmd">git bundle create release.bundle v1.2.0 v1.3.0  # between two tags</div>'
++'<div class="cmd"># Verify a bundle:</div>'
++'<div class="cmd">git bundle verify repo.bundle</div>'
++'<div class="cmd"># Clone from a bundle:</div>'
++'<div class="cmd">git clone repo.bundle myrepo</div>'
++'<div class="cmd"># Fetch from a bundle into existing repo:</div>'
++'<div class="cmd">git fetch repo.bundle main:refs/remotes/origin/main</div>'
++'<div class="cmd"># List what a bundle contains:</div>'
++'<div class="cmd">git bundle list-heads repo.bundle</div>'
++'</div>'
++'<p>git bundle creates a single file that contains a complete Git repository or a subset of it — it can be transferred via USB drive, email, or any file transfer mechanism. Use cases: transferring code to air-gapped networks (common in defense, government, financial), offline backup of a repository, sharing a specific range of commits without granting repository access. The bundle is treated like a remote: you can clone from it, fetch from it, and push to it. It is a complete git transport over a file rather than a network.</p>'
++'<div class="info"><b>Infrastructure use case:</b> Terraform modules or Ansible roles for air-gapped environments. CI/CD in a locked-down network: the pipeline bundle is created on an internet-connected machine, transferred physically, and applied on an isolated server. This pattern is common in regulated industries (finance, government, utilities) where production networks have no internet access.</div>'},
+
+{n:45, tag:'advanced', q:'How do you set up and use Git aliases for productivity — what are the most useful ones?',
+body:'<div class="cmds">'
++'<div class="cmd">git config --global alias.st "status -sb"</div>'
++'<div class="cmd">git config --global alias.lg "log --oneline --graph --all --decorate"</div>'
++'<div class="cmd">git config --global alias.last "log -1 HEAD --stat"</div>'
++'<div class="cmd">git config --global alias.unstage "reset HEAD --"</div>'
++'<div class="cmd">git config --global alias.undo "reset --soft HEAD~1"</div>'
++'<div class="cmd">git config --global alias.wip "commit -am WIP"</div>'
++'<div class="cmd">git config --global alias.unwip "reset HEAD~1"</div>'
++'<div class="cmd">git config --global alias.aliases "config --get-regexp alias"</div>'
++'<div class="cmd">git config --global alias.whoami "config user.email"</div>'
++'<div class="cmd"># Shell command aliases (prefix with !):</div>'
++'<div class="cmd">git config --global alias.recent "for-each-ref --sort=-committerdate refs/heads/ --format=\"%(refname:short) %(committerdate:relative)\""</div>'
++'<div class="cmd">git config --global alias.contributors "shortlog --summary --numbered --no-merges"</div>'
++'<div class="cmd">git config --global alias.nuke "!git reset --hard &amp;&amp; git clean -fdx"</div>'
++'</div>'
++'<p>Aliases reduce cognitive overhead for frequently used command sequences. Store aliases in ~/.gitconfig and share them via a dotfiles repository so the team has a consistent Git experience. The wip/unwip pattern is a fast way to save and restore work-in-progress: git wip saves everything in a single commit, git unwip restores it. The nuke alias resets to a known clean state — useful in CI cleanup or development experiments. Aliases that start with ! execute as shell commands, enabling multi-step sequences.</p>'
++'<div class="good"><b>Dotfiles repo:</b> Keep ~/.gitconfig, ~/.zshrc, and other config files in a dotfiles repository. New developers clone it and run an install script to get the full team configuration. This ensures everyone has the same aliases, hooks, and settings — eliminating "works on my machine" due to Git configuration differences.</div>'},
+
+// More production scenarios
+{n:46, tag:'workflows', q:'How do you manage hotfixes in production — what is the workflow when main has moved ahead?',
+body:'<div class="cmds">'
++'<div class="cmd"># Situation: production is running v2.3.0, main is at v2.5.0-dev</div>'
++'<div class="cmd"># Critical bug found in production that needs immediate fix</div>'
++'<div class="cmd"># Step 1: Create hotfix branch from the production tag</div>'
++'<div class="cmd">git checkout v2.3.0</div>'
++'<div class="cmd">git checkout -b hotfix/payment-crash-v2.3.1</div>'
++'<div class="cmd"># Step 2: Fix the bug, commit</div>'
++'<div class="cmd">git commit -m "fix(payments): prevent crash on null currency code"</div>'
++'<div class="cmd"># Step 3: Create release tag</div>'
++'<div class="cmd">git tag -a v2.3.1 -m "Hotfix release v2.3.1"</div>'
++'<div class="cmd">git push origin hotfix/payment-crash-v2.3.1 v2.3.1</div>'
++'<div class="cmd"># Step 4: Cherry-pick or merge the fix back to main</div>'
++'<div class="cmd">git checkout main</div>'
++'<div class="cmd">git cherry-pick &lt;fix-commit-sha&gt;    # port fix to main</div>'
++'<div class="cmd">git push origin main</div>'
++'<div class="cmd"># Step 5: Deploy v2.3.1 tag to production via CI/CD</div>'
++'</div>'
++'<p>Hotfix workflow: branch from the production tag (not main, which may have incompatible changes), apply the minimal fix, tag the hotfix release, push the tag (which triggers the CI/CD production deployment pipeline), and then cherry-pick the fix back to main so it is not lost. The critical mistake is forgetting step 4 — the hotfix gets deployed to production but the fix is never ported back to the development branch, re-introducing the bug in the next release. Set a team process: every hotfix must have a tracking ticket requiring a cherry-pick confirmation before the ticket is closed.</p>'
++'<div class="warn"><b>Test the hotfix:</b> The temptation to skip testing under production pressure is real. At minimum: run the specific test case that exercises the bug, and deploy to staging first even if it takes 10 minutes. A bad hotfix deployed under pressure that causes a second outage is far worse than a 15-minute additional delay. Keep a fast-path staging environment for exactly this scenario.</div>'},
+
+{n:47, tag:'collaboration', q:'How do you use git format-patch and git am for email-based workflows?',
+body:'<div class="cmds">'
++'<div class="cmd">git format-patch origin/main            # create .patch files for new commits</div>'
++'<div class="cmd">git format-patch -1 HEAD                # patch for just last commit</div>'
++'<div class="cmd">git format-patch HEAD~3..HEAD           # last 3 commits as patches</div>'
++'<div class="cmd">git format-patch --stdout &gt; changes.patch  # single file</div>'
++'<div class="cmd"># Apply patches:</div>'
++'<div class="cmd">git am 0001-feat-add-payment-logging.patch</div>'
++'<div class="cmd">git am *.patch                          # apply all patches in order</div>'
++'<div class="cmd">git am --3way *.patch                   # use 3-way merge for conflicts</div>'
++'<div class="cmd">git am --abort                          # if it goes wrong</div>'
++'<div class="cmd"># Review a patch before applying:</div>'
++'<div class="cmd">git apply --check 0001-*.patch          # dry run (no changes)</div>'
++'<div class="cmd">git apply --stat 0001-*.patch           # show what would change</div>'
++'</div>'
++'<p>format-patch creates patches in the mbox email format — the original Linux kernel contribution workflow. Each patch is a self-contained commit with author, date, message, and diff. git am applies patches as commits, preserving authorship. Still used in: Linux kernel development, projects that accept contributions via email list, transferring commits between repositories without shared remote access, and distributing fixes to customers who cannot access your source repository. In air-gapped deployments, patches transfer specific code changes between environments where direct git push is not possible.</p>'
++'<div class="tip"><b>Modern equivalent:</b> For most teams, PRs replaced the format-patch workflow. But knowing format-patch is valuable for: contributing to open-source projects that use mailing lists (Linux kernel, Git itself, many BSD projects), generating change documentation for security-sensitive deployments where reviewers need a portable patch file, and troubleshooting by reproducing exact commits in isolated environments.</div>'},
+
+{n:48, tag:'advanced', q:'What is git bisect run — how do you automate regression hunting in CI?',
+body:'<div class="cmds">'
++'<div class="cmd"># Automated bisect with a test script:</div>'
++'<div class="cmd">cat test-regression.sh</div>'
++'<div class="cmd">#!/bin/bash</div>'
++'<div class="cmd">make build 2&gt;/dev/null || exit 125   # exit 125 = skip this commit</div>'
++'<div class="cmd">./run-specific-test.sh payment-flow   # 0 = good, non-zero = bad</div>'
++'<div class="cmd">git bisect start HEAD v1.8.0         # bad=HEAD, good=v1.8.0</div>'
++'<div class="cmd">git bisect run ./test-regression.sh  # automated binary search</div>'
++'<div class="cmd">git bisect reset                     # clean up when done</div>'
++'<div class="cmd"># Exit codes for bisect run:</div>'
++'<div class="cmd">0    — commit is good (no regression)</div>'
++'<div class="cmd">1-127 (not 125) — commit is bad (has regression)</div>'
++'<div class="cmd">125  — skip this commit (cannot test, e.g., build fails)</div>'
++'<div class="cmd"># CI integration: run bisect as part of incident response</div>'
++'<div class="cmd">git bisect start --first-parent HEAD &lt;last-known-good-tag&gt;</div>'
++'</div>'
++'<p>exit 125 (special to bisect) skips commits where the test cannot run — build failures, missing dependencies, or intermediate states that are untestable. --first-parent on a merge-heavy repo restricts bisect to the mainline, ignoring merge commits where the regression was introduced via a side branch. For CI incident response, a fully automated bisect script can run overnight and identify the exact regression commit in a repository with 500 commits since the last known good release — all without human intervention.</p>'
++'<div class="good"><b>Production incident automation:</b> Integrate bisect into your incident runbook: when a regression is detected (monitoring alert), the on-call automation kicks off a git bisect run job in CI targeting the deployment range. By the time a human looks at the incident, the root commit is already identified. This is the highest-leverage use of git bisect.</div>'},
+
+{n:49, tag:'recovery', q:'How do you deal with a merge gone wrong after pushing — the "undo a published merge" scenario?',
+body:'<div class="cmds">'
++'<div class="cmd"># Scenario: merged feature to main, pushed, but it broke production</div>'
++'<div class="cmd"># Option 1: git revert the merge commit (SAFE, preferred)</div>'
++'<div class="cmd">git log --merges --oneline -5    # find the merge commit SHA</div>'
++'<div class="cmd">git revert -m 1 &lt;merge-commit-sha&gt;  # -m 1 = mainline parent</div>'
++'<div class="cmd">git push origin main</div>'
++'<div class="cmd"># This undoes all changes from the merge as a new commit</div>'
++'<div class="cmd"># When the fix is ready, re-merge the feature branch:</div>'
++'<div class="cmd">git revert &lt;revert-of-merge-sha&gt;   # revert the revert (re-enables the feature)</div>'
++'<div class="cmd">git merge feature/broken-feature   # merge with actual fixes</div>'
++'<div class="cmd"># Option 2: Reset + force-push (DANGEROUS, coordinate with team)</div>'
++'<div class="cmd">git reset --hard &lt;sha-before-merge&gt;</div>'
++'<div class="cmd">git push --force-with-lease origin main</div>'
++'</div>'
++'<p>Reverting a merge commit requires -m to specify which parent to keep (mainline = 1). The result is a new commit that undoes all changes introduced by the merge. Critical follow-up: when you fix the feature branch and want to re-merge, you MUST first revert the revert. If you simply merge the feature branch again, Git sees that all those commits were already "merged" (the revert is a descendant) and only applies the new fix commits — the original feature code stays missing. This is the most common mistake in the "revert a bad merge" pattern.</p>'
++'<div class="warn"><b>Revert the revert:</b> After reverting a merge, if you just merge the branch again later, Git thinks the original commits are already merged (by the revert) and skips them. You must: git revert &lt;revert-commit&gt; (revert the revert) to re-enable the original changes, THEN apply your fix. Forgetting this step results in the feature being silently absent from production despite the branch showing as merged.</div>'},
+
+{n:50, tag:'workflows', q:'Walk through your methodology for onboarding a new repository to production Git standards.',
+body:'<p>This is the Principal-level systems thinking question — designing the Git governance model, not just using commands.</p>'
++'<div class="sec">Production Git standards checklist</div>'
++'<div class="cmds">'
++'<div class="cmd">Phase 1 — Repository setup:</div>'
++'<div class="cmd">  Branch protection on main: require PR, 1+ approvers, status checks, signed commits</div>'
++'<div class="cmd">  CODEOWNERS file: map directories to owning teams</div>'
++'<div class="cmd">  .gitignore: comprehensive (OS files, IDE files, build artifacts, .env)</div>'
++'<div class="cmd">  .gitattributes: line endings, binary files, LFS configuration</div>'
++'<div class="cmd">  README.md: setup instructions, branching model, PR process</div>'
++'<div class="cmd">Phase 2 — Developer tooling:</div>'
++'<div class="cmd">  .pre-commit-config.yaml: secrets detection, lint, format, commit-msg</div>'
++'<div class="cmd">  PULL_REQUEST_TEMPLATE.md: standard PR description format</div>'
++'<div class="cmd">  Conventional commits enforced via commitlint</div>'
++'<div class="cmd">Phase 3 — CI/CD integration:</div>'
++'<div class="cmd">  Required status checks: tests, security scan, lint</div>'
++'<div class="cmd">  Semantic versioning: semantic-release or manual tag policy</div>'
++'<div class="cmd">  Branch → environment mapping: feature/* → preview, main → staging, tag → prod</div>'
++'<div class="cmd">Phase 4 — Security:</div>'
++'<div class="cmd">  GitHub Advanced Security: secret scanning + code scanning enabled</div>'
++'<div class="cmd">  Audit log streaming to SIEM or GCS</div>'
++'<div class="cmd">  Deploy keys or Workload Identity (no PATs with long expiry)</div>'
++'<div class="cmd">  Signed commits required (SSH or GPG)</div>'
++'<div class="cmd">Phase 5 — Documentation:</div>'
++'<div class="cmd">  Git workflow documented in team wiki (branching model, release process, hotfix process)</div>'
++'<div class="cmd">  Runbook: what to do if X (force push needed, secret exposed, branch deleted)</div>'
++'</div>'
++'<p>A well-governed Git repository is invisible to developers — the guardrails prevent mistakes without getting in the way. The goal: any engineer can contribute safely without knowing every edge case, because the tooling (hooks, branch protection, CI checks) catches problems before they reach production. The Principal Platform Engineer designs this system, documents it, and iterates based on incidents and team feedback.</p>'
++'<div class="tip"><b>Measure, then improve:</b> Key Git health metrics: PR cycle time (open to merge), review response time, CI failure rate, force-push incidents, secret scanning alerts per month, branch age P95. Track these on a dashboard. An increase in PR cycle time signals friction in the review process. Force-push incidents signal a gap in branch protection configuration. Data drives improvements rather than opinions.</div>'}
+];
+
+var activeFilter = 'all';
+var openCards    = new Set();
+
+function badge(tag) {
+  var labels = {
+    fundamentals:'Fundamentals', branching:'Branching',
+    merging:'Merging & rebasing', history:'History & commits',
+    workflows:'Workflows', recovery:'Recovery & undo',
+    collaboration:'Collaboration', cicd:'CI/CD & GitOps',
+    security:'Security', advanced:'Advanced & internals'
+  };
+  return '<span class="badge ' + tag + '">' + (labels[tag] || tag) + '</span>';
+}
+
+function render(qs) {
+  document.getElementById('count-bar').textContent = 'Showing ' + qs.length + ' of 50 questions';
+  document.getElementById('q-list').innerHTML = qs.map(function(q) {
+    return '<div class="q-card" id="card-' + q.n + '">'
+      + '<div class="q-header" onclick="toggle(' + q.n + ')">'
+      + '<span class="q-num">Q' + q.n + '</span>'
+      + '<span class="q-title">' + q.q + '</span>'
+      + '<div class="q-right">'
+      + badge(q.tag)
+      + '<span class="chevron ' + (openCards.has(q.n) ? 'open' : '') + '" id="chev-' + q.n + '">&#9660;</span>'
+      + '</div></div>'
+      + '<div class="q-body ' + (openCards.has(q.n) ? 'open' : '') + '" id="body-' + q.n + '">' + q.body + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function toggle(n) {
+  var body = document.getElementById('body-' + n);
+  var chev = document.getElementById('chev-' + n);
+  if (openCards.has(n)) {
+    openCards.delete(n); body.classList.remove('open'); chev.classList.remove('open');
+  } else {
+    openCards.add(n); body.classList.add('open'); chev.classList.add('open');
+  }
+  document.getElementById('viewed-count').textContent = openCards.size;
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  filterQs();
+}
+
+function filterQs() {
+  var q = document.getElementById('search').value.toLowerCase();
+  var filtered = QS;
+  if (activeFilter !== 'all') filtered = filtered.filter(function(x) { return x.tag === activeFilter; });
+  if (q) filtered = filtered.filter(function(x) {
+    return x.q.toLowerCase().indexOf(q) !== -1 || x.body.toLowerCase().indexOf(q) !== -1;
+  });
+  render(filtered);
+}
+
+render(QS);
+</script>
+</body>
+</html>

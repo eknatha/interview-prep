@@ -1,0 +1,495 @@
+
+<style>
+:root { --accent: #1D9E75; --accent-light: #E1F5EE; --accent-dark: #0F6E56; --warn: #BA7517; --warn-light: #FAEEDA; --danger: #A32D2D; --danger-light: #FCEBEB; --info: #185FA5; --info-light: #E6F1FB; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.wrap { padding: 1rem 0 2rem; }
+.search-bar { position: relative; margin-bottom: 1.25rem; }
+.search-bar input { width: 100%; padding: 10px 16px 10px 38px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; }
+.search-bar svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.4; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.chip { padding: 5px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-secondary); transition: all 0.15s; }
+.chip.active { background: var(--accent-light); color: var(--accent-dark); border-color: var(--accent); font-weight: 500; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 16px; }
+.stat-n { font-size: 22px; font-weight: 500; }
+.stat-l { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.stat-n.green { color: var(--accent); }
+.stat-n.amber { color: var(--warn); }
+.stat-n.red { color: var(--danger); }
+.stat-n.blue { color: var(--info); }
+.q-list { display: flex; flex-direction: column; gap: 8px; }
+.q-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); overflow: hidden; }
+.q-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+.q-num { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); min-width: 28px; padding-top: 2px; }
+.q-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); flex: 1; line-height: 1.5; }
+.q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+.badge.state { background: var(--accent-light); color: var(--accent-dark); }
+.badge.backend { background: var(--info-light); color: var(--info); }
+.badge.cicd { background: var(--warn-light); color: var(--warn); }
+.badge.modules { background: #EEEDFE; color: #3C3489; }
+.badge.security { background: var(--danger-light); color: var(--danger); }
+.badge.prod { background: #F4C0D1; color: #72243E; }
+.badge.perf { background: #EAF3DE; color: #3B6D11; }
+.chevron { font-size: 12px; color: var(--color-text-secondary); transition: transform 0.2s; }
+.chevron.open { transform: rotate(180deg); }
+.q-body { display: none; padding: 0 16px 16px 56px; }
+.q-body.open { display: block; }
+.q-body p { font-size: 13px; line-height: 1.7; color: var(--color-text-secondary); margin-bottom: 10px; }
+.q-body p:last-child { margin-bottom: 0; }
+.section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-secondary); margin: 4px 0 8px; }
+.cmd-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.cmd { background: var(--color-background-secondary); border-radius: 6px; padding: 6px 10px; font-family: var(--font-mono); font-size: 12px; color: var(--color-text-primary); border-left: 2px solid var(--accent); }
+.tip { background: var(--warn-light); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--color-text-primary); border-left: 2px solid var(--warn); margin-top: 4px; }
+.tip b { color: var(--warn); }
+.danger-tip { background: var(--danger-light); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--color-text-primary); border-left: 2px solid var(--danger); margin-top: 4px; }
+.count-bar { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; }
+.section-divider { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); padding: 6px 0 4px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 8px; margin-top: 8px; }
+</style>
+
+<div class="wrap">
+<div class="search-bar">
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  <input type="text" id="search" placeholder="Search questions or answers..." oninput="filterQs()">
+</div>
+
+<div class="filters">
+  <div class="chip active" onclick="setFilter('all',this)">All (30)</div>
+  <div class="chip" onclick="setFilter('state',this)">State</div>
+  <div class="chip" onclick="setFilter('backend',this)">Backend</div>
+  <div class="chip" onclick="setFilter('cicd',this)">CI/CD</div>
+  <div class="chip" onclick="setFilter('modules',this)">Modules</div>
+  <div class="chip" onclick="setFilter('security',this)">Security</div>
+  <div class="chip" onclick="setFilter('prod',this)">Production</div>
+  <div class="chip" onclick="setFilter('perf',this)">Performance</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n green">30</div><div class="stat-l">Total questions</div></div>
+  <div class="stat"><div class="stat-n blue">20</div><div class="stat-l">Core concepts</div></div>
+  <div class="stat"><div class="stat-n amber">10</div><div class="stat-l">Production scenarios</div></div>
+  <div class="stat"><div class="stat-n red" id="open-count">0</div><div class="stat-l">Viewed</div></div>
+</div>
+
+<div class="count-bar" id="count-bar">Showing 30 questions</div>
+<div class="q-list" id="q-list"></div>
+</div>
+
+<script>
+const QS = [
+  {
+    n:1, tag:'state',
+    q:'What is Terraform and how does it manage infrastructure state?',
+    body:`<p>Terraform is an open-source Infrastructure as Code (IaC) tool by HashiCorp that lets you define, provision, and manage infrastructure across multiple cloud providers using declarative HCL (HashiCorp Configuration Language) files.</p>
+<p><b>State management</b>: Terraform maintains a state file (<code>terraform.tfstate</code>) that maps real-world resources to your configuration. This file tracks resource metadata, dependencies, and current values — it is Terraform's source of truth.</p>
+<div class='section-title'>Key state concepts</div>
+<div class='cmd-list'>
+  <div class='cmd'>terraform state list           # list all tracked resources</div>
+  <div class='cmd'>terraform state show &lt;resource&gt; # inspect resource attributes</div>
+  <div class='cmd'>terraform refresh               # sync state with real infra</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Mention that state enables Terraform to calculate diffs (plan), detect drift, and avoid duplicate resource creation. Remote state (S3, GCS, Terraform Cloud) is production best practice.</div>`
+  },
+  {
+    n:2, tag:'state',
+    q:'Terraform state file is accidentally deleted — how would you recover?',
+    body:`<p>This is a critical incident. The recovery approach depends on whether you had backups and whether remote state was configured.</p>
+<div class='section-title'>Recovery steps</div>
+<div class='cmd-list'>
+  <div class='cmd'># 1. Check S3 versioning / GCS object versioning for previous tfstate</div>
+  <div class='cmd'># 2. Restore from backup: aws s3api list-object-versions --bucket &lt;bucket&gt;</div>
+  <div class='cmd'>terraform import &lt;resource_type&gt;.&lt;name&gt; &lt;resource_id&gt;  # re-import each resource</div>
+  <div class='cmd'>terraform refresh  # reconcile after imports</div>
+</div>
+<p>If no backup exists, use <code>terraform import</code> to re-import each existing resource one by one, then run <code>terraform plan</code> to verify no unintended changes are proposed.</p>
+<div class='danger-tip'><b>Prevention:</b> Always enable S3 versioning + DynamoDB locking. Enable Terraform Cloud state history. Never store state locally in production.</div>`
+  },
+  {
+    n:3, tag:'backend',
+    q:'Multiple team members are working on the same Terraform code — how do you prevent conflicts?',
+    body:`<p>State locking is the core mechanism. Configure a remote backend with locking enabled.</p>
+<div class='cmd-list'>
+  <div class='cmd'>terraform { backend "s3" { bucket = "tf-state" key = "prod.tfstate" dynamodb_table = "tf-lock" } }</div>
+</div>
+<p>DynamoDB provides atomic lock acquisition — only one <code>terraform apply</code> runs at a time. Other best practices: use Terraform workspaces per environment, enforce code review via pull requests before apply, and use Atlantis or Terraform Cloud for run orchestration.</p>
+<div class='tip'><b>Key answer points:</b> Remote state + locking (DynamoDB/Consul), Atlantis for PR-based workflows, separate workspaces or state files per environment.</div>`
+  },
+  {
+    n:4, tag:'state',
+    q:'Terraform apply failed in the middle of execution — how do you recover from a partial deployment?',
+    body:`<p>Terraform is not transactional. A mid-apply failure leaves some resources created and others not.</p>
+<div class='section-title'>Recovery process</div>
+<div class='cmd-list'>
+  <div class='cmd'>terraform plan  # identify what's missing vs what exists</div>
+  <div class='cmd'>terraform apply  # re-run — Terraform skips already-created resources</div>
+  <div class='cmd'>terraform state list  # verify state matches reality</div>
+</div>
+<p>If a resource was created outside state (partial creation with no state entry), use <code>terraform import</code>. For resources stuck in a bad state, use <code>terraform taint &lt;resource&gt;</code> (pre-1.0) or <code>terraform apply -replace</code> to force recreation.</p>
+<div class='danger-tip'><b>Root cause:</b> Check provider API errors, IAM permissions, quota limits, or dependency ordering issues before re-applying.</div>`
+  },
+  {
+    n:5, tag:'state',
+    q:'Terraform shows drift between infrastructure and state — how do you identify and fix it?',
+    body:`<p>Drift occurs when resources are modified outside Terraform (manual console changes, other automation).</p>
+<div class='cmd-list'>
+  <div class='cmd'>terraform plan  # drift shows as "changes" in plan output</div>
+  <div class='cmd'>terraform refresh  # update state to match real infra (careful!)</div>
+  <div class='cmd'>terraform plan -refresh-only  # preview what refresh would change (TF 1.1+)</div>
+</div>
+<p>To fix: either update your Terraform config to match the manual changes (then apply to align), or apply Terraform to revert the manual change back to IaC-defined values. The choice depends on whether the manual change was intentional.</p>
+<div class='tip'><b>Production advice:</b> Use drift detection in CI pipelines — run <code>terraform plan</code> on a schedule and alert on non-empty plans. AWS Config or Driftctl can augment this.</div>`
+  },
+  {
+    n:6, tag:'state',
+    q:'Terraform plan shows unexpected resource changes — how do you troubleshoot?',
+    body:`<p>Unexpected plan changes are often caused by provider upgrades, computed attributes, or config drift.</p>
+<div class='section-title'>Debugging steps</div>
+<div class='cmd-list'>
+  <div class='cmd'>TF_LOG=DEBUG terraform plan 2>&1 | tee debug.log</div>
+  <div class='cmd'>terraform state show &lt;resource&gt;  # compare state values with config</div>
+  <div class='cmd'>terraform providers lock  # check provider version pinning</div>
+</div>
+<p>Common causes: provider version bump changing default attribute values, computed fields (like ARNs) changing on recreation, <code>ignore_changes</code> not set for externally managed attributes, or sensitive value encoding differences.</p>
+<div class='tip'><b>Fix:</b> Pin provider versions in <code>required_providers</code>. Use <code>lifecycle { ignore_changes = [...] }</code> for attributes managed externally.</div>`
+  },
+  {
+    n:7, tag:'backend',
+    q:'Remote backend (like S3) is not accessible — how do you debug backend issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>TF_LOG=TRACE terraform init 2>&1 | grep -i backend</div>
+  <div class='cmd'>aws s3 ls s3://&lt;bucket&gt;/&lt;key&gt;  # verify bucket access manually</div>
+  <div class='cmd'>aws sts get-caller-identity  # confirm correct AWS credentials/role</div>
+</div>
+<p>Check: IAM permissions for the executing role (s3:GetObject, s3:PutObject, s3:ListBucket, DynamoDB read/write). Verify VPC endpoint or internet access if running in a private subnet. Check S3 bucket policy — it may block cross-account access.</p>
+<div class='danger-tip'><b>CI/CD context:</b> Ensure the pipeline IAM role has explicit backend access. Environment variables AWS_ACCESS_KEY_ID / AWS_ROLE_ARN must be set correctly in the runner.</div>`
+  },
+  {
+    n:8, tag:'backend',
+    q:'Terraform state file is locked — how do you resolve state lock issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform force-unlock &lt;LOCK_ID&gt;  # get lock ID from error message</div>
+  <div class='cmd'># For DynamoDB: aws dynamodb delete-item --table-name tf-lock --key '{"LockID": {"S": "..."}}'</div>
+</div>
+<p>A stale lock occurs when a previous apply was interrupted (network failure, process kill). The lock ID is shown in the error message. Always verify no other apply is actually running before force-unlocking — concurrent applies corrupt state.</p>
+<div class='danger-tip'><b>Never</b> force-unlock if you are unsure whether another apply is in progress. Check CI/CD pipeline status and team communication first.</div>`
+  },
+  {
+    n:9, tag:'state',
+    q:'Terraform resources are getting recreated unexpectedly — what could be the cause?',
+    body:`<p>Unexpected recreation (destroy + create) is usually caused by one of these:</p>
+<div class='cmd-list'>
+  <div class='cmd'># ForceNew attribute changed — check provider docs for which attrs trigger recreation</div>
+  <div class='cmd'>terraform plan -out=tfplan && terraform show -json tfplan | jq '.resource_changes'</div>
+</div>
+<p>Common causes: changing a resource name or ID (some resources require recreation on name change), provider upgrade altering default values, computed attributes not stored in state, or <code>taint</code> left from a previous operation. Use <code>lifecycle { prevent_destroy = true }</code> to guard critical resources.</p>
+<div class='tip'><b>Key trick:</b> Read the plan's "replacement triggered by" message carefully — it tells you the exact attribute driving recreation.</div>`
+  },
+  {
+    n:10, tag:'security',
+    q:'Sensitive values are visible in Terraform state — how do you secure them?',
+    body:`<p>Terraform state contains sensitive data in plaintext (passwords, keys, secrets). This is a known limitation.</p>
+<div class='section-title'>Mitigations</div>
+<div class='cmd-list'>
+  <div class='cmd'>sensitive = true  # mark outputs/variables as sensitive (redacted in plan output)</div>
+  <div class='cmd'># S3 backend: enable server-side encryption (SSE-S3 or SSE-KMS)</div>
+  <div class='cmd'># Use Vault provider or AWS Secrets Manager for secrets, not tfvars</div>
+</div>
+<p>Restrict state file access via IAM policies — only CI/CD roles should have S3 read access to state. Enable S3 access logging. Use Terraform Cloud/Enterprise for encrypted state with RBAC. Never commit <code>.tfstate</code> or <code>.tfvars</code> files to Git.</p>
+<div class='tip'><b>Production pattern:</b> Store secrets in Vault/SSM Parameter Store and reference via data sources — they never need to be in your TF config at all.</div>`
+  },
+  {
+    n:11, tag:'modules',
+    q:'Terraform modules are not working as expected — how do you debug module issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform init -upgrade  # refresh module sources</div>
+  <div class='cmd'>terraform validate  # syntax and reference errors</div>
+  <div class='cmd'>TF_LOG=DEBUG terraform plan  # trace module resolution</div>
+  <div class='cmd'>terraform console  # interactively evaluate expressions</div>
+</div>
+<p>Common issues: incorrect module source path (relative vs absolute), version constraint conflicts, missing required variables, output not exposed correctly. Use <code>terraform console</code> to test expressions interactively. Check that module outputs are referenced as <code>module.&lt;name&gt;.&lt;output&gt;</code>.</p>
+<div class='tip'><b>Registry modules:</b> Pin module versions explicitly. Never use <code>source = "terraform-aws-modules/vpc/aws"</code> without <code>version = "X.Y.Z"</code>.</div>`
+  },
+  {
+    n:12, tag:'modules',
+    q:'A resource dependency is not respected — how do you handle dependency issues?',
+    body:`<p>Terraform builds a dependency graph automatically from references. When implicit dependencies are insufficient, use explicit <code>depends_on</code>.</p>
+<div class='cmd-list'>
+  <div class='cmd'>resource "aws_instance" "app" { depends_on = [aws_security_group.sg] }</div>
+  <div class='cmd'>terraform graph | dot -Tsvg > graph.svg  # visualize dependency graph</div>
+</div>
+<p>Use <code>depends_on</code> sparingly — it forces sequential execution and slows applies. Prefer implicit dependencies via attribute references. For module dependencies, use <code>depends_on</code> at the module block level.</p>
+<div class='tip'><b>Common trap:</b> IAM policy attachment must complete before EC2 instance launch. If the IAM role exists but the policy isn't attached yet, the instance may start without permissions. Use explicit <code>depends_on</code> here.</div>`
+  },
+  {
+    n:13, tag:'modules',
+    q:'Terraform variables are not being picked up correctly — how do you debug variable precedence?',
+    body:`<p>Terraform variable precedence (highest to lowest):</p>
+<div class='cmd-list'>
+  <div class='cmd'>1. -var and -var-file CLI flags (highest priority)</div>
+  <div class='cmd'>2. TF_VAR_name environment variables</div>
+  <div class='cmd'>3. terraform.tfvars or *.auto.tfvars files</div>
+  <div class='cmd'>4. Default values in variable blocks (lowest priority)</div>
+</div>
+<div class='cmd-list'>
+  <div class='cmd'>terraform console -&gt; var.&lt;name&gt;  # check resolved value</div>
+  <div class='cmd'>TF_LOG=TRACE terraform plan 2>&1 | grep variable</div>
+</div>
+<div class='tip'><b>Common mistake:</b> A <code>terraform.tfvars</code> is silently overriding a <code>-var-file</code> you intended to use. Always use explicit <code>-var-file</code> flags in CI/CD and avoid relying on auto-loaded files in pipelines.</div>`
+  },
+  {
+    n:14, tag:'perf',
+    q:'Terraform apply takes too long — how do you optimize performance?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform apply -parallelism=20  # default is 10, increase with caution</div>
+  <div class='cmd'>terraform apply -target=module.&lt;name&gt;  # apply only specific module</div>
+  <div class='cmd'># Split monolith into smaller state files / root modules</div>
+</div>
+<p>Root causes: monolithic root module with hundreds of resources, unnecessary <code>depends_on</code> causing serial execution, slow provider API calls, or large number of data sources evaluated at plan time. Break large configurations into smaller independently managed state files with remote state data sources for cross-references.</p>
+<div class='tip'><b>Architecture fix:</b> Separate network, compute, and application layers into distinct Terraform roots. Use <code>terraform_remote_state</code> data source to share outputs between layers.</div>`
+  },
+  {
+    n:15, tag:'prod',
+    q:'Infrastructure created by Terraform is not accessible after deployment — how do you troubleshoot?',
+    body:`<p>This is an application/network layer issue, not a Terraform issue per se. Terraform successfully created resources but something in the config is wrong.</p>
+<div class='cmd-list'>
+  <div class='cmd'>terraform output  # verify IPs, DNS names, ports from outputs</div>
+  <div class='cmd'>terraform state show &lt;resource&gt;  # check security group rules, subnet config</div>
+</div>
+<p>Check: security group rules (ingress/egress), NACLs, route tables, IAM roles, VPC peering, DNS resolution, health check configuration for load balancers. The resource exists in state — the problem is in its configuration values.</p>
+<div class='tip'><b>Pattern:</b> Compare the Terraform-created config with a known-working manually-created resource in the same region/VPC.</div>`
+  },
+  {
+    n:16, tag:'backend',
+    q:'Terraform workspace is not switching properly — how do you fix workspace-related issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform workspace list  # show all workspaces and current</div>
+  <div class='cmd'>terraform workspace show  # confirm active workspace</div>
+  <div class='cmd'>terraform workspace select prod  # explicit switch</div>
+</div>
+<p>Common issues: workspace state stored in wrong backend path, <code>terraform.workspace</code> variable not used in resource naming, or workspace created in different backend config. Each workspace has its own state file at <code>&lt;prefix&gt;/env:&lt;workspace&gt;/&lt;key&gt;</code> in S3.</p>
+<div class='danger-tip'><b>Production warning:</b> Workspaces share the same backend and code — they are NOT true environment isolation. For prod/stage/dev isolation, use separate root modules with separate backends.</div>`
+  },
+  {
+    n:17, tag:'modules',
+    q:'Terraform provider version conflict occurs — how do you resolve provider dependency issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform providers  # show provider requirements from all modules</div>
+  <div class='cmd'>terraform init -upgrade  # upgrade to latest compatible versions</div>
+  <div class='cmd'># In required_providers: version = "~> 5.0"  (allow patch updates only)</div>
+  <div class='cmd'>terraform providers lock -platform=linux_amd64  # lock for CI platform</div>
+</div>
+<p>Conflicts arise when a root module and a child module require incompatible provider versions. Use <code>terraform providers</code> to identify the conflict, then adjust version constraints. Commit <code>.terraform.lock.hcl</code> to Git to pin provider versions across the team.</p>
+<div class='tip'><b>Key practice:</b> Always commit <code>.terraform.lock.hcl</code>. Run <code>terraform init</code> in CI — never skip the lock file.</div>`
+  },
+  {
+    n:18, tag:'prod',
+    q:'Terraform apply fails due to API rate limits — how do you handle throttling issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform apply -parallelism=5  # reduce concurrent API calls</div>
+  <div class='cmd'># Add retry logic at provider level (some providers support max_retries)</div>
+</div>
+<p>AWS, GCP, and Azure all have API rate limits. Hitting them during large applies is common. Reduce parallelism, stagger deployments, split into smaller modules, or add exponential backoff via retry configuration in the provider block. For AWS: <code>provider "aws" { max_retries = 25 }</code>.</p>
+<div class='tip'><b>Architecture fix:</b> Breaking a monolithic config into smaller modules deployed sequentially is both a rate limit mitigation and a blast-radius reduction strategy.</div>`
+  },
+  {
+    n:19, tag:'backend',
+    q:'Terraform cannot authenticate to cloud provider — how do you debug authentication failures?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>aws sts get-caller-identity  # verify AWS credentials</div>
+  <div class='cmd'>gcloud auth application-default print-access-token  # GCP ADC check</div>
+  <div class='cmd'>TF_LOG=DEBUG terraform plan 2>&1 | grep -i auth</div>
+</div>
+<p>Check credential chain: environment variables → shared credentials file → IAM instance profile → IRSA (in EKS). In CI/CD, ensure the pipeline has assumed the correct role with sufficient permissions. For GCP, use Workload Identity Federation instead of service account keys.</p>
+<div class='tip'><b>SonicWall/GCP context:</b> For GCP, Application Default Credentials (ADC) flow — ensure GOOGLE_APPLICATION_CREDENTIALS or Workload Identity is configured. Never use service account keys in CI.</div>`
+  },
+  {
+    n:20, tag:'cicd',
+    q:'Terraform plan works locally but fails in CI/CD pipeline — how do you troubleshoot?',
+    body:`<p>Environment differences between local and CI are the root cause 95% of the time.</p>
+<div class='cmd-list'>
+  <div class='cmd'># Check: Terraform version mismatch (use tfenv or .terraform-version file)</div>
+  <div class='cmd'># Check: Provider versions (lock file not committed)</div>
+  <div class='cmd'># Check: Environment variables (AWS creds, TF_VAR_*, workspace)</div>
+  <div class='cmd'>TF_LOG=DEBUG terraform plan > /tmp/ci-debug.log 2>&1</div>
+</div>
+<p>Common differences: Terraform binary version, provider lock file missing/different, missing environment variables for authentication, different working directory, or network access restrictions (S3 backend, provider API endpoints) from the CI runner.</p>
+<div class='tip'><b>Fix:</b> Pin Terraform version in CI with a <code>.terraform-version</code> file and use <code>tfenv</code>. Commit <code>.terraform.lock.hcl</code>. Mirror the exact CI environment locally with Docker.</div>`
+  },
+  {
+    n:21, tag:'prod',
+    q:'Resources are manually modified outside Terraform — how do you detect and fix configuration drift?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform plan -refresh-only  # preview drift without applying changes</div>
+  <div class='cmd'># Schedule: run terraform plan in CI, fail build on non-empty plan</div>
+  <div class='cmd'># Tool: driftctl scan  # open-source drift detection</div>
+</div>
+<p>Drift is inevitable in large orgs. The strategic response: decide whether to reconcile to IaC or absorb the change into config. Use <code>terraform refresh</code> to absorb, or <code>terraform apply</code> to revert. Prevent future drift with SCPs (AWS), Organization Policies (GCP), or Azure Policy to restrict console-level changes in production.</p>
+<div class='tip'><b>Process fix:</b> Require all changes go through IaC PR process. Use Atlantis to enforce this — no manual console access in prod.</div>`
+  },
+  {
+    n:22, tag:'prod',
+    q:'Terraform destroy fails due to dependencies — how do you resolve it safely?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform destroy -target=&lt;dependent_resource&gt;  # destroy dependents first</div>
+  <div class='cmd'>terraform state rm &lt;resource&gt;  # remove from state without destroying</div>
+</div>
+<p>Dependency-related destroy failures happen when resources outside Terraform depend on Terraform-managed resources (e.g., an S3 bucket with objects, a VPC with manually-created ENIs). Manually remove the blocking dependency, then retry destroy. Or use <code>terraform state rm</code> to detach resources from state before destroying the parent.</p>
+<div class='danger-tip'><b>Never</b> force-delete production resources without confirming with stakeholders. Destroy is irreversible.</div>`
+  },
+  {
+    n:23, tag:'state',
+    q:'Remote state corruption occurs — how do you recover state safely?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'># 1. Immediately lock or take the backend offline</div>
+  <div class='cmd'># 2. Restore from S3 versioned backup</div>
+  <div class='cmd'>aws s3api get-object --bucket tf-state --key prod.tfstate --version-id &lt;id&gt; restored.tfstate</div>
+  <div class='cmd'># 3. Validate restored state</div>
+  <div class='cmd'>terraform show restored.tfstate</div>
+  <div class='cmd'># 4. Run plan before apply to confirm no unintended changes</div>
+</div>
+<div class='tip'><b>Prevention:</b> S3 versioning is non-negotiable for production state backends. Enable MFA delete for extra protection. Terraform Cloud provides automatic state versioning with rollback UI.</div>`
+  },
+  {
+    n:24, tag:'modules',
+    q:'Multiple environments (dev, stage, prod) need isolation — how do you design Terraform structure?',
+    body:`<p>The recommended pattern is separate root modules per environment, each with their own backend state.</p>
+<div class='cmd-list'>
+  <div class='cmd'>infra/ ├── modules/ │   ├── vpc/ │   └── eks/ ├── environments/ │   ├── dev/ │   ├── stage/ │   └── prod/</div>
+</div>
+<p>Each environment directory has its own <code>backend.tf</code>, <code>main.tf</code>, and <code>terraform.tfvars</code>. Shared infrastructure is defined in reusable modules. This gives complete blast-radius isolation — a broken plan in dev cannot touch prod state. Workspaces alone are insufficient for true environment isolation.</p>
+<div class='tip'><b>Alternative:</b> Terragrunt for DRY environment configs — it generates backend configs dynamically and reduces boilerplate across environments.</div>`
+  },
+  {
+    n:25, tag:'prod',
+    q:'Terraform outputs are not available after deployment — how do you debug?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform output  # list all outputs in current state</div>
+  <div class='cmd'>terraform output &lt;name&gt;  # get specific output value</div>
+  <div class='cmd'>terraform state show &lt;resource&gt;  # verify attribute exists in state</div>
+</div>
+<p>Common causes: output defined in a module but not re-exported in root module, resource not yet applied (output depends on computed value), or state file not refreshed. For cross-state outputs, verify the <code>terraform_remote_state</code> data source path and backend access permissions.</p>
+<div class='tip'><b>Tip:</b> Mark outputs as <code>sensitive = true</code> if they contain secrets — they are redacted in CLI but still accessible via <code>terraform output -json</code> for pipeline use.</div>`
+  },
+  {
+    n:26, tag:'prod',
+    q:'Infrastructure deployment fails due to incorrect IAM permissions — how do you troubleshoot?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>TF_LOG=DEBUG terraform apply 2>&1 | grep -i "access denied\|not authorized"</div>
+  <div class='cmd'>aws iam simulate-principal-policy --policy-source-arn &lt;role_arn&gt; --action-names &lt;action&gt;</div>
+</div>
+<p>The error message usually contains the exact missing permission. Build the IAM policy incrementally: start with a broad managed policy, run apply, capture all AccessDenied errors, then scope down to least privilege. Use AWS IAM Access Analyzer to generate least-privilege policies from CloudTrail logs.</p>
+<div class='tip'><b>GCP equivalent:</b> <code>gcloud projects get-iam-policy</code> and Policy Analyzer. For SonicWall GCP role, start with roles/editor scoped to specific project, then tighten.</div>`
+  },
+  {
+    n:27, tag:'modules',
+    q:'Terraform cannot find required modules — how do you fix module source issues?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'>terraform init  # always required after changing module sources</div>
+  <div class='cmd'># For private registry: configure credentials in .terraformrc</div>
+  <div class='cmd'># For Git sources: ensure SSH key or token is configured</div>
+  <div class='cmd'>terraform init -get=true -upgrade  # force re-download modules</div>
+</div>
+<p>Module sources can be local paths, Terraform Registry, GitHub, S3, or GCS. Local paths must be relative (<code>./modules/vpc</code>). Registry modules need internet access or a private registry mirror. Git sources need SSH keys or HTTPS tokens configured in the environment.</p>
+<div class='tip'><b>CI/CD:</b> Use <code>-get=true</code> in <code>terraform init</code> in pipelines. Cache the <code>.terraform</code> directory between pipeline runs to speed up init.</div>`
+  },
+  {
+    n:28, tag:'cicd',
+    q:'Changes are applied to the wrong environment — how do you prevent such mistakes?',
+    body:`<div class='cmd-list'>
+  <div class='cmd'># Use separate backend configs — accidentally applying to wrong backend is immediately obvious</div>
+  <div class='cmd'># Require explicit -var-file=environments/prod.tfvars in CI</div>
+  <div class='cmd'># Atlantis: restrict prod applies to protected branches + required approvers</div>
+</div>
+<p>Prevention is architectural: separate state backends per environment eliminate cross-environment contamination entirely. Add workspace/environment verification in CI with an explicit check step. Require manual approval gates before production applies. Tag all resources with <code>environment = terraform.workspace</code> for auditability.</p>
+<div class='danger-tip'><b>Process control:</b> Production applies should require 2-person approval, be logged, and be triggered only from protected branches. Never allow direct terraform apply from developer laptops to prod.</div>`
+  },
+  {
+    n:29, tag:'prod',
+    q:'Terraform rollback is required after a failed deployment — how do you handle rollback strategy?',
+    body:`<p>Terraform does not have a built-in rollback command. Rollback must be planned explicitly.</p>
+<div class='cmd-list'>
+  <div class='cmd'># Option 1: Revert git commit, run terraform apply (previous code state)</div>
+  <div class='cmd'># Option 2: Restore previous tfstate from S3 versioning, then apply</div>
+  <div class='cmd'>terraform apply -target=&lt;specific_resource&gt;  # selective rollback</div>
+</div>
+<p>For stateful resources (databases, storage), rollback may be impossible or dangerous. The real strategy is forward-fix: fix the issue in code and apply forward. For immutable infrastructure (EC2, containers), blue-green or canary patterns allow instant rollback at the infrastructure level without Terraform state changes.</p>
+<div class='tip'><b>Design principle:</b> Build rollback into your infrastructure design (blue-green, feature flags) rather than relying on Terraform to roll back. Terraform manages desired state, not deployment history.</div>`
+  },
+  {
+    n:30, tag:'prod',
+    q:'How do you troubleshoot a complete infrastructure deployment failure using Terraform?',
+    body:`<p>A complete failure requires a structured incident response approach.</p>
+<div class='section-title'>Triage sequence</div>
+<div class='cmd-list'>
+  <div class='cmd'>TF_LOG=DEBUG terraform plan > debug.log 2>&1  # full trace</div>
+  <div class='cmd'>terraform validate  # eliminate config syntax errors first</div>
+  <div class='cmd'>terraform state list  # what exists vs what should exist</div>
+  <div class='cmd'>terraform plan -target=&lt;first_failing_resource&gt;  # isolate the failure</div>
+</div>
+<p>Systematic approach: (1) isolate which resource is failing, (2) identify whether it's a config, permission, quota, or API issue, (3) fix the root cause — not the symptom, (4) apply incrementally using <code>-target</code>, (5) verify full plan is clean before full apply.</p>
+<div class='tip'><b>Post-incident:</b> Document root cause, add a plan validation step to CI, add resource-specific tests using Terratest, and improve IAM policies proactively. Share the runbook with the team.</div>`
+  }
+];
+
+let activeFilter = 'all';
+let openCards = new Set();
+let viewedCount = 0;
+
+function badge(tag) {
+  const map = {state:'state',backend:'backend',cicd:'cicd',modules:'modules',security:'security',prod:'prod',perf:'perf'};
+  const labels = {state:'State',backend:'Backend',cicd:'CI/CD',modules:'Modules',security:'Security',prod:'Production',perf:'Performance'};
+  return `<span class="badge ${map[tag]}">${labels[tag]||tag}</span>`;
+}
+
+function render(qs) {
+  const list = document.getElementById('q-list');
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 30 questions`;
+  list.innerHTML = qs.map((q, i) => `
+    <div class="q-card" id="card-${q.n}">
+      <div class="q-header" onclick="toggle(${q.n})">
+        <span class="q-num">Q${q.n}</span>
+        <span class="q-title">${q.q}</span>
+        <div class="q-right">
+          ${badge(q.tag)}
+          <span class="chevron${openCards.has(q.n)?' open':''}" id="chev-${q.n}">▼</span>
+        </div>
+      </div>
+      <div class="q-body${openCards.has(q.n)?' open':''}" id="body-${q.n}">${q.body}</div>
+    </div>
+  `).join('');
+}
+
+function toggle(n) {
+  const body = document.getElementById('body-'+n);
+  const chev = document.getElementById('chev-'+n);
+  if (openCards.has(n)) {
+    openCards.delete(n);
+    body.classList.remove('open');
+    chev.classList.remove('open');
+  } else {
+    openCards.add(n);
+    body.classList.add('open');
+    chev.classList.add('open');
+    viewedCount++;
+    document.getElementById('open-count').textContent = openCards.size;
+  }
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterQs();
+}
+
+function filterQs() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = QS;
+  if (activeFilter !== 'all') filtered = filtered.filter(x => x.tag === activeFilter);
+  if (q) filtered = filtered.filter(x => x.q.toLowerCase().includes(q) || x.body.toLowerCase().includes(q));
+  render(filtered);
+}
+
+render(QS);
+</script>

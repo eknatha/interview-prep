@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCP Production Interview Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1.25rem 2rem; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  header span { font-size: 12px; background: #E1F5EE; color: #085041; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .search-bar { position: relative; margin-bottom: 1.25rem; }
+  .search-bar input { width: 100%; padding: 11px 18px 11px 42px; border: 1px solid #ddd; border-radius: 10px; background: #fff; color: #1a1a1a; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .search-bar input:focus { border-color: #1D9E75; }
+  .search-bar svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; opacity: 0.4; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .chip { padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #555; transition: all 0.15s; user-select: none; }
+  .chip:hover { border-color: #1D9E75; color: #0F6E56; }
+  .chip.active { background: #E1F5EE; color: #085041; border-color: #1D9E75; font-weight: 600; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e8e8e0; }
+  .stat-n { font-size: 24px; font-weight: 600; }
+  .stat-l { font-size: 12px; color: #666; margin-top: 3px; }
+  .n-teal { color: #0F6E56; } .n-blue { color: #185FA5; } .n-amber { color: #854F0B; } .n-red { color: #A32D2D; }
+  .count-bar { font-size: 12px; color: #888; margin-bottom: 10px; }
+  .q-list { display: flex; flex-direction: column; gap: 8px; }
+  .q-card { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; overflow: hidden; transition: border-color 0.15s; }
+  .q-card:hover { border-color: #c0c0b8; }
+  .q-header { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; cursor: pointer; user-select: none; }
+  .q-num { font-size: 11px; font-weight: 600; color: #aaa; min-width: 30px; padding-top: 2px; flex-shrink: 0; }
+  .q-title { font-size: 14px; font-weight: 600; color: #1a1a1a; flex: 1; line-height: 1.5; }
+  .q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .badge.iam { background: #E1F5EE; color: #085041; }
+  .badge.gke { background: #E6F1FB; color: #0C447C; }
+  .badge.networking { background: #EEEDFE; color: #3C3489; }
+  .badge.storage { background: #FAEEDA; color: #633806; }
+  .badge.compute { background: #F1EFE8; color: #444441; }
+  .badge.observability { background: #EAF3DE; color: #27500A; }
+  .badge.security { background: #FCEBEB; color: #791F1F; }
+  .badge.cicd { background: #FBEAF0; color: #72243E; }
+  .badge.cost { background: #FAC775; color: #412402; }
+  .chevron { font-size: 12px; color: #bbb; transition: transform 0.2s; flex-shrink: 0; margin-top: 2px; }
+  .chevron.open { transform: rotate(180deg); }
+  .q-body { display: none; padding: 0 18px 18px 60px; border-top: 1px solid #f0f0e8; margin-top: 0; }
+  .q-body.open { display: block; }
+  .q-body p { font-size: 13px; line-height: 1.75; color: #555; margin-bottom: 10px; margin-top: 12px; }
+  .q-body p:last-child { margin-bottom: 0; }
+  .sec { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin: 14px 0 6px; }
+  .cmds { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .cmd { background: #f8f7f3; border-radius: 6px; padding: 7px 12px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; color: #1a1a1a; border-left: 3px solid #1D9E75; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+  .tip { background: #FAEEDA; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #412402; border-left: 3px solid #BA7517; margin-top: 10px; line-height: 1.6; }
+  .warn { background: #FCEBEB; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #501313; border-left: 3px solid #E24B4A; margin-top: 10px; line-height: 1.6; }
+  .good { background: #EAF3DE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #173404; border-left: 3px solid #639922; margin-top: 10px; line-height: 1.6; }
+  .tip b, .warn b, .good b { font-weight: 700; }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .q-body { padding-left: 18px; }
+    header { padding: 1rem; }
+    .container { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GCP Production Interview Guide</h1>
+  <span>40 questions</span>
+</header>
+
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#555" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+  </div>
+
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (40)</div>
+    <div class="chip" onclick="setFilter('iam',this)">IAM &amp; identity</div>
+    <div class="chip" onclick="setFilter('gke',this)">GKE</div>
+    <div class="chip" onclick="setFilter('networking',this)">Networking</div>
+    <div class="chip" onclick="setFilter('storage',this)">Storage &amp; data</div>
+    <div class="chip" onclick="setFilter('compute',this)">Compute</div>
+    <div class="chip" onclick="setFilter('observability',this)">Observability</div>
+    <div class="chip" onclick="setFilter('security',this)">Security</div>
+    <div class="chip" onclick="setFilter('cicd',this)">CI/CD &amp; IaC</div>
+    <div class="chip" onclick="setFilter('cost',this)">Cost</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n n-teal">40</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n n-blue">25</div><div class="stat-l">Core concepts</div></div>
+    <div class="stat"><div class="stat-n n-amber">15</div><div class="stat-l">Production scenarios</div></div>
+    <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
+  </div>
+
+  <div class="count-bar" id="count-bar">Showing 40 questions</div>
+  <div class="q-list" id="q-list"></div>
+</div>
+
+<script>
+const QS = [
+  {n:1,tag:'iam',q:'What is the GCP IAM model — how do principals, roles, and policies work together?',
+  body:`<p>GCP IAM controls who (principal) can do what (role) on which resource (policy binding). A policy is a collection of role bindings attached to a resource.</p>
+<div class='sec'>Core concepts</div>
+<div class='cmds'>
+  <div class='cmd'>gcloud projects get-iam-policy &lt;project&gt;  # view project-level policy</div>
+  <div class='cmd'>gcloud projects add-iam-policy-binding &lt;project&gt; --member="user:x@y.com" --role="roles/viewer"</div>
+  <div class='cmd'>gcloud iam roles describe roles/container.admin  # inspect permissions in a role</div>
+</div>
+<p>Principals: Google accounts, service accounts, groups, domains, allUsers/allAuthenticatedUsers. Roles: Basic (Owner/Editor/Viewer — avoid in prod), Predefined (fine-grained per service), Custom (least privilege). IAM policies are additive — no explicit deny. Resource hierarchy: Org → Folder → Project → Resource. Policies inherited downward.</p>
+<div class='tip'><b>Interview tip:</b> Mention that IAM conditions allow attribute-based access control (restrict by time, IP, resource tag). This is the Principal-level nuance interviewers listen for.</div>`},
+
+  {n:2,tag:'iam',q:'A service account has too many permissions — how do you audit and enforce least privilege?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud projects get-iam-policy &lt;project&gt; --format=json | jq '.bindings[] | select(.members[] | contains("serviceAccount:"))'</div>
+  <div class='cmd'>gcloud policy-intelligence query-activity --project=&lt;project&gt;  # what permissions were actually used</div>
+  <div class='cmd'>gcloud iam service-accounts list --project=&lt;project&gt;</div>
+</div>
+<p>Use Policy Analyzer and IAM Recommender — GCP automatically suggests permission reductions based on 90-day usage history. Recommender shows which permissions are granted but never used. Create custom roles with only the permissions actually needed. Audit with Cloud Asset Inventory for org-wide SA permission scan.</p>
+<div class='good'><b>Automated enforcement:</b> Enable IAM Recommender via Security Command Center and set up alerts for high-risk recommendations. This is how platform teams scale least-privilege across hundreds of SAs without manual audits.</div>`},
+
+  {n:3,tag:'iam',q:'What is Workload Identity Federation — how does it replace service account keys?',
+  body:`<p>Workload Identity Federation lets external workloads (GitHub Actions, AWS, Azure, on-prem) authenticate to GCP using their native identity — no service account key files needed.</p>
+<div class='cmds'>
+  <div class='cmd'>gcloud iam workload-identity-pools create &lt;pool&gt; --location=global</div>
+  <div class='cmd'>gcloud iam workload-identity-pools providers create-oidc &lt;provider&gt; --workload-identity-pool=&lt;pool&gt; --issuer-uri=https://token.actions.githubusercontent.com</div>
+  <div class='cmd'>gcloud iam service-accounts add-iam-policy-binding &lt;sa&gt; --role=roles/iam.workloadIdentityUser --member="principalSet://..."</div>
+</div>
+<p>Flow: external system gets OIDC token → exchanges with GCP STS → gets short-lived access token → calls GCP APIs. No keys to rotate, no keys to leak. For GKE specifically, Workload Identity maps a Kubernetes ServiceAccount to a GCP ServiceAccount — pods call GCP APIs without key files.</p>
+<div class='warn'><b>Never use SA key files in production.</b> They don't expire by default, are hard to rotate, and are the #1 source of GCP credential leaks. Workload Identity is the production standard for every external integration.</div>`},
+
+  {n:4,tag:'iam',q:'IAM policy change accidentally removed access — how do you recover?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud projects get-iam-policy &lt;project&gt; --format=json &gt; backup.json  # always backup first</div>
+  <div class='cmd'>gcloud projects set-iam-policy &lt;project&gt; backup.json  # restore from backup</div>
+  <div class='cmd'>gcloud logging read 'protoPayload.methodName="SetIamPolicy"' --limit=5 --format=json  # audit who changed what</div>
+</div>
+<p>If you locked yourself out of a project: use a break-glass account (org-level admin) to restore access. Check Cloud Audit Logs (Admin Activity) for the exact SetIamPolicy call — it records the before/after policy diff. For org-level lockout, contact GCP Support with proof of ownership.</p>
+<div class='tip'><b>Prevention:</b> Use Terraform for IAM management — all changes go through PR review and state diff. Never make manual IAM changes in production. Store IAM policy backups in GCS with versioning.</div>`},
+
+  {n:5,tag:'iam',q:'How does GCP Service Account impersonation work and when should you use it?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud --impersonate-service-account=&lt;sa&gt;@&lt;project&gt;.iam.gserviceaccount.com compute instances list</div>
+  <div class='cmd'>gcloud iam service-accounts add-iam-policy-binding &lt;target-sa&gt; --member="serviceAccount:&lt;caller-sa&gt;" --role="roles/iam.serviceAccountTokenCreator"</div>
+</div>
+<p>Impersonation lets one SA act as another SA — short-lived credentials, full audit trail, no key exchange. Use it for: pipeline SA impersonating deployment SA (privilege separation), breaking glass scenarios, testing SA permissions without a key. Requires roles/iam.serviceAccountTokenCreator on the target SA.</p>
+<div class='good'><b>Security pattern:</b> Human users never get SA keys — they impersonate SAs via their own identity. The audit log shows both the human and the SA identity, giving full traceability. This is the recommended model for developer access to production resources.</div>`},
+
+  {n:6,tag:'gke',q:'GKE cluster upgrade is failing — how do you troubleshoot and manage it safely?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud container clusters describe &lt;cluster&gt; --zone=&lt;zone&gt; | grep -A5 currentMaster</div>
+  <div class='cmd'>gcloud container operations list --filter="status=RUNNING"  # any pending operations</div>
+  <div class='cmd'>gcloud container clusters upgrade &lt;cluster&gt; --master  # upgrade control plane first</div>
+</div>
+<p>GKE upgrades: control plane first (automatic with release channels), then node pools. Enable surge upgrade on node pools: adds extra nodes during upgrade so pods are never disrupted. Set --max-surge=1 --max-unavailable=0 for zero-downtime node upgrades. Use release channels (Rapid/Regular/Stable) instead of manual version pinning — GKE manages the upgrade cadence for you.</p>
+<div class='tip'><b>Production pattern:</b> Use Regular channel for production. Rapid for dev/staging to catch issues early. Stable only if you have compliance requirements for specific versions.</div>`},
+
+  {n:7,tag:'gke',q:'GKE nodes are experiencing high memory pressure — how do you diagnose and fix?',
+  body:`<div class='cmds'>
+  <div class='cmd'>kubectl top nodes                                        # current usage</div>
+  <div class='cmd'>kubectl describe node &lt;node&gt; | grep -A10 "Allocated resources"</div>
+  <div class='cmd'>kubectl get pods -A --field-selector spec.nodeName=&lt;node&gt;  # pods on node</div>
+</div>
+<p>Distinguish between: requested memory (scheduling pressure), used memory (actual pressure), and allocatable memory (total minus OS and kubelet reservation). GKE reserves memory for OS and system daemons — subtract this from VM memory. Fix: scale node pool, enable cluster autoscaler, set accurate memory requests, or move memory-heavy workloads to dedicated node pools.</p>
+<div class='good'><b>GKE Autopilot advantage:</b> No node management — GCP provisions and manages nodes automatically based on pod requests. Memory pressure becomes a pod scheduling concern, not a node ops concern. Recommend Autopilot for new clusters unless you need node-level customization.</div>`},
+
+  {n:8,tag:'gke',q:'How do you configure GKE Workload Identity for a pod to access GCP services?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud container clusters update &lt;cluster&gt; --workload-pool=&lt;project&gt;.svc.id.goog</div>
+  <div class='cmd'>gcloud iam service-accounts add-iam-policy-binding &lt;gcp-sa&gt;@&lt;project&gt;.iam.gserviceaccount.com \
+  --role=roles/iam.workloadIdentityUser \
+  --member="serviceAccount:&lt;project&gt;.svc.id.goog[&lt;namespace&gt;/&lt;ksa&gt;]"</div>
+  <div class='cmd'>kubectl annotate serviceaccount &lt;ksa&gt; -n &lt;ns&gt; iam.gke.io/gcp-service-account=&lt;gcp-sa&gt;@&lt;project&gt;.iam.gserviceaccount.com</div>
+</div>
+<p>Workload Identity is the recommended way for GKE pods to call GCP APIs. The pod's Kubernetes SA is bound to a GCP SA — the metadata server on the node exchanges the KSA token for a GCP access token transparently. No key files, automatic rotation, full audit trail per pod.</p>
+<div class='warn'><b>Common mistake:</b> Forgetting to annotate the Kubernetes ServiceAccount OR forgetting the IAM binding on the GCP SA. Both are required. Test with kubectl exec -- gcloud auth list from the pod.</div>`},
+
+  {n:9,tag:'gke',q:'GKE cluster autoscaler is not scaling up — how do you debug?',
+  body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe configmap cluster-autoscaler-status -n kube-system  # autoscaler decisions</div>
+  <div class='cmd'>kubectl get events -n &lt;ns&gt; | grep -i "FailedScheduling\|ScaleUp"</div>
+  <div class='cmd'>gcloud container clusters describe &lt;cluster&gt; | grep -A5 autoscaling</div>
+</div>
+<p>Autoscaler won't scale if: node pool is at max size (increase maxNodeCount), pods have PodAntiAffinity preventing placement on a new node, node selector/taint rules prevent the pod from running on any new node type, or the pending pod requests are larger than the node pool's instance type. Check the cluster-autoscaler-status ConfigMap — it explains why scale-up was skipped.</p>
+<div class='tip'><b>Scale-down issue:</b> Autoscaler won't remove a node if any pod has a local PVC (emptyDir with data), PodDisruptionBudget blocks eviction, or pod has cluster-autoscaler.kubernetes.io/safe-to-evict: "false" annotation.</div>`},
+
+  {n:10,tag:'gke',q:'How do you set up a private GKE cluster and what are the connectivity implications?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud container clusters create &lt;name&gt; --enable-private-nodes --master-ipv4-cidr=172.16.0.0/28 --enable-ip-alias</div>
+  <div class='cmd'>gcloud container clusters update &lt;name&gt; --enable-master-authorized-networks --master-authorized-networks=&lt;cidr&gt;</div>
+</div>
+<p>Private clusters: nodes have no public IPs — only RFC1918 addresses. Control plane is in a GCP-managed VPC peered to your VPC. Implications: nodes need Cloud NAT for outbound internet (image pulls, external APIs), kubectl access requires authorized networks or VPN/bastion, and inter-node traffic stays on Google's network. Use Master Authorized Networks to restrict control plane API access to specific CIDRs.</p>
+<div class='warn'><b>Image pull:</b> Private nodes cannot reach Docker Hub directly. Either mirror images to Artifact Registry, configure Cloud NAT, or use GKE's image streaming feature. This catches teams off-guard the first time.</div>`},
+
+  {n:11,tag:'networking',q:'VPC network is misconfigured — traffic between VMs is not working. How do you debug?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud compute firewall-rules list --filter="network=&lt;vpc&gt;"  # all firewall rules</div>
+  <div class='cmd'>gcloud compute networks subnets describe &lt;subnet&gt; --region=&lt;region&gt;</div>
+  <div class='cmd'>gcloud compute connectivity-tests create test1 --source-instance=&lt;vm1&gt; --destination-instance=&lt;vm2&gt; --protocol=TCP --destination-port=80</div>
+</div>
+<p>Debug layers: (1) Firewall rules — default VPC allows internal traffic, custom VPCs do not. (2) Routes — is there a route to the destination subnet? (3) VM network tags — firewall rules target tags, not IPs. (4) Shared VPC — is the subnet in the correct host project? Use Connectivity Tests (Network Intelligence Center) to trace packet path and identify exactly where traffic is dropped.</p>
+<div class='tip'><b>Network Intelligence Center:</b> Far faster than manual firewall rule analysis. It simulates the packet path and shows the exact firewall rule accepting or blocking traffic. Always use this before manually scanning rule lists.</div>`},
+
+  {n:12,tag:'networking',q:'How does Cloud Load Balancing work in GCP — what type do you choose for which scenario?',
+  body:`<div class='cmds'>
+  <div class='cmd'># External HTTP(S) LB: global, anycast IP, URL-based routing, Cloud CDN integration</div>
+  <div class='cmd'># Internal HTTP(S) LB: regional, private IP, for internal microservices</div>
+  <div class='cmd'># TCP/UDP Network LB: regional, preserves client IP, for non-HTTP protocols</div>
+  <div class='cmd'>gcloud compute backend-services describe &lt;name&gt; --global  # inspect LB backend config</div>
+</div>
+<p>External HTTPS LB is GKE Ingress default — uses Google's global anycast network, enabling traffic to enter from the nearest PoP worldwide. Backend health is checked via GCP health checks. Premium Tier networking routes traffic on Google's backbone; Standard Tier uses public internet.</p>
+<div class='warn'><b>GKE Ingress note:</b> Backend pods must pass GCP health checks or they're marked unhealthy in the LB backend. Check pod readiness AND GCP health check path/port alignment. A common source of 502 errors after deployment.</div>`},
+
+  {n:13,tag:'networking',q:'Cloud NAT is not working — VMs cannot reach the internet. How do you debug?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud compute routers describe &lt;router&gt; --region=&lt;region&gt;  # NAT router config</div>
+  <div class='cmd'>gcloud compute routers get-nat-mapping-info &lt;router&gt; --region=&lt;region&gt;  # active NAT mappings</div>
+  <div class='cmd'>gcloud logging read 'resource.type="nat_gateway"' --limit=20  # NAT logs</div>
+</div>
+<p>Check: Cloud Router exists in the correct region, NAT config covers the correct subnet (AUTO or manual subnet selection), VM has no public IP (NAT only applies to VMs without external IPs), and NAT IP allocation is not exhausted. Enable Cloud NAT logging for dropped connection visibility.</p>
+<div class='tip'><b>Port exhaustion:</b> Each NAT IP supports ~64K ports. High-connection workloads (like GKE pods doing many outbound calls) can exhaust NAT ports. Allocate additional NAT IPs or increase min-ports-per-VM in the NAT config.</div>`},
+
+  {n:14,tag:'networking',q:'How does VPC peering vs Shared VPC vs VPN differ — when do you use each?',
+  body:`<div class='cmds'>
+  <div class='cmd'># VPC Peering: direct connectivity, no transitive routing, both projects manage own firewall</div>
+  <div class='cmd'># Shared VPC: central host project owns subnets, service projects use them</div>
+  <div class='cmd'># Cloud VPN / Interconnect: connect to on-premises or other clouds</div>
+  <div class='cmd'>gcloud compute networks peerings list  # view existing peerings</div>
+</div>
+<p>VPC Peering: peer-to-peer, low latency, no transitive routing (A-B and B-C peering doesn't give A-C connectivity). Shared VPC: org-recommended for multi-project architectures — network team owns subnets, app teams deploy into them. VPN: encrypted tunnel over internet. Dedicated/Partner Interconnect: high-bandwidth on-prem connectivity (99.99% SLA for dedicated).</p>
+<div class='good'><b>Enterprise pattern:</b> Shared VPC with a hub-and-spoke topology. Central connectivity project (VPN/Interconnect) peered to the Shared VPC host. App projects are service projects. Network security team controls firewall rules centrally.</div>`},
+
+  {n:15,tag:'networking',q:'DNS resolution is failing for a GCP resource — how do you troubleshoot Cloud DNS?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud dns managed-zones list                        # list DNS zones</div>
+  <div class='cmd'>gcloud dns record-sets list --zone=&lt;zone&gt;           # inspect records</div>
+  <div class='cmd'>gcloud compute instances ssh &lt;vm&gt; -- "dig +short &lt;hostname&gt; @169.254.169.254"</div>
+  <div class='cmd'>gcloud dns policies list                             # DNS policies on VPC</div>
+</div>
+<p>Check: DNS zone is attached to the correct VPC network (private zones must be authorized for the network), record TTL (stale cache), DNS policy enabling/blocking forwarding, and VPC DNS settings. For GKE, CoreDNS queries go to the metadata server (169.254.169.254) which proxies to Cloud DNS.</p>
+<div class='tip'><b>Hybrid DNS:</b> For on-prem DNS resolution from GCP, use Cloud DNS inbound forwarding (creates forwarding IP in subnet) and configure on-prem DNS to forward GCP domain queries to it.</div>`},
+
+  {n:16,tag:'storage',q:'GCS bucket is returning 403 errors — how do you debug access issues?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud storage buckets get-iam-policy gs://&lt;bucket&gt;  # bucket-level IAM</div>
+  <div class='cmd'>gsutil acl get gs://&lt;bucket&gt;/&lt;object&gt;              # object-level ACL</div>
+  <div class='cmd'>gcloud logging read 'resource.type="gcs_bucket" protoPayload.status.code=403' --limit=10</div>
+  <div class='cmd'>gcloud auth application-default print-access-token   # verify caller identity</div>
+</div>
+<p>403 causes: caller SA lacks roles/storage.objectViewer or storage.objectAdmin, bucket has uniform bucket-level access disabled with conflicting ACLs, VPC Service Controls perimeter blocking access, or bucket CORS config rejecting the origin. Check if Uniform Bucket-Level Access is enabled — it disables ACLs and uses IAM only.</p>
+<div class='warn'><b>VPC Service Controls:</b> If the bucket is inside a service perimeter, only requests from within the perimeter are allowed. A SA outside the perimeter gets 403 even with correct IAM. Check SC perimeter config first when IAM looks correct.</div>`},
+
+  {n:17,tag:'storage',q:'BigQuery query costs are unexpectedly high — how do you investigate and control costs?',
+  body:`<div class='cmds'>
+  <div class='cmd'>SELECT * FROM region-us.INFORMATION_SCHEMA.JOBS_BY_PROJECT WHERE total_bytes_billed > 1000000000 ORDER BY creation_time DESC LIMIT 20;</div>
+  <div class='cmd'>bq query --dry_run 'SELECT ...'  # estimate cost before running</div>
+</div>
+<p>Cost controls: partition tables by date and require partition filter (rejects full scans), cluster tables on common filter columns, use column selection (avoid SELECT *), set project-level custom quotas (max bytes per day/user), use flat-rate slots for predictable cost vs on-demand pricing. Audit with INFORMATION_SCHEMA.JOBS to find expensive queries and their authors.</p>
+<div class='tip'><b>Partitioned tables + partition filter:</b> Setting require_partition_filter = true forces all queries to include a WHERE clause on the partition column. This single change can reduce BigQuery costs by 90% for time-series data.</div>`},
+
+  {n:18,tag:'storage',q:'Cloud Spanner is showing high latency — how do you diagnose performance issues?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud spanner databases execute-sql &lt;db&gt; --instance=&lt;inst&gt; --sql='SELECT * FROM SPANNER_SYS.QUERY_STATS_TOP_HOUR ORDER BY avg_latency_seconds DESC LIMIT 10'</div>
+  <div class='cmd'>gcloud spanner instances describe &lt;inst&gt;  # node count</div>
+</div>
+<p>Spanner latency causes: hot spots from monotonically increasing keys (use UUID or bit-reversed sequences as primary keys), insufficient nodes (scale up processing units), large read/write transactions, missing secondary indexes causing full scans, or high-priority CPU above 65%. Use Query Execution Plans to identify slow operations.</p>
+<div class='warn'><b>Hot spot pattern:</b> Using timestamps or auto-increment IDs as Spanner primary keys creates hot spots on the last split. Always use UUID v4 or hash-prefixed keys. This is the most common Spanner performance mistake.</div>`},
+
+  {n:19,tag:'storage',q:'Cloud SQL instance is not accepting connections — how do you debug?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud sql instances describe &lt;instance&gt; | grep -E "state|ipAddresses"</div>
+  <div class='cmd'>gcloud sql connect &lt;instance&gt; --user=root  # direct test</div>
+  <div class='cmd'>./cloud_sql_proxy -instances=&lt;project&gt;:&lt;region&gt;:&lt;instance&gt;=tcp:5432</div>
+</div>
+<p>Connection issues: Cloud SQL Auth Proxy not running (recommended connection method — handles IAM auth and TLS), authorized networks not including the client IP (for public IP instances), SA missing roles/cloudsql.client, instance is stopped or in maintenance, max connections reached. Use PgBouncer or Cloud SQL's built-in connection pooling for high-concurrency apps.</p>
+<div class='good'><b>GKE pattern:</b> Run Cloud SQL Auth Proxy as a sidecar container in each pod, or as a Deployment with a ClusterIP Service. The sidecar pattern is simpler; the shared proxy pattern reduces total connections to Cloud SQL.</div>`},
+
+  {n:20,tag:'compute',q:'Compute Engine VM is unreachable via SSH — how do you recover access?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud compute instances describe &lt;vm&gt; --zone=&lt;zone&gt; | grep -E "status|networkInterfaces"</div>
+  <div class='cmd'>gcloud compute instances get-serial-port-output &lt;vm&gt; --zone=&lt;zone&gt;  # boot/OS logs</div>
+  <div class='cmd'>gcloud compute ssh &lt;vm&gt; --zone=&lt;zone&gt; --tunnel-through-iap  # SSH via IAP (no public IP needed)</div>
+</div>
+<p>Recovery options: IAP TCP tunneling bypasses firewall rules and public IP requirement — just needs roles/iap.tunnelResourceAccessor. For SSH key issues: use OS Login (recommended) which ties SSH access to GCP IAM identity. Serial console output shows OS-level boot errors. For disk issues, detach disk, attach to recovery VM, repair, reattach.</p>
+<div class='tip'><b>OS Login vs metadata SSH keys:</b> OS Login is the recommended approach — maps Linux user accounts to Google identities, respects IAM, audit logs every login. Metadata SSH keys are unmanaged and hard to audit at scale.</div>`},
+
+  {n:21,tag:'compute',q:'Cloud Run service is returning 500 errors — how do you debug?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud run services describe &lt;service&gt; --region=&lt;region&gt;  # configuration</div>
+  <div class='cmd'>gcloud logging read 'resource.type="cloud_run_revision" severity=ERROR' --limit=20</div>
+  <div class='cmd'>gcloud run services update-traffic &lt;service&gt; --to-revisions=LATEST=0,&lt;prev-rev&gt;=100 --region=&lt;region&gt;  # rollback traffic</div>
+</div>
+<p>Cloud Run 500 causes: application panic/crash (check container logs), container fails to start within 4 minutes (startup probe/timeout), container port mismatch (must listen on $PORT env var), exceeded concurrency limit causing queue buildup, cold start timeout, or dependency unavailable. Roll back traffic to previous revision while debugging.</p>
+<div class='warn'><b>PORT env var:</b> Cloud Run injects the $PORT environment variable. Your container must listen on this port — hardcoding port 8080 works only if you explicitly set it. Many teams hardcode the port and then are confused when the service returns 502.</div>`},
+
+  {n:22,tag:'compute',q:'VM instance group is not autoscaling as expected — how do you debug MIG autoscaling?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud compute instance-groups managed describe &lt;mig&gt; --zone=&lt;zone&gt;  # autoscaler config</div>
+  <div class='cmd'>gcloud compute instance-groups managed list-instances &lt;mig&gt; --zone=&lt;zone&gt;</div>
+  <div class='cmd'>gcloud compute instance-groups managed describe-autoscaler &lt;mig&gt; --zone=&lt;zone&gt;  # scaling decisions</div>
+</div>
+<p>Autoscaler decisions are based on: CPU utilization, HTTP LB serving capacity, Cloud Monitoring metrics, or schedule. Debug: check autoscaler status (ACTIVE/ERROR), verify metric is being emitted, check min/max instance bounds, and confirm instance template is valid. Cooldown period (default 60s) prevents rapid scale oscillation.</p>
+<div class='tip'><b>Predictive autoscaling:</b> GCP MIG autoscaler supports predictive mode — it learns traffic patterns and scales proactively before load spikes. Enable with --autoscaling-mode=ONLY_SCALE_OUT initially to avoid unexpected scale-in.</div>`},
+
+  {n:23,tag:'observability',q:'How do you set up comprehensive observability in GCP — metrics, logs, and traces?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud monitoring alerting-policies list   # existing alerts</div>
+  <div class='cmd'>gcloud logging sinks list                 # log routing destinations</div>
+  <div class='cmd'>gcloud trace list --project=&lt;project&gt;    # recent traces</div>
+</div>
+<p>Key setup: install Ops Agent on VMs for system metrics and logs, configure log-based metrics for business events, create alerting policies on SLO burn rates (not just thresholds), export logs to BigQuery for long-term analysis, and use Cloud Trace with OpenTelemetry SDK for distributed tracing. Create Uptime Checks for external endpoint monitoring.</p>
+<div class='good'><b>SLO-based alerting:</b> Alert on error budget burn rate, not raw error rate. GCP Cloud Monitoring supports SLO burn rate alerting natively — use it over simple threshold alerts.</div>`},
+
+  {n:24,tag:'observability',q:'Cloud Logging is missing expected logs — how do you investigate log routing issues?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud logging sinks list --project=&lt;project&gt;  # log sinks and filters</div>
+  <div class='cmd'>gcloud logging read 'resource.type="gce_instance"' --limit=5  # test query</div>
+  <div class='cmd'>gcloud logging write test-log "test message" --severity=INFO  # inject test log</div>
+</div>
+<p>Missing logs causes: log exclusion filter on the default sink dropping logs before they reach Log Bucket, application writing to stdout but log agent not configured, resource not exporting logs to Cloud Logging, log retention period expired (default 30 days), or log sink misconfigured. Check the _Default sink's exclusion filters first.</p>
+<div class='warn'><b>Cost vs retention:</b> Logs are expensive at scale. Use log exclusions to drop high-volume low-value logs. Route important logs to BigQuery for long-term analysis. Set log-based alerts for critical errors instead of keeping all logs hot.</div>`},
+
+  {n:25,tag:'observability',q:'How do you create custom dashboards and alerting policies in Cloud Monitoring?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud monitoring dashboards create --config-from-file=dashboard.json</div>
+  <div class='cmd'>gcloud monitoring alerting-policies create --policy-from-file=alert.yaml</div>
+  <div class='cmd'>kubernetes.io/container/cpu/request_utilization  # pod CPU vs request</div>
+  <div class='cmd'>loadbalancing.googleapis.com/https/backend_latencies  # LB latency</div>
+</div>
+<p>Build dashboards around golden signals: latency (p50/p99), traffic (RPS), errors (5xx rate), saturation (CPU/memory). Use Monitoring Query Language (MQL) for complex aggregations. Set up notification channels (PagerDuty, OpsGenie, Slack) before creating alerts.</p>
+<div class='tip'><b>Dashboard as code:</b> Export dashboard JSON, store in Git, deploy via Terraform google_monitoring_dashboard resource. All observability config should be IaC — dashboards deleted in UI get recreated automatically.</div>`},
+
+  {n:26,tag:'security',q:'How does VPC Service Controls work — when and how do you configure it?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud access-context-manager perimeters list --policy=&lt;policy&gt;</div>
+  <div class='cmd'>gcloud access-context-manager perimeters create &lt;name&gt; --policy=&lt;policy&gt; --resources=projects/&lt;num&gt; --restricted-services=storage.googleapis.com</div>
+</div>
+<p>VPC Service Controls creates a security perimeter around GCP services — requests from outside the perimeter are denied even with valid IAM credentials. Use for: data exfiltration prevention, compliance (HIPAA, PCI-DSS), restricting BigQuery/GCS to internal access only. Configure access levels for exceptions. Dry-run mode logs violations without enforcing — use this first to identify legitimate traffic to allowlist.</p>
+<div class='warn'><b>Breakage risk:</b> VPC-SC can break service integrations. Always run in dry-run mode for 2+ weeks before enforcing. Audit the violation logs thoroughly. A wrong VPC-SC config can cause widespread service outages.</div>`},
+
+  {n:27,tag:'security',q:'Security Command Center is showing high-severity findings — how do you triage and remediate?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud scc findings list --organization=&lt;org&gt; --filter="severity=HIGH AND state=ACTIVE" --format=json</div>
+  <div class='cmd'>gcloud scc findings update &lt;finding&gt; --organization=&lt;org&gt; --state=INACTIVE  # mark resolved</div>
+</div>
+<p>SCC finding categories: vulnerabilities (CVEs in container images), misconfigurations (public GCS buckets, open firewall rules, SA key age), threats (anomalous API calls, cryptomining, data exfiltration), and compliance violations. Prioritize: CRITICAL > HIGH, then by asset criticality. Integrate SCC with SIEM for SOC workflows.</p>
+<div class='good'><b>Quick wins:</b> SCC often flags public GCS buckets, overly permissive firewall rules (allow all ingress), and stale SA keys (>90 days). Fix these first — they're high impact, low effort. Set up SCC notifications to PagerDuty for CRITICAL findings.</div>`},
+
+  {n:28,tag:'security',q:'How do you implement Binary Authorization for GKE — ensuring only verified images run in production?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud container binauthz policy export &gt; policy.yaml  # export current policy</div>
+  <div class='cmd'>gcloud container binauthz attestations sign-and-create --artifact-url=&lt;digest-url&gt; --attestor=&lt;attestor&gt; --keyversion=&lt;kms-key&gt;</div>
+  <div class='cmd'>gcloud container clusters update &lt;cluster&gt; --binauthz-evaluation-mode=PROJECT_SINGLETON_POLICY_ENFORCE</div>
+</div>
+<p>Binary Authorization enforces that only cryptographically attested images run on GKE. CI pipeline: build image → scan with Trivy/Container Analysis → if no critical CVEs, sign the image digest with KMS → attestation stored. GKE admission controller verifies attestation before allowing pod creation. Unsigned images are rejected.</p>
+<div class='tip'><b>For SonicWall context:</b> Binary Authorization is the gold standard for supply chain security in GKE. Being able to describe this end-to-end at a Principal level demonstrates mature GCP security thinking.</div>`},
+
+  {n:29,tag:'security',q:'A GCP service account key was accidentally committed to GitHub — what do you do?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud iam service-accounts keys disable &lt;key-id&gt; --iam-account=&lt;sa&gt;  # disable immediately</div>
+  <div class='cmd'>gcloud iam service-accounts keys delete &lt;key-id&gt; --iam-account=&lt;sa&gt;  # then delete</div>
+  <div class='cmd'>gcloud logging read 'protoPayload.authenticationInfo.serviceAccountKeyName="&lt;key-id&gt;"' --limit=50  # audit usage</div>
+</div>
+<p>Incident response: (1) Disable the key immediately. (2) Audit Cloud Audit Logs for any usage of the compromised key. (3) Delete the key. (4) Rotate all secrets that the SA had access to. (5) Remove from Git history and force-push. (6) Enable Secret Scanning in GitHub. (7) Migrate to Workload Identity to eliminate keys entirely.</p>
+<div class='warn'><b>Never rely on Git history deletion alone.</b> Assume the key was already scraped by automated bots. The key is compromised — disable it first, investigate second.</div>`},
+
+  {n:30,tag:'cicd',q:'How do you implement a production-grade CI/CD pipeline on GCP using Cloud Build?',
+  body:`<div class='cmds'>
+  <div class='cmd'>steps:</div>
+  <div class='cmd'>  - name: gcr.io/cloud-builders/docker</div>
+  <div class='cmd'>    args: [build, -t, IMAGE, .]</div>
+  <div class='cmd'>  - name: gcr.io/cloud-builders/gke-deploy</div>
+  <div class='cmd'>    args: [run, --filename=k8s/, --cluster=&lt;c&gt;, --location=&lt;z&gt;]</div>
+  <div class='cmd'>gcloud builds triggers create github --repo-name=&lt;repo&gt; --branch-pattern=main --build-config=cloudbuild.yaml</div>
+</div>
+<p>Production pipeline: PR trigger → lint + test → build image → push to Artifact Registry → scan with Container Analysis → run integration tests in staging → deploy to staging → gate on test results → deploy to production. Use Cloud Build substitution variables for environment-specific config. Separate SA per environment with minimal permissions.</p>
+<div class='good'><b>GitOps alternative:</b> Use Cloud Build to update the image tag in a GitOps repo → ArgoCD picks up the change and syncs to GKE. This separates CI (Cloud Build) from CD (ArgoCD) cleanly — the recommended pattern for production GKE deployments.</div>`},
+
+  {n:31,tag:'cicd',q:'Terraform is being used to manage GCP infrastructure — what GCP-specific best practices apply?',
+  body:`<div class='cmds'>
+  <div class='cmd'>terraform {</div>
+  <div class='cmd'>  backend "gcs" {</div>
+  <div class='cmd'>    bucket = "tf-state-&lt;project&gt;"</div>
+  <div class='cmd'>    prefix = "prod"</div>
+  <div class='cmd'>  }</div>
+  <div class='cmd'>}</div>
+  <div class='cmd'>gcloud iam roles create terraform_deployer --project=&lt;project&gt; --permissions=compute.instances.create,...</div>
+</div>
+<p>GCP-specific Terraform best practices: store state in GCS with object versioning. Use Workload Identity for CI/CD — no SA key files. Enable GCS state locking (native, no DynamoDB equivalent needed). Organize by resource hierarchy: one root module per project/environment. Use google_project_service to manage API enablement.</p>
+<div class='tip'><b>API enablement:</b> Add google_project_service resources for every API your Terraform uses, with disable_on_destroy = false to avoid breaking dependent resources during teardown.</div>`},
+
+  {n:32,tag:'cicd',q:'How do you manage GCP project structure and resource hierarchy at an enterprise scale?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud resource-manager folders list --organization=&lt;org-id&gt;</div>
+  <div class='cmd'>gcloud organizations get-iam-policy &lt;org-id&gt;  # org-wide policies</div>
+  <div class='cmd'>gcloud org-policies set-policy --organization=&lt;org-id&gt; constraints/storage.publicAccessPrevention.yaml</div>
+</div>
+<p>Recommended structure: Org → [Bootstrap, Common, Environments] folders → [network, security, prod, staging, dev] projects. One project per environment per application (project as blast radius boundary). Shared VPC host project for networking. Use Organization Policies (constraints) for guardrails: disable SA key creation, enforce resource location, require OS Login.</p>
+<div class='tip'><b>Landing Zone pattern:</b> Use Google's Cloud Foundation Toolkit (Terraform modules) for bootstrapping the org hierarchy. Don't design from scratch — the CFT encodes GCP best practices accumulated from thousands of enterprise deployments.</div>`},
+
+  {n:33,tag:'cost',q:'GCP bill is unexpectedly high — how do you investigate and optimize costs?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud billing budgets list --billing-account=&lt;account&gt;  # existing budget alerts</div>
+  <div class='cmd'>SELECT service.description, SUM(cost) as total</div>
+  <div class='cmd'>FROM \`billing_dataset.gcp_billing_export\`</div>
+  <div class='cmd'>WHERE DATE(usage_start_time) = CURRENT_DATE()-1</div>
+  <div class='cmd'>GROUP BY 1 ORDER BY 2 DESC</div>
+</div>
+<p>Investigation: export billing data to BigQuery (enable billing export first), query by service/project/label/SKU. Common culprits: undeleted persistent disks after VM deletion, unused static IPs, GKE nodes with low utilization, inter-region egress traffic, BigQuery on-demand scan costs. Use committed use discounts (CUDs) — 1-year CUD saves ~37%, 3-year ~55%.</p>
+<div class='good'><b>Label-based cost attribution:</b> Tag all resources with team, env, application labels. Filter billing export by label to charge back costs to teams. Without labels, cost attribution becomes a guessing game at scale.</div>`},
+
+  {n:34,tag:'cost',q:'GKE cluster costs are too high — what optimization strategies do you apply?',
+  body:`<div class='cmds'>
+  <div class='cmd'>kubectl top pods -A --sort-by=memory   # find over-provisioned pods</div>
+  <div class='cmd'>gcloud container node-pools create spot-pool --cluster=&lt;cluster&gt; --spot --machine-type=e2-standard-4</div>
+</div>
+<p>GKE cost optimization: (1) Spot/Preemptible VMs for batch/stateless workloads (60-90% cheaper), (2) Right-size node pools using VPA recommendations, (3) Enable cluster autoscaler to scale down idle nodes, (4) Use E2 machine family (cost-optimized), (5) Schedule dev/staging clusters to scale to zero overnight, (6) Enable GKE usage metering to attribute costs per namespace/team.</p>
+<div class='tip'><b>Autopilot cost model:</b> GKE Autopilot charges per pod CPU/memory request — no idle node cost. For variable workloads with low off-peak usage, Autopilot is often significantly cheaper than Standard mode clusters with persistent node pools.</div>`},
+
+  {n:35,tag:'cost',q:'How do you implement cost governance and FinOps practices on GCP?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud billing budgets create --billing-account=&lt;account&gt; --display-name="Prod Budget" --budget-amount=5000USD --threshold-rule=percent=0.5 --threshold-rule=percent=0.9</div>
+  <div class='cmd'>gcloud recommender recommendations list --project=&lt;project&gt; --recommender=google.compute.instance.MachineTypeRecommender --location=&lt;region&gt;</div>
+</div>
+<p>FinOps on GCP: (1) Budget alerts per project/team, (2) Billing export to BigQuery + Looker Studio dashboards for real-time spend visibility, (3) Enforce resource labels via Organization Policy, (4) Use GCP Recommender API for automatic right-sizing suggestions, (5) Committed Use Discounts for baseline compute, (6) Monthly cost review with team leads.</p>
+<div class='good'><b>Principal-level ownership:</b> A Platform Engineer builds the cost visibility tooling and governance framework. Attribute costs to teams, surface anomalies automatically, make the data self-serve. The goal is teams making cost-aware decisions independently.</div>`},
+
+  {n:36,tag:'iam',q:'How do you manage Organization Policies to enforce guardrails across all GCP projects?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud org-policies list --organization=&lt;org-id&gt;             # all active policies</div>
+  <div class='cmd'>gcloud org-policies describe constraints/iam.disableServiceAccountKeyCreation --organization=&lt;org-id&gt;</div>
+  <div class='cmd'>gcloud org-policies set-policy policy.yaml --organization=&lt;org-id&gt;</div>
+</div>
+<p>Key Organization Policies for security: iam.disableServiceAccountKeyCreation (enforce Workload Identity), storage.publicAccessPrevention (no public GCS buckets), compute.requireOsLogin, compute.restrictCloudSQLInstances (private-only), gcp.resourceLocations (restrict to specific regions). Policies inherit downward and can be overridden at lower levels unless enforced.</p>
+<div class='warn'><b>Policy inheritance override:</b> Use inheritFromParent: false with an empty allow list to enforce a deny-all at org level that cannot be overridden by child resources.</div>`},
+
+  {n:37,tag:'networking',q:'Cloud Interconnect is experiencing packet loss — how do you diagnose hybrid connectivity issues?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud compute interconnects describe &lt;interconnect&gt;  # operational state</div>
+  <div class='cmd'>gcloud compute interconnects attachments describe &lt;attachment&gt; --region=&lt;region&gt;</div>
+  <div class='cmd'>gcloud compute routers get-status &lt;router&gt; --region=&lt;region&gt;  # BGP session status</div>
+</div>
+<p>Interconnect issues: BGP session down (check advertised routes and ASN config), VLAN attachment misconfiguration, physical layer issues (contact GCP Support), or route advertisement missing. For Partner Interconnect, the ISP manages the physical layer — open ticket with both GCP Support and the ISP simultaneously.</p>
+<div class='tip'><b>Redundancy:</b> Always provision 2 VLAN attachments in different metropolitan areas for Dedicated Interconnect (99.99% SLA requires this). A single attachment gives only 99.9% SLA.</div>`},
+
+  {n:38,tag:'gke',q:'How do you implement multi-cluster GKE architecture for high availability?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud container fleet memberships list   # GKE Fleet registered clusters</div>
+  <div class='cmd'>gcloud container fleet ingress enable --config-membership=&lt;cluster&gt;  # Multi-cluster Ingress</div>
+  <div class='cmd'>gcloud container fleet multi-cluster-services enable</div>
+</div>
+<p>Multi-cluster patterns: Multi-cluster Ingress with a Global Load Balancer routes traffic to the nearest healthy cluster (active-active), GKE Fleet for unified management and policy enforcement across clusters, Config Sync (ACM) for GitOps-driven config consistency. Deploy stateless workloads active-active across regions; stateful workloads with primary-replica across zones within a region.</p>
+<div class='good'><b>GKE Fleet:</b> Registers clusters under a common management plane. Enables Fleet-wide policy enforcement, Config Sync across all clusters, unified observability, and multi-cluster service mesh (Anthos Service Mesh). This is the production pattern for 5+ cluster environments.</div>`},
+
+  {n:39,tag:'security',q:'How do you implement a secure software supply chain on GCP?',
+  body:`<div class='cmds'>
+  <div class='cmd'>gcloud artifacts repositories create &lt;repo&gt; --repository-format=docker --location=&lt;region&gt;</div>
+  <div class='cmd'>gcloud artifacts docker images list &lt;region&gt;-docker.pkg.dev/&lt;project&gt;/&lt;repo&gt; --show-occurrences</div>
+  <div class='cmd'>gcloud builds submit --config=cloudbuild-sign.yaml  # build, scan, attest in pipeline</div>
+</div>
+<p>Supply chain security layers: (1) Source — branch protection, code review, secret scanning. (2) Build — Cloud Build with hermetic builds, provenance attestation (SLSA). (3) Artifact — Artifact Registry with Container Analysis, vulnerability policy gates. (4) Deploy — Binary Authorization enforces only attested images. (5) Runtime — Falco/GKE security posture for anomaly detection.</p>
+<div class='tip'><b>SLSA framework:</b> GCP Cloud Build supports SLSA Level 3 provenance — cryptographic proof that a specific source commit produced a specific image via a specific build process. This is the industry direction for supply chain security and a strong Principal-level talking point.</div>`},
+
+  {n:40,tag:'cicd',q:'How would you design a complete GCP Platform Engineering architecture for a growing product company?',
+  body:`<p>This is the end-to-end system design question. A Principal Platform Engineer owns this entire picture.</p>
+<div class='cmds'>
+  <div class='cmd'># Foundation: Org hierarchy via Cloud Foundation Toolkit (Terraform)</div>
+  <div class='cmd'># Identity: Workload Identity everywhere, OS Login for VMs, no SA keys</div>
+  <div class='cmd'># Networking: Shared VPC + Cloud NAT + Private GKE + Cloud Interconnect</div>
+  <div class='cmd'># Compute: GKE Autopilot for apps, Cloud Run for stateless APIs, Cloud SQL + Spanner for data</div>
+  <div class='cmd'># CI/CD: Cloud Build + Artifact Registry + ArgoCD + Binary Authorization</div>
+  <div class='cmd'># Observability: Cloud Monitoring + Cloud Logging + Cloud Trace + SLO alerting</div>
+  <div class='cmd'># Security: VPC-SC + SCC + Org Policies + KMS + Secret Manager</div>
+  <div class='cmd'># Cost: Billing export → BigQuery → Looker dashboards + team labels + CUDs</div>
+</div>
+<p>The Platform team's output is a paved road: developers deploy applications without knowing GCP internals. Golden paths (IaC modules, CI/CD templates, observability standards) make the right thing the easy thing. Platform team measures success by developer deployment frequency and MTTR — not by individual infrastructure components.</p>
+<div class='good'><b>SonicWall framing:</b> A Principal Platform Engineer at a security company also owns the security posture of the platform itself. Tie every architectural decision back to: least privilege, auditability, data protection, and supply chain integrity. That combination — platform reliability + security-first thinking — is exactly what the role requires.</div>`}
+];
+
+let activeFilter = 'all';
+let openCards = new Set();
+
+function badge(tag) {
+  const labels = {iam:'IAM & identity',gke:'GKE',networking:'Networking',storage:'Storage & data',compute:'Compute',observability:'Observability',security:'Security',cicd:'CI/CD & IaC',cost:'Cost'};
+  return `<span class="badge ${tag}">${labels[tag] || tag}</span>`;
+}
+
+function render(qs) {
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 40 questions`;
+  document.getElementById('q-list').innerHTML = qs.map(q => `
+    <div class="q-card" id="card-${q.n}">
+      <div class="q-header" onclick="toggle(${q.n})">
+        <span class="q-num">Q${q.n}</span>
+        <span class="q-title">${q.q}</span>
+        <div class="q-right">
+          ${badge(q.tag)}
+          <span class="chevron ${openCards.has(q.n) ? 'open' : ''}" id="chev-${q.n}">▼</span>
+        </div>
+      </div>
+      <div class="q-body ${openCards.has(q.n) ? 'open' : ''}" id="body-${q.n}">${q.body}</div>
+    </div>
+  `).join('');
+}
+
+function toggle(n) {
+  const body = document.getElementById('body-' + n);
+  const chev = document.getElementById('chev-' + n);
+  if (openCards.has(n)) {
+    openCards.delete(n);
+    body.classList.remove('open');
+    chev.classList.remove('open');
+  } else {
+    openCards.add(n);
+    body.classList.add('open');
+    chev.classList.add('open');
+  }
+  document.getElementById('viewed-count').textContent = openCards.size;
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterQs();
+}
+
+function filterQs() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = QS;
+  if (activeFilter !== 'all') filtered = filtered.filter(x => x.tag === activeFilter);
+  if (q) filtered = filtered.filter(x => x.q.toLowerCase().includes(q) || x.body.toLowerCase().includes(q));
+  render(filtered);
+}
+
+render(QS);
+</script>
+</body>
+</html>
