@@ -165,51 +165,67 @@ footer a:hover { text-decoration: underline; }
   nav .hs { display: none; }
 }
 
-/* VISITOR COUNTER */
-.visitor-strip {
+/* ── VISITOR COUNTER ─────────────────────── */
+.vcounter-wrap {
   max-width: 1100px;
-  margin: 1.25rem auto 0;
+  margin: 1.5rem auto 0;
   padding: 0 2rem;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
-.visitor-box {
+.vcounter-pill {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 99px;
-  padding: 7px 18px;
+  padding: 8px 20px 8px 14px;
   font-size: 12px;
   color: var(--muted);
   transition: background .2s, border-color .2s;
 }
-.visitor-box .vdot {
-  width: 7px; height: 7px;
+.vcounter-pill .vdot {
+  width: 8px; height: 8px;
   background: var(--accent);
   border-radius: 50%;
-  animation: vpulse 2s ease-in-out infinite;
   flex-shrink: 0;
+  animation: vpulse 2.2s ease-in-out infinite;
 }
 @keyframes vpulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: .5; transform: scale(.75); }
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.4; transform:scale(.7); }
 }
-.visitor-box strong {
-  color: var(--text);
-  font-weight: 700;
+.vcounter-pill .vlabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
 }
-.visitor-count {
-  font-size: 14px;
+.vcount-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.vcount-total {
+  font-size: 17px;
   font-weight: 800;
   color: var(--accent);
   letter-spacing: -.5px;
   min-width: 28px;
-  text-align: center;
+  text-align: right;
 }
-
+.vcount-today {
+  font-size: 11px;
+  color: var(--faint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.vcount-loading {
+  font-size: 12px;
+  color: var(--faint);
+  font-weight: 400;
+}
+/* dark mode inherits via CSS vars - no extra rules needed */
 </style>
 </head>
 <body>
@@ -243,20 +259,24 @@ footer a:hover { text-decoration: underline; }
   </div>
 </div>
 
-
 <!-- VISITOR COUNTER -->
-<div class="visitor-strip">
-  <div class="visitor-box">
+<div class="vcounter-wrap">
+  <div class="vcounter-pill">
     <span class="vdot"></span>
-    <span>Total visitors</span>
-    <span class="visitor-count" id="vcnt">...</span>
-    <img src="https://hits.sh/eknatha.github.io/interview-prep.svg"
-         referrerpolicy="no-referrer-when-downgrade"
+    <span class="vlabel">Visitors</span>
+    <span id="vcnt-wrap">
+      <span class="vcount-loading" id="vcnt-loading">counting...</span>
+      <span class="vcount-group" id="vcnt-group" style="display:none">
+        <span class="vcount-total" id="vcnt-total">0</span>
+        <span class="vcount-today" id="vcnt-today"></span>
+      </span>
+    </span>
+    <!-- hidden img fires the actual counter increment -->
+    <img id="hits-img"
+         src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&count_bg=%231D9E75&title_bg=%23555555&icon=&title=visitors&edge_flat=true"
          alt="visitor counter"
-         id="hits-img"
          style="display:none"
-         onload="parseHits(this)"
-         onerror="document.getElementById('vcnt').textContent='—'">
+         referrerpolicy="no-referrer-when-downgrade">
   </div>
 </div>
 
@@ -508,33 +528,83 @@ function setTag(tag, el) {
   filterCards();
 }
 
-/* visitor counter */
-function parseHits(img) {
-  // hits.sh SVG contains the count as text — parse it via a canvas-free approach
-  // We fetch the SVG text and extract the number
-  fetch('https://hits.sh/eknatha.github.io/interview-prep.svg')
-    .then(function(r){ return r.text(); })
-    .then(function(svg){
-      // The count is the last number in the SVG text content
-      var matches = svg.match(/>([\d,]+)</g);
-      if (matches && matches.length) {
-        var last = matches[matches.length - 1].replace(/[><,]/g,'').trim();
-        if (last && !isNaN(last.replace(/,/g,''))) {
-          // format with commas
-          var n = parseInt(last.replace(/,/g,''));
-          document.getElementById('vcnt').textContent = n.toLocaleString();
-          return;
-        }
+/* ── VISITOR COUNTER ─────────────────────── */
+(function () {
+  var BADGE = 'https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&count_bg=%231D9E75&title_bg=%23555555&icon=&title=visitors&edge_flat=true';
+
+  function fmtNum(n) {
+    return Number(n).toLocaleString();
+  }
+
+  function showCounts(today, total) {
+    var grp  = document.getElementById('vcnt-group');
+    var load = document.getElementById('vcnt-loading');
+    var tot  = document.getElementById('vcnt-total');
+    var tod  = document.getElementById('vcnt-today');
+    if (!grp) return;
+    tot.textContent  = fmtNum(total);
+    tod.textContent  = '+' + fmtNum(today) + ' today';
+    load.style.display = 'none';
+    grp.style.display  = '';
+  }
+
+  function showFallback() {
+    /* If fetch fails, show the badge image instead */
+    var load = document.getElementById('vcnt-loading');
+    var img  = document.getElementById('hits-img');
+    if (load) load.style.display = 'none';
+    if (img)  { img.style.display = 'inline'; img.style.height = '20px'; img.style.borderRadius = '4px'; }
+  }
+
+  function parseSVG(svgText) {
+    /* hits.seeyoufarm SVG has two <text> nodes with the counts.
+       The count text nodes contain digits.
+       We find all text content that is purely numeric and take the last two. */
+    var matches = [];
+    var re = />([0-9,]+)</g;
+    var m;
+    while ((m = re.exec(svgText)) !== null) {
+      var val = m[1].replace(/,/g, '').trim();
+      if (val.length > 0 && !isNaN(val)) {
+        matches.push(parseInt(val, 10));
       }
-      document.getElementById('vcnt').textContent = '—';
-    })
-    .catch(function(){ document.getElementById('vcnt').textContent = '—'; });
-}
-// Fire on load
-window.addEventListener('load', function(){
-  var img = document.getElementById('hits-img');
-  if (img) parseHits(img);
-});
+    }
+    /* hits.seeyoufarm returns: [today, total] as the last two numbers */
+    if (matches.length >= 2) {
+      return { today: matches[matches.length - 2], total: matches[matches.length - 1] };
+    }
+    if (matches.length === 1) {
+      return { today: 0, total: matches[0] };
+    }
+    return null;
+  }
+
+  /* Fetch the SVG — same URL the img already loaded, so browser may use cache.
+     We add a timestamp to get a fresh read after the img has incremented. */
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      fetch(BADGE + '&t=' + Date.now(), {
+        mode: 'cors',
+        cache: 'no-store'
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('bad response');
+          return r.text();
+        })
+        .then(function (svg) {
+          var counts = parseSVG(svg);
+          if (counts) {
+            showCounts(counts.today, counts.total);
+          } else {
+            showFallback();
+          }
+        })
+        .catch(function () {
+          showFallback();
+        });
+    }, 800); /* small delay so the img increment fires first */
+  });
+})();
 
 </script>
 </body>
