@@ -164,6 +164,52 @@ footer a:hover { text-decoration: underline; }
   .counters { gap: 1.5rem; }
   nav .hs { display: none; }
 }
+
+/* VISITOR COUNTER */
+.visitor-strip {
+  max-width: 1100px;
+  margin: 1.25rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.visitor-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 7px 18px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: background .2s, border-color .2s;
+}
+.visitor-box .vdot {
+  width: 7px; height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: vpulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes vpulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .5; transform: scale(.75); }
+}
+.visitor-box strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.visitor-count {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -.5px;
+  min-width: 28px;
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -194,6 +240,23 @@ footer a:hover { text-decoration: underline; }
     <div class="ctr"><div class="ctr-n">11</div><div class="ctr-l">Topic guides</div></div>
     <div class="ctr"><div class="ctr-n">100%</div><div class="ctr-l">Free &amp; offline</div></div>
     <div class="ctr"><div class="ctr-n">0</div><div class="ctr-l">Login required</div></div>
+  </div>
+</div>
+
+
+<!-- VISITOR COUNTER -->
+<div class="visitor-strip">
+  <div class="visitor-box">
+    <span class="vdot"></span>
+    <span>Total visitors</span>
+    <span class="visitor-count" id="vcnt">...</span>
+    <img src="https://hits.sh/eknatha.github.io/interview-prep.svg"
+         referrerpolicy="no-referrer-when-downgrade"
+         alt="visitor counter"
+         id="hits-img"
+         style="display:none"
+         onload="parseHits(this)"
+         onerror="document.getElementById('vcnt').textContent='—'">
   </div>
 </div>
 
@@ -444,6 +507,35 @@ function setTag(tag, el) {
   el.classList.add('on');
   filterCards();
 }
+
+/* visitor counter */
+function parseHits(img) {
+  // hits.sh SVG contains the count as text — parse it via a canvas-free approach
+  // We fetch the SVG text and extract the number
+  fetch('https://hits.sh/eknatha.github.io/interview-prep.svg')
+    .then(function(r){ return r.text(); })
+    .then(function(svg){
+      // The count is the last number in the SVG text content
+      var matches = svg.match(/>([\d,]+)</g);
+      if (matches && matches.length) {
+        var last = matches[matches.length - 1].replace(/[><,]/g,'').trim();
+        if (last && !isNaN(last.replace(/,/g,''))) {
+          // format with commas
+          var n = parseInt(last.replace(/,/g,''));
+          document.getElementById('vcnt').textContent = n.toLocaleString();
+          return;
+        }
+      }
+      document.getElementById('vcnt').textContent = '—';
+    })
+    .catch(function(){ document.getElementById('vcnt').textContent = '—'; });
+}
+// Fire on load
+window.addEventListener('load', function(){
+  var img = document.getElementById('hits-img');
+  if (img) parseHits(img);
+});
+
 </script>
 </body>
 </html>
