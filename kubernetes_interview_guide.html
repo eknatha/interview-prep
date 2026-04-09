@@ -1,0 +1,720 @@
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#185FA5;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">35 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.wrap { padding: 1rem 0 2rem; font-family: var(--font-sans); }
+.search-bar { position: relative; margin-bottom: 1.25rem; }
+.search-bar input { width: 100%; padding: 10px 16px 10px 38px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; opacity: 0.4; pointer-events: none; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.chip { padding: 5px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-secondary); transition: all 0.15s; }
+.chip.active { background: #E6F1FB; color: #0C447C; border-color: #185FA5; font-weight: 500; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 16px; }
+.stat-n { font-size: 22px; font-weight: 500; }
+.stat-l { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.n-blue { color: #185FA5; } .n-teal { color: #0F6E56; } .n-amber { color: #854F0B; } .n-red { color: #A32D2D; }
+.count-bar { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; }
+.q-list { display: flex; flex-direction: column; gap: 8px; }
+.q-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); overflow: hidden; }
+.q-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+.q-num { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); min-width: 28px; padding-top: 2px; flex-shrink: 0; }
+.q-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); flex: 1; line-height: 1.5; }
+.q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+.badge.pods { background: #E6F1FB; color: #0C447C; }
+.badge.networking { background: #EEEDFE; color: #3C3489; }
+.badge.storage { background: #FAEEDA; color: #633806; }
+.badge.security { background: #FCEBEB; color: #791F1F; }
+.badge.scheduling { background: #EAF3DE; color: #27500A; }
+.badge.observability { background: #E1F5EE; color: #085041; }
+.badge.cluster { background: #F1EFE8; color: #444441; }
+.badge.cicd { background: #FBEAF0; color: #72243E; }
+.chevron { font-size: 11px; color: var(--color-text-secondary); transition: transform 0.2s; flex-shrink: 0; }
+.chevron.open { transform: rotate(180deg); }
+.q-body { display: none; padding: 0 16px 16px 56px; }
+.q-body.open { display: block; }
+.q-body p { font-size: 13px; line-height: 1.7; color: var(--color-text-secondary); margin-bottom: 10px; }
+.q-body p:last-child { margin-bottom: 0; }
+.sec { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-tertiary); margin: 4px 0 6px; }
+.cmds { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.cmd { background: var(--color-background-secondary); border-radius: 6px; padding: 6px 10px; font-family: var(--font-mono); font-size: 12px; color: var(--color-text-primary); border-left: 2px solid #185FA5; }
+.tip { background: #FAEEDA; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #412402; border-left: 2px solid #BA7517; margin-top: 4px; }
+.warn { background: #FCEBEB; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #501313; border-left: 2px solid #E24B4A; margin-top: 4px; }
+.good { background: #EAF3DE; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #173404; border-left: 2px solid #639922; margin-top: 4px; }
+
+/* ── DARK MODE VARIABLES ─────────────────────────────── */
+body {
+  --dm-bg:         #111314;
+  --dm-surface:    #1a1d1f;
+  --dm-surface2:   #222629;
+  --dm-border:     #2e3235;
+  --dm-text:       #e8eaec;
+  --dm-muted:      #8a9099;
+  --dm-cmd-bg:     #1e2123;
+  --dm-cmd-border: #1D9E75;
+}
+body.dark {
+  background:  var(--dm-bg)      !important;
+  color:       var(--dm-text)    !important;
+}
+body.dark header,
+body.dark .wrap > *:not(.q-list):not(#q-list) { color: var(--dm-text); }
+
+/* cards */
+body.dark .q-card  { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .q-header .q-title { color: var(--dm-text); }
+body.dark .q-body  { border-color: var(--dm-border); }
+body.dark .q-body p { color: var(--dm-muted); }
+
+/* commands */
+body.dark .cmd     { background: var(--dm-cmd-bg); color: #c9d1d9; border-left-color: var(--dm-cmd-border); }
+body.dark .cmds    { background: transparent; }
+
+/* filter chips */
+body.dark .chip    { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-muted); }
+body.dark .chip.active,
+body.dark .chip.on { background: #0F6E56; color: #fff; border-color: #1D9E75; }
+
+/* search */
+body.dark .search-bar input,
+body.dark #search  { background: var(--dm-surface); border-color: var(--dm-border); color: var(--dm-text); }
+body.dark .search-bar input::placeholder,
+body.dark #search::placeholder { color: var(--dm-muted); }
+
+/* stats */
+body.dark .stat    { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .stat-l  { color: var(--dm-muted); }
+
+/* tips/warns */
+body.dark .tip     { background: #231c09; color: #d4a847; }
+body.dark .warn    { background: #1f0f0f; color: #e07070; }
+body.dark .good    { background: #0d1f0d; color: #7aba5e; }
+body.dark .info    { background: #0d1226; color: #7aa8e0; }
+
+/* interview mode bar */
+body.dark .fm-bar  { background: var(--dm-surface); border-color: #1D9E75; }
+body.dark .fm-q    { color: var(--dm-text); }
+body.dark .fm-score { color: var(--dm-muted); }
+body.dark .fm-reveal { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-text); }
+
+/* header / portal link */
+body.dark .portal-link { color: #1D9E75; }
+body.dark .q-num   { color: var(--dm-muted); }
+body.dark .chevron { color: var(--dm-muted); }
+body.dark .count-bar { color: var(--dm-muted); }
+body.dark .sec     { color: var(--dm-muted); }
+
+/* dark toggle button */
+.dm-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
+  transition: all .14s; flex-shrink: 0;
+}
+.dm-btn:hover { border-color: #1D9E75; }
+body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); color: var(--dm-text); }
+
+/* interview mode toggle */
+.fm-btn {
+  background: #1D9E75; color: #fff; border: none; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .14s; flex-shrink: 0;
+}
+.fm-btn:hover { background: #0F6E56; }
+
+/* interview mode bar */
+.fm-bar {
+  display: none;
+  background: #fff;
+  border: 2px solid #1D9E75;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.fm-bar.open { display: block; }
+.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+.fm-prog      { height: 4px; background: #1D9E75; border-radius: 99px; transition: width .3s; }
+.fm-meta      { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fm-q         { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
+.fm-answer    { display: none; margin-bottom: 14px; }
+.fm-answer.show { display: block; }
+.fm-actions   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fm-reveal    { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-reveal:hover { background: #eee; }
+.fm-got       { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-got:hover { background: #d5ecb8; }
+.fm-miss      { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-miss:hover { background: #f9d5d5; }
+.fm-stop      { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
+.fm-stop:hover { border-color: #999; color: #555; }
+.fm-score     { font-size: 12px; color: #888; font-weight: 600; }
+.fm-done      { font-size: 14px; font-weight: 700; color: #1D9E75; margin-bottom: 8px; }
+
+/* toolbar row (count + IM button) */
+.toolbar      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+</style>
+
+<div class="wrap">
+<div class="search-bar">
+  <svg class="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+</div>
+
+<div class="filters">
+  <div class="chip active" onclick="setFilter('all',this)">All (35)</div>
+  <div class="chip" onclick="setFilter('pods',this)">Pods &amp; workloads</div>
+  <div class="chip" onclick="setFilter('networking',this)">Networking</div>
+  <div class="chip" onclick="setFilter('storage',this)">Storage</div>
+  <div class="chip" onclick="setFilter('security',this)">Security</div>
+  <div class="chip" onclick="setFilter('scheduling',this)">Scheduling</div>
+  <div class="chip" onclick="setFilter('observability',this)">Observability</div>
+  <div class="chip" onclick="setFilter('cluster',this)">Cluster ops</div>
+  <div class="chip" onclick="setFilter('cicd',this)">CI/CD &amp; GitOps</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n n-blue">35</div><div class="stat-l">Total questions</div></div>
+  <div class="stat"><div class="stat-n n-teal">20</div><div class="stat-l">Core operations</div></div>
+  <div class="stat"><div class="stat-n n-amber">15</div><div class="stat-l">Production scenarios</div></div>
+  <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
+</div>
+
+
+<div class="toolbar"><div class="count-bar" id="count-bar" style="margin:0;font-size:12px;color:#888;"></div><button class="fm-btn" onclick="fmStart()">&#9654; Interview mode</button></div>
+<div class="fm-bar" id="fm-bar"><div class="fm-prog-wrap"><div class="fm-prog" id="fm-prog" style="width:0%"></div></div><div class="fm-meta" id="fm-meta">Question 1 of N</div><div class="fm-q" id="fm-q-text"></div><div class="fm-answer" id="fm-answer"></div><div class="fm-actions"><button class="fm-reveal" id="fm-reveal" onclick="fmReveal()">&#128065; Reveal answer</button><button class="fm-got"  id="fm-got"  onclick="fmNext(true)"  style="display:none">&#10003; Got it</button><button class="fm-miss" id="fm-miss" onclick="fmNext(false)" style="display:none">&#10007; Missed it</button><span class="fm-score" id="fm-score"></span><button class="fm-stop" onclick="fmStop()">&#10005; Stop</button></div></div>
+
+<div class="q-list" id="q-list"></div>
+</div>
+
+<script>
+const QS = [
+  { n:1, tag:'pods',
+    q:'What happens when a pod is stuck in Pending state — how do you debug it?',
+    body:`<p>Pending means the scheduler cannot place the pod on any node. The root cause is almost always resource constraints, node selectors, taints, or missing PVCs.</p>
+<div class='sec'>Debug commands</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt; -n &lt;ns&gt;  # check Events section — scheduler message is here</div>
+  <div class='cmd'>kubectl get nodes -o wide           # confirm nodes are Ready</div>
+  <div class='cmd'>kubectl describe nodes | grep -A5 "Allocated resources"  # check capacity</div>
+  <div class='cmd'>kubectl get events --sort-by='.lastTimestamp' -n &lt;ns&gt;</div>
+</div>
+<p>Common causes: insufficient CPU/memory on all nodes (scale node pool or reduce requests), node selector / affinity rules not matching any node, taint with no matching toleration, PVC stuck in Pending (storage class issue), or image pull waiting on volume mount.</p>
+<div class='tip'><b>Interview tip:</b> Mention the scheduler's filter + score pipeline — Pending means the filter phase eliminated all nodes. The Events section tells you which predicate failed.</div>`
+  },
+  { n:2, tag:'pods',
+    q:'Pod is in CrashLoopBackOff — how do you diagnose and fix it?',
+    body:`<p>CrashLoopBackOff means the container starts, crashes, Kubernetes restarts it, and it crashes again — with exponential backoff delay (10s → 20s → 40s → max 5min).</p>
+<div class='cmds'>
+  <div class='cmd'>kubectl logs &lt;pod&gt; --previous          # logs from the crashed container</div>
+  <div class='cmd'>kubectl logs &lt;pod&gt; -c &lt;container&gt; -f   # follow live logs</div>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt;             # check Exit Code and Last State</div>
+</div>
+<p>Exit code meanings: 0 = success (CMD exited cleanly — check your ENTRYPOINT), 1 = app error, 137 = OOMKilled (increase memory limit), 139 = segfault, 143 = SIGTERM (graceful shutdown issue). Fix the application error, check liveness probe config, verify env vars and secrets are mounted correctly.</p>
+<div class='warn'><b>OOMKilled pattern:</b> If Exit Code is 137 consistently, increase <code>resources.limits.memory</code> or find the memory leak. Kubernetes never lies about OOM.</div>`
+  },
+  { n:3, tag:'pods',
+    q:'Pod is in ImagePullBackOff — how do you resolve it?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt;  # check Events for exact pull error</div>
+  <div class='cmd'>kubectl get secret &lt;pull-secret&gt; -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d</div>
+  <div class='cmd'>kubectl create secret docker-registry regcred --docker-server=&lt;registry&gt; --docker-username=&lt;u&gt; --docker-password=&lt;p&gt;</div>
+</div>
+<p>Causes: image tag does not exist, wrong registry URL, missing or expired <code>imagePullSecret</code>, registry authentication failure, or network policy blocking egress to the registry. Verify the image exists with <code>docker pull</code> from the node. Check the service account has the pull secret attached.</p>
+<div class='tip'><b>GKE/GCP context:</b> For GCR/Artifact Registry, use Workload Identity — no secrets needed. The node SA must have <code>roles/artifactregistry.reader</code>.</div>`
+  },
+  { n:4, tag:'pods',
+    q:'A Deployment is not rolling out — pods are stuck in old version. How do you debug?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl rollout status deployment/&lt;name&gt;     # check rollout progress</div>
+  <div class='cmd'>kubectl rollout history deployment/&lt;name&gt;    # list revisions</div>
+  <div class='cmd'>kubectl describe deployment &lt;name&gt;          # check conditions</div>
+  <div class='cmd'>kubectl rollout undo deployment/&lt;name&gt;       # rollback to previous</div>
+  <div class='cmd'>kubectl rollout undo deployment/&lt;name&gt; --to-revision=2  # rollback to specific</div>
+</div>
+<p>Common blockers: new pods are CrashLoopBackOff so the rolling update stalls (maxUnavailable / maxSurge config), readiness probe failing so new pods never become Ready, resource quota exceeded so new pods can't schedule, or PodDisruptionBudget blocking old pod termination.</p>
+<div class='tip'><b>Principal-level answer:</b> Explain the <code>maxUnavailable</code> and <code>maxSurge</code> parameters and how they control rollout speed vs availability tradeoff. A stuck rollout with <code>maxUnavailable: 0</code> means the new pod must become Ready before the old one is removed.</div>`
+  },
+  { n:5, tag:'pods',
+    q:'A StatefulSet pod is not coming up — how do you troubleshoot?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe pod &lt;sts-pod-0&gt;   # StatefulSet pods start sequentially</div>
+  <div class='cmd'>kubectl get pvc -n &lt;ns&gt;            # check PVC binding status</div>
+  <div class='cmd'>kubectl describe pvc &lt;pvc-name&gt;    # storage provisioner events</div>
+</div>
+<p>StatefulSets have ordered, sequential pod creation — pod-1 won't start until pod-0 is Running and Ready. PVC binding failure is the most common blocker. Check: storage class exists and has a provisioner, the provisioner pod itself is running, correct access modes (ReadWriteOnce vs ReadWriteMany), and sufficient storage quota.</p>
+<div class='warn'><b>Critical difference from Deployments:</b> Deleting a StatefulSet pod does NOT delete its PVC. If you need to wipe data, delete the PVC explicitly. This is intentional — protect stateful data.</div>`
+  },
+  { n:6, tag:'pods',
+    q:'How do you handle a pod that is consuming too much CPU or memory in production?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl top pod &lt;pod&gt; -n &lt;ns&gt;      # current resource usage</div>
+  <div class='cmd'>kubectl top pod --sort-by=memory   # find top consumers</div>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt; | grep -A4 Limits  # check current limits</div>
+</div>
+<p>Immediate: if OOMKilling, increase memory limit with <code>kubectl set resources deployment</code>. Long term: add Vertical Pod Autoscaler (VPA) in recommendation mode to get right-sized request/limit suggestions. Set resource requests accurately — they affect scheduling; limits affect throttling/OOM.</p>
+<div class='tip'><b>CPU vs memory:</b> CPU throttling is silent — the pod runs slowly. Memory OOM kills the container. Both cause degraded performance. Use Prometheus metrics (<code>container_cpu_throttled_seconds_total</code>) to detect CPU throttling in production.</div>`
+  },
+  { n:7, tag:'networking',
+    q:'A Service is not routing traffic to pods — how do you debug?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl get endpoints &lt;svc&gt; -n &lt;ns&gt;       # if empty — label selector mismatch</div>
+  <div class='cmd'>kubectl describe svc &lt;svc&gt;                  # check selector labels</div>
+  <div class='cmd'>kubectl get pods --show-labels -n &lt;ns&gt;      # verify pod labels match selector</div>
+  <div class='cmd'>kubectl exec -it &lt;pod&gt; -- curl &lt;svc&gt;:&lt;port&gt; # test from inside cluster</div>
+</div>
+<p>The most common cause is empty Endpoints — the service selector doesn't match any pod labels. Also check: targetPort matches the container port (not the service port), pods are in Ready state (only Ready pods get endpoints), and kube-proxy / CNI is functioning on the node.</p>
+<div class='good'><b>Quick test:</b> <code>kubectl run tmp --image=curlimages/curl -it --rm -- curl http://&lt;svc&gt;.&lt;ns&gt;.svc.cluster.local</code> to test DNS resolution and connectivity in one command.</div>`
+  },
+  { n:8, tag:'networking',
+    q:'DNS resolution is failing inside the cluster — how do you troubleshoot?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl exec -it &lt;pod&gt; -- nslookup kubernetes.default  # basic DNS check</div>
+  <div class='cmd'>kubectl get pods -n kube-system | grep coredns         # CoreDNS health</div>
+  <div class='cmd'>kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50</div>
+  <div class='cmd'>kubectl describe cm coredns -n kube-system             # check Corefile config</div>
+</div>
+<p>Check CoreDNS pods are Running. Check ConfigMap for Corefile syntax errors. Verify the pod's <code>/etc/resolv.conf</code> points to the cluster DNS IP (usually 10.96.0.10). Network policies can block DNS (UDP 53) from pods to CoreDNS — always allow this in custom NetworkPolicies.</p>
+<div class='warn'><b>Common trap:</b> A NetworkPolicy with <code>podSelector: {}</code> (deny all) will break DNS unless you explicitly allow egress to CoreDNS on port 53 UDP/TCP.</div>`
+  },
+  { n:9, tag:'networking',
+    q:'Ingress is not routing traffic — how do you debug Ingress issues?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe ingress &lt;name&gt; -n &lt;ns&gt;            # check rules and backend</div>
+  <div class='cmd'>kubectl get pods -n ingress-nginx                   # controller running?</div>
+  <div class='cmd'>kubectl logs -n ingress-nginx &lt;controller-pod&gt; -f   # access + error logs</div>
+  <div class='cmd'>kubectl get events -n &lt;ns&gt; | grep ingress</div>
+</div>
+<p>Troubleshooting layers: (1) Is the Ingress controller running and has an external IP? (2) Does the IngressClass match the controller? (3) Is the backend Service and port correct? (4) Does the host header in the request match the Ingress rule? (5) Is TLS cert valid for the hostname? Check controller logs — nginx/envoy logs show exactly which requests arrive and why they fail.</p>
+<div class='tip'><b>GKE context:</b> GKE Ingress uses a GCP HTTP(S) Load Balancer. Provisioning takes 5–10 minutes. Check GCP Console → Load Balancers for backend health status — unhealthy backends mean readiness probe failures.</div>`
+  },
+  { n:10, tag:'networking',
+    q:'Network Policy is blocking traffic unexpectedly — how do you debug?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl get networkpolicy -n &lt;ns&gt; -o yaml   # review all policies in namespace</div>
+  <div class='cmd'>kubectl describe networkpolicy &lt;name&gt;        # ingress/egress rules</div>
+  <div class='cmd'># Test connectivity: kubectl exec -it &lt;pod&gt; -- nc -zv &lt;target-ip&gt; &lt;port&gt;</div>
+</div>
+<p>NetworkPolicies are additive for allow rules but the default (if any policy selects a pod) is deny-all for unmatched traffic. Debug by temporarily removing NetworkPolicies to confirm they are the cause, then add back one by one. Check both ingress rules on the destination pod AND egress rules on the source pod.</p>
+<div class='warn'><b>Important:</b> NetworkPolicies are enforced by the CNI plugin (Calico, Cilium, etc.). If your CNI doesn't support them (like Flannel without addons), policies are silently ignored. Verify CNI support first.</div>`
+  },
+  { n:11, tag:'storage',
+    q:'PersistentVolumeClaim is stuck in Pending — how do you fix it?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe pvc &lt;name&gt; -n &lt;ns&gt;     # provisioner events are here</div>
+  <div class='cmd'>kubectl get sc                            # list storage classes</div>
+  <div class='cmd'>kubectl describe sc &lt;name&gt;               # check provisioner and parameters</div>
+  <div class='cmd'>kubectl get pods -n kube-system | grep provisioner</div>
+</div>
+<p>Causes: no default StorageClass defined, StorageClass provisioner pod is not running, access mode mismatch (requesting ReadWriteMany on a block storage that only supports ReadWriteOnce), storage quota exceeded, or the <code>volumeBindingMode: WaitForFirstConsumer</code> means PVC binds only when a pod using it is scheduled.</p>
+<div class='tip'><b>WaitForFirstConsumer:</b> With this binding mode, the PVC stays Pending until a pod claims it. This is correct behavior for topology-aware provisioning (e.g., AWS EBS in a specific AZ).</div>`
+  },
+  { n:12, tag:'storage',
+    q:'A pod lost its persistent data after restart — how do you investigate?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt; | grep -A10 Volumes   # check volume mounts</div>
+  <div class='cmd'>kubectl get pvc -n &lt;ns&gt;                           # PVC still bound?</div>
+  <div class='cmd'>kubectl describe pv &lt;pv-name&gt;                     # reclaim policy</div>
+</div>
+<p>Root causes: pod was using <code>emptyDir</code> instead of a PVC (emptyDir is ephemeral — wiped on pod restart), PVC had <code>reclaimPolicy: Delete</code> and the pod/PVC was deleted, or the volume was mounted at wrong path. Always use PVCs with <code>reclaimPolicy: Retain</code> for production stateful data. Confirm the data directory in the container matches the <code>mountPath</code> in the pod spec.</p>
+<div class='warn'><b>Never use emptyDir for production data.</b> It survives container restarts within the same pod but is destroyed when the pod is evicted or deleted.</div>`
+  },
+  { n:13, tag:'security',
+    q:'How do you secure secrets in Kubernetes — what are the risks of using Kubernetes Secrets natively?',
+    body:`<p>Kubernetes Secrets are base64-encoded (not encrypted) by default. Anyone with RBAC access to <code>get secrets</code> can read them. They are stored in etcd — if etcd is compromised without encryption-at-rest, all secrets are exposed.</p>
+<div class='sec'>Production hardening</div>
+<div class='cmds'>
+  <div class='cmd'># Enable etcd encryption at rest (EncryptionConfiguration)</div>
+  <div class='cmd'># Use external secret stores: External Secrets Operator + AWS SSM/GCP Secret Manager</div>
+  <div class='cmd'># Use Vault Agent Injector for sidecar-based secret injection</div>
+  <div class='cmd'>kubectl get rolebinding,clusterrolebinding -A | grep secrets  # audit RBAC</div>
+</div>
+<div class='tip'><b>Best practice:</b> Never store secrets in Git (even encrypted tfvars). Use External Secrets Operator to sync from GCP Secret Manager — secrets live in GCP, K8s Secret is auto-synced and rotated. This is the production standard.</div>`
+  },
+  { n:14, tag:'security',
+    q:'A pod is running as root — how do you harden the pod security posture?',
+    body:`<div class='cmds'>
+  <div class='cmd'># In pod spec: securityContext</div>
+  <div class='cmd'>runAsNonRoot: true</div>
+  <div class='cmd'>runAsUser: 1000</div>
+  <div class='cmd'>allowPrivilegeEscalation: false</div>
+  <div class='cmd'>readOnlyRootFilesystem: true</div>
+  <div class='cmd'>capabilities: { drop: ["ALL"] }</div>
+</div>
+<p>Use Pod Security Admission (PSA) with <code>enforce: restricted</code> label on namespaces in production. Audit existing pods with <code>kubectl get pods -o json | jq '.items[].spec.containers[].securityContext'</code>. For CKS exam: know the difference between privileged, baseline, and restricted PSA profiles.</p>
+<div class='good'><b>CKS relevance:</b> This is a core CKS domain. Know how to audit with <code>kube-bench</code>, configure PSA, and use Falco for runtime security detection.</div>`
+  },
+  { n:15, tag:'security',
+    q:'RBAC is misconfigured — a service account has too much access. How do you audit and fix?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl auth can-i --list --as=system:serviceaccount:&lt;ns&gt;:&lt;sa&gt;</div>
+  <div class='cmd'>kubectl get rolebinding,clusterrolebinding -o yaml | grep -A5 &lt;sa-name&gt;</div>
+  <div class='cmd'>kubectl describe clusterrolebinding &lt;name&gt;</div>
+</div>
+<p>Follow least-privilege principle: avoid ClusterRoleBindings when a RoleBinding scoped to a namespace suffices. Avoid binding to default service accounts. Audit with tools like <code>rbac-tool</code> or <code>kubectl-who-can</code>. Never use <code>cluster-admin</code> for application service accounts.</p>
+<div class='tip'><b>Common mistake:</b> Helm deployments often create ClusterRoleBindings for convenience. Audit every Helm chart's RBAC manifests before applying to production.</div>`
+  },
+  { n:16, tag:'security',
+    q:'How do you detect and prevent privilege escalation in a Kubernetes cluster?',
+    body:`<div class='cmds'>
+  <div class='cmd'># Runtime detection: Falco with default ruleset</div>
+  <div class='cmd'>falco -r /etc/falco/falco_rules.yaml  # detects privileged container exec, etc.</div>
+  <div class='cmd'># Admission control: OPA/Gatekeeper or Kyverno policies</div>
+  <div class='cmd'>kubectl get constrainttemplate  # OPA Gatekeeper policies</div>
+</div>
+<p>Prevention layers: PSA restricted profile blocks privileged containers at admission, NetworkPolicies limit lateral movement, Falco detects anomalous runtime behavior (unexpected exec, file writes in /etc), and audit logging captures API server activity. For CKS: know how to write Falco rules and Kyverno ClusterPolicies.</p>
+<div class='warn'><b>Audit logging:</b> Enable API server audit policy. Without it, you cannot do forensics after a breach. This is often missed in self-managed clusters.</div>`
+  },
+  { n:17, tag:'scheduling',
+    q:'Pods are not being scheduled on specific nodes — how do you control pod placement?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl label node &lt;node&gt; disktype=ssd          # add node label</div>
+  <div class='cmd'>kubectl taint node &lt;node&gt; key=value:NoSchedule  # add taint</div>
+</div>
+<p>Placement mechanisms (in order of preference for production use): (1) <code>nodeSelector</code> — simple label match, (2) Node Affinity — richer rules with preferred vs required, (3) Pod Affinity/AntiAffinity — place pods relative to other pods, (4) Taints + Tolerations — node-side repulsion with pod-side override. For high availability: use <code>topologySpreadConstraints</code> to spread pods across zones evenly.</p>
+<div class='tip'><b>Production pattern:</b> Use AntiAffinity with <code>topologyKey: kubernetes.io/hostname</code> to ensure Deployment replicas land on different nodes. Use zone-level spread for HA across AZs.</div>`
+  },
+  { n:18, tag:'scheduling',
+    q:'Nodes are under resource pressure — how do you handle node eviction and resource management?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe node &lt;node&gt; | grep -A10 Conditions   # MemoryPressure, DiskPressure</div>
+  <div class='cmd'>kubectl get pods --field-selector=status.phase=Failed -A  # recently evicted pods</div>
+  <div class='cmd'>kubectl top nodes  # resource utilization</div>
+</div>
+<p>Kubelet evicts pods under memory or disk pressure using QoS classes: BestEffort (no requests/limits) evicted first, then Burstable, then Guaranteed (requests = limits). Set accurate resource requests to avoid BestEffort classification for production pods. Use PodDisruptionBudgets to limit voluntary evictions during node drain/maintenance.</p>
+<div class='good'><b>Best practice:</b> Set <code>requests = limits</code> for memory on critical pods (Guaranteed QoS). Never leave requests unset in production — the scheduler and eviction manager both rely on them.</div>`
+  },
+  { n:19, tag:'scheduling',
+    q:'HPA (Horizontal Pod Autoscaler) is not scaling — how do you debug?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe hpa &lt;name&gt; -n &lt;ns&gt;   # check current metrics and conditions</div>
+  <div class='cmd'>kubectl get apiservice v1beta1.metrics.k8s.io   # metrics-server available?</div>
+  <div class='cmd'>kubectl top pods -n &lt;ns&gt;                # verify metrics are flowing</div>
+</div>
+<p>HPA requires metrics-server to be running. Common failures: metrics-server not installed, pod resource requests not set (HPA computes utilization % of requests — without requests it cannot calculate), scale-down cooldown period active (default 5min), or minReplicas == maxReplicas. For custom metrics HPA, verify Prometheus Adapter is running and the metric is registered as an APIService.</p>
+<div class='tip'><b>Production tip:</b> Always set both CPU and memory HPA targets. CPU alone misses memory-bound workloads. For GKE, use custom metrics from Cloud Monitoring for queue-depth-based scaling.</div>`
+  },
+  { n:20, tag:'scheduling',
+    q:'Node is NotReady — how do you diagnose and recover?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl describe node &lt;node&gt;             # check Conditions and Events</div>
+  <div class='cmd'>kubectl get pods -A --field-selector spec.nodeName=&lt;node&gt;  # pods on the node</div>
+  <div class='cmd'># SSH to node:</div>
+  <div class='cmd'>systemctl status kubelet                  # kubelet running?</div>
+  <div class='cmd'>journalctl -u kubelet -n 100             # kubelet logs</div>
+  <div class='cmd'>systemctl status containerd              # container runtime</div>
+</div>
+<p>NotReady causes: kubelet stopped/crashed, container runtime (containerd/docker) failed, network plugin (CNI) crashed, node OOM at OS level, disk full, or certificate expired. Fix: restart kubelet and containerd. For a fully unrecoverable node, drain it (<code>kubectl drain --ignore-daemonsets --delete-emptydir-data</code>) and replace it.</p>
+<div class='warn'><b>Node drain before delete:</b> Always drain before deleting/replacing a node to gracefully evict pods and respect PodDisruptionBudgets.</div>`
+  },
+  { n:21, tag:'observability',
+    q:'How do you debug a pod that is Running but application is not responding?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl logs &lt;pod&gt; -f --tail=100         # live application logs</div>
+  <div class='cmd'>kubectl exec -it &lt;pod&gt; -- sh             # exec into container</div>
+  <div class='cmd'>kubectl exec -it &lt;pod&gt; -- curl localhost:&lt;port&gt;/health</div>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt; | grep -A5 Readiness  # readiness probe status</div>
+</div>
+<p>Running state only means the container process is alive — the application inside may be deadlocked, misconfigured, or healthy-checked incorrectly. Check: readiness probe endpoint is responding (if not, pod is excluded from Service endpoints), application logs for panics/errors, env vars/configmaps mounted correctly, and network connectivity to dependencies (DB, cache).</p>
+<div class='tip'><b>Readiness vs Liveness:</b> Readiness probe failure removes pod from Service endpoints (traffic stops). Liveness probe failure restarts the container. Use both strategically — don't make liveness probe too aggressive or you'll cause unnecessary restarts under load.</div>`
+  },
+  { n:22, tag:'observability',
+    q:'How do you set up effective observability for a Kubernetes cluster?',
+    body:`<p>Production observability has three pillars: metrics, logs, and traces.</p>
+<div class='cmds'>
+  <div class='cmd'># Metrics: Prometheus + Grafana (kube-prometheus-stack Helm chart)</div>
+  <div class='cmd'># Logs: Fluent Bit (DaemonSet) → Elasticsearch/Loki → Grafana/Kibana</div>
+  <div class='cmd'># Traces: OpenTelemetry Collector → Jaeger/Tempo</div>
+  <div class='cmd'># Alerting: Prometheus AlertManager with PagerDuty/OpsGenie</div>
+</div>
+<p>Key metrics to alert on: pod restart rate, HPA at max replicas, PVC usage %, node CPU/memory %, etcd latency, API server request latency, and coredns error rate. Set up dashboards for: cluster overview, namespace resource usage, and per-deployment golden signals (latency, traffic, errors, saturation).</p>
+<div class='good'><b>GKE context:</b> GKE Autopilot includes managed Prometheus. For SonicWall GCP role, Google Cloud Monitoring + Cloud Logging reduces operational overhead significantly vs self-managed Prometheus stack.</div>`
+  },
+  { n:23, tag:'observability',
+    q:'Kubernetes API server is slow or unresponsive — how do you troubleshoot?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl get --raw /metrics | grep apiserver_request_duration</div>
+  <div class='cmd'>kubectl get --raw /healthz                    # API server health</div>
+  <div class='cmd'># Check etcd: etcdctl endpoint health</div>
+  <div class='cmd'>kubectl top nodes                             # control plane node pressure</div>
+</div>
+<p>Causes: etcd performance degradation (high disk latency — use SSDs for etcd), too many LIST operations (watch storms from controllers), control plane node under memory/CPU pressure, too many objects in etcd (clean up unused resources), or webhook latency (admission webhooks adding round-trip time to every API call).</p>
+<div class='warn'><b>Webhook timeout:</b> Misconfigured admission webhooks with long timeouts can make every API call slow. Set <code>failurePolicy: Ignore</code> and short timeouts for non-critical webhooks. Check webhook latency with <code>apiserver_admission_webhook_admission_duration_seconds</code>.</div>`
+  },
+  { n:24, tag:'cluster',
+    q:'How do you perform a zero-downtime Kubernetes cluster upgrade?',
+    body:`<div class='cmds'>
+  <div class='cmd'># 1. Upgrade control plane first (one minor version at a time)</div>
+  <div class='cmd'>kubectl drain &lt;control-plane-node&gt; --ignore-daemonsets</div>
+  <div class='cmd'># 2. Upgrade kubelet and kubectl on control plane node</div>
+  <div class='cmd'># 3. Upgrade worker nodes one by one:</div>
+  <div class='cmd'>kubectl drain &lt;worker-node&gt; --ignore-daemonsets --delete-emptydir-data</div>
+  <div class='cmd'>kubectl uncordon &lt;worker-node&gt;   # after upgrade</div>
+</div>
+<p>Rules: upgrade only one minor version at a time (1.28 → 1.29, not 1.28 → 1.30). Control plane must be upgraded before workers. Ensure PodDisruptionBudgets are set so draining doesn't violate availability. Test in staging first. For GKE: use GKE's managed upgrade with surge upgrade enabled (adds extra nodes during upgrade).</p>
+<div class='tip'><b>GKE shortcut:</b> Enable auto-upgrade with maintenance windows and surge upgrade. GKE handles the upgrade orchestration — you define the maintenance policy and it does the rest safely.</div>`
+  },
+  { n:25, tag:'cluster',
+    q:'etcd is unhealthy — how do you recover a Kubernetes cluster?',
+    body:`<div class='cmds'>
+  <div class='cmd'>etcdctl endpoint health --endpoints=&lt;ip&gt;:2379</div>
+  <div class='cmd'>etcdctl member list   # check cluster membership</div>
+  <div class='cmd'># Restore from snapshot:</div>
+  <div class='cmd'>etcdctl snapshot restore /backup/etcd.db --data-dir=/var/lib/etcd-restore</div>
+</div>
+<p>etcd is the source of truth for the entire cluster. If the majority of etcd members are down, the cluster is read-only (no writes). Recovery steps: restore from a snapshot backup, reconfigure the etcd data directory, restart the etcd service, then restart kube-apiserver. Always take regular etcd snapshots in production (automated, stored in durable object storage).</p>
+<div class='warn'><b>etcd quorum:</b> A 3-node etcd cluster tolerates 1 failure. A 5-node cluster tolerates 2. Never run single-node etcd in production. For GKE and managed services, etcd is managed for you — this question is more relevant for self-managed clusters (CKA/CKS exam domain).</div>`
+  },
+  { n:26, tag:'cluster',
+    q:'How do you drain a node safely without causing downtime?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl cordon &lt;node&gt;    # prevent new pods from scheduling</div>
+  <div class='cmd'>kubectl drain &lt;node&gt; --ignore-daemonsets --delete-emptydir-data --grace-period=60</div>
+  <div class='cmd'>kubectl uncordon &lt;node&gt;  # re-enable scheduling after maintenance</div>
+</div>
+<p>Before draining: verify PodDisruptionBudgets allow eviction (if PDB has <code>minAvailable: 100%</code> and only 1 replica, drain will hang). Ensure other nodes have capacity to absorb the evicted pods. DaemonSet pods are ignored by default (<code>--ignore-daemonsets</code>). Pods using <code>emptyDir</code> require <code>--delete-emptydir-data</code> flag to proceed.</p>
+<div class='tip'><b>Production checklist:</b> Check HPA max replicas, PDB definitions, and node capacity before draining. Schedule drains during low-traffic windows for safety.</div>`
+  },
+  { n:27, tag:'cluster',
+    q:'Certificate expired in the cluster — how do you renew Kubernetes certificates?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubeadm certs check-expiration          # list all cert expiry dates</div>
+  <div class='cmd'>kubeadm certs renew all                 # renew all control plane certs</div>
+  <div class='cmd'>systemctl restart kubelet               # restart to pick up new certs</div>
+  <div class='cmd'>openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -dates</div>
+</div>
+<p>kubeadm-managed clusters: certs expire after 1 year by default. Rotate before expiry using <code>kubeadm certs renew</code>. After renewal, restart all control plane components. Set up a monitoring alert for cert expiry (Prometheus <code>x509_cert_expiry</code> metric). For managed clusters (GKE/EKS), certificate rotation is handled automatically.</p>
+<div class='warn'><b>Expired cert symptoms:</b> kubectl commands fail with TLS errors, pods can't pull images, webhooks fail. This is a full cluster outage scenario — certificate monitoring is non-negotiable.</div>`
+  },
+  { n:28, tag:'cicd',
+    q:'How do you implement GitOps for Kubernetes using ArgoCD?',
+    body:`<p>GitOps principle: Git is the single source of truth for cluster state. ArgoCD continuously reconciles cluster state with the Git repository.</p>
+<div class='cmds'>
+  <div class='cmd'>argocd app create myapp --repo &lt;git-url&gt; --path k8s/ --dest-server &lt;cluster&gt;</div>
+  <div class='cmd'>argocd app sync myapp          # manual sync</div>
+  <div class='cmd'>argocd app get myapp           # health and sync status</div>
+  <div class='cmd'>argocd app diff myapp          # what would change on sync</div>
+</div>
+<p>ArgoCD polls the repo (default 3min) or uses Git webhooks for instant sync. Set sync policy to <code>automated</code> with <code>prune: true</code> and <code>selfHeal: true</code> for fully automated GitOps. Use ApplicationSets for multi-cluster or multi-environment deployments from a single template.</p>
+<div class='tip'><b>Interview differentiator:</b> Mention the App-of-Apps pattern for bootstrapping cluster infrastructure. ArgoCD manages ArgoCD itself — the entire cluster config is in Git.</div>`
+  },
+  { n:29, tag:'cicd',
+    q:'How do you implement a blue-green or canary deployment in Kubernetes?',
+    body:`<p>Blue-green: two full deployments (blue=current, green=new). Switch traffic at the Service level. Canary: route a percentage of traffic to new version.</p>
+<div class='cmds'>
+  <div class='cmd'># Blue-green: patch service selector to switch</div>
+  <div class='cmd'>kubectl patch svc myapp -p '{"spec":{"selector":{"version":"green"}}}'</div>
+  <div class='cmd'># Canary with Argo Rollouts:</div>
+  <div class='cmd'>kubectl argo rollouts get rollout myapp --watch</div>
+  <div class='cmd'>kubectl argo rollouts promote myapp   # advance canary steps</div>
+</div>
+<p>Native Kubernetes: use multiple Deployments with weighted Services or Ingress traffic splitting. Production-grade: use Argo Rollouts or Flagger with analysis templates — they automate canary promotion/rollback based on Prometheus metrics (error rate, latency). This is far more sophisticated than manual Deployment switching.</p>
+<div class='good'><b>Principal-level answer:</b> Describe analysis-driven progressive delivery — canary receives 10% traffic, if P99 latency stays under threshold for 10min, promote to 25%, then 50%, then 100%. Argo Rollouts automates this entire workflow.</div>`
+  },
+  { n:30, tag:'cicd',
+    q:'CI/CD pipeline is failing to deploy to Kubernetes — how do you troubleshoot?',
+    body:`<div class='cmds'>
+  <div class='cmd'># Check: kubectl is configured with correct kubeconfig</div>
+  <div class='cmd'>kubectl config current-context   # verify target cluster</div>
+  <div class='cmd'>kubectl auth can-i create deployment --as=system:serviceaccount:cicd:deployer</div>
+  <div class='cmd'># Check: image was pushed to registry before apply</div>
+  <div class='cmd'>kubectl rollout status deployment/&lt;name&gt; --timeout=120s</div>
+</div>
+<p>Common pipeline failures: kubeconfig not configured or expired token, CI service account lacks RBAC permissions (create/update deployments, secrets), image not yet pushed when apply runs (race condition), wrong namespace or context, or Helm values file referencing wrong environment. Always check <code>kubectl auth can-i</code> with the pipeline's service account identity.</p>
+<div class='tip'><b>GKE pipeline pattern:</b> Use Workload Identity Federation to authenticate GitHub Actions to GCP — no service account key files needed. OIDC token exchange is the production standard.</div>`
+  },
+  { n:31, tag:'pods',
+    q:'How do you handle pod disruption during node maintenance to maintain availability?',
+    body:`<div class='cmds'>
+  <div class='cmd'># Create PodDisruptionBudget</div>
+  <div class='cmd'>kubectl apply -f - &lt;&lt;EOF
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: myapp-pdb }
+spec:
+  minAvailable: 2
+  selector: { matchLabels: { app: myapp } }
+EOF</div>
+  <div class='cmd'>kubectl get pdb -n &lt;ns&gt;   # check current disruptions allowed</div>
+</div>
+<p>PDBs guarantee that at least N pods (or at most X% are unavailable) during voluntary disruptions (drain, eviction). Set <code>minAvailable: "50%"</code> or <code>maxUnavailable: 1</code>. PDBs only apply to voluntary disruptions — a node crash is involuntary and PDBs don't protect against it. Combine PDBs with proper replica counts and anti-affinity for full HA.</p>
+<div class='warn'><b>PDB trap:</b> A PDB with <code>minAvailable</code> equal to current replicas will block all drains. Always set minAvailable to less than total replicas.</div>`
+  },
+  { n:32, tag:'cluster',
+    q:'How do you manage multi-tenancy in a Kubernetes cluster?',
+    body:`<p>Multi-tenancy means multiple teams/applications share a cluster safely with isolation and fair resource usage.</p>
+<div class='cmds'>
+  <div class='cmd'># Namespace per team/environment with ResourceQuota:</div>
+  <div class='cmd'>kubectl create quota team-quota --hard=cpu=10,memory=20Gi,pods=50 -n team-a</div>
+  <div class='cmd'># LimitRange for default resource requests:</div>
+  <div class='cmd'>kubectl apply -f limitrange.yaml -n team-a</div>
+</div>
+<p>Isolation layers: Namespaces (logical), ResourceQuota (resource limits per namespace), LimitRange (per-pod defaults and limits), NetworkPolicies (network isolation), RBAC (API access isolation), PSA (security posture enforcement per namespace). For stronger isolation between untrusted tenants, use separate node pools with taints/tolerations per tenant, or separate clusters.</p>
+<div class='tip'><b>Principal recommendation:</b> Soft multi-tenancy (namespace isolation) for trusted teams. Hard multi-tenancy (separate clusters or node pools) for compliance-sensitive or untrusted workloads.</div>`
+  },
+  { n:33, tag:'observability',
+    q:'How do you troubleshoot high latency in a microservices application running on Kubernetes?',
+    body:`<div class='cmds'>
+  <div class='cmd'>kubectl top pods -n &lt;ns&gt; --sort-by=cpu   # CPU-saturated pods</div>
+  <div class='cmd'># Check Prometheus golden signals per service:</div>
+  <div class='cmd'># http_request_duration_seconds (latency), http_requests_total (traffic), error rate</div>
+  <div class='cmd'>kubectl exec -it &lt;pod&gt; -- curl -s /metrics | grep duration</div>
+</div>
+<p>Systematic approach: (1) Identify which service in the call chain is slow using distributed traces (Jaeger/Tempo), (2) Check if the slow pod is CPU-throttled (increase limits or HPA), (3) Check DNS resolution latency (ndots:5 config causes multiple DNS lookups), (4) Check network policy overhead, (5) Check external dependency (DB, cache) latency. Use service mesh (Istio/Linkerd) for automatic tracing and traffic metrics.</p>
+<div class='tip'><b>DNS latency fix:</b> Set <code>dnsConfig.options: [{name: ndots, value: "1"}]</code> to reduce spurious DNS lookups. This alone can reduce P99 latency by hundreds of milliseconds in chatty microservices.</div>`
+  },
+  { n:34, tag:'security',
+    q:'How do you implement image security scanning in a Kubernetes cluster?',
+    body:`<div class='cmds'>
+  <div class='cmd'># CI: trivy image &lt;image&gt;:&lt;tag&gt;  # scan before push</div>
+  <div class='cmd'># Admission: OPA/Gatekeeper or Kyverno to block unscanned images</div>
+  <div class='cmd'># Runtime: Falco to detect anomalous container behavior</div>
+  <div class='cmd'># Registry: GCR/Artifact Registry with Container Analysis API</div>
+</div>
+<p>Defense in layers: (1) Scan in CI pipeline — block PRs with critical CVEs, (2) Admission webhook — only allow images from approved registries with scan results, (3) Use digest pinning (<code>image: repo/app@sha256:abc...</code>) not mutable tags in production, (4) Enable runtime scanning with Falco, (5) Regularly re-scan deployed images for newly discovered CVEs.</p>
+<div class='good'><b>GCP Artifact Registry:</b> Enables automatic vulnerability scanning with Container Analysis. Combine with Binary Authorization to enforce only attested images run in production — a cryptographic proof of scan completion.</div>`
+  },
+  { n:35, tag:'cicd',
+    q:'How do you design a production-grade Kubernetes platform for multiple teams — what does a Principal Platform Engineer own here?',
+    body:`<p>This is the Principal-level systems design question. The answer spans infrastructure, developer experience, and organizational patterns.</p>
+<div class='cmds'>
+  <div class='cmd'># Infrastructure: IaC (Terraform) for cluster provisioning, GitOps (ArgoCD) for config</div>
+  <div class='cmd'># Developer experience: internal developer platform, self-service namespace creation</div>
+  <div class='cmd'># Reliability: multi-region clusters, cross-cluster traffic routing</div>
+  <div class='cmd'># Governance: OPA/Kyverno policies, admission webhooks, cost attribution</div>
+</div>
+<p>A Principal Platform Engineer owns: cluster lifecycle (provisioning, upgrades, capacity planning), golden paths (opinionated templates teams use to deploy safely), reliability SLOs for the platform itself, security posture enforcement, observability standards, and developer productivity metrics. The platform should make the right thing the easy thing — teams deploy to production without thinking about Kubernetes internals.</p>
+<div class='tip'><b>SonicWall context:</b> Frame your answer around mentoring — a Principal defines the standards other engineers follow. Show you think in terms of platforms and APIs, not just individual cluster operations. That's what separates a Staff/Principal from a Senior engineer.</div>`
+  }
+];
+
+let activeFilter = 'all';
+let openCards = new Set();
+
+function badge(tag) {
+  const labels = {pods:'Pods & workloads',networking:'Networking',storage:'Storage',security:'Security',scheduling:'Scheduling',observability:'Observability',cluster:'Cluster ops',cicd:'CI/CD & GitOps'};
+  return `<span class="badge ${tag}">${labels[tag]||tag}</span>`;
+}
+
+function render(qs) {
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 35 questions`;
+  document.getElementById('q-list').innerHTML = qs.map(q => `
+    <div class="q-card" id="card-${q.n}">
+      <div class="q-header" onclick="toggle(${q.n})">
+        <span class="q-num">Q${q.n}</span>
+        <span class="q-title">${q.q}</span>
+        <div class="q-right">
+          ${badge(q.tag)}
+          <span class="chevron${openCards.has(q.n)?' open':''}" id="chev-${q.n}">▼</span>
+        </div>
+      </div>
+      <div class="q-body${openCards.has(q.n)?' open':''}" id="body-${q.n}">${q.body}</div>
+    </div>
+  `).join('');
+}
+
+function toggle(n) {
+  const body = document.getElementById('body-'+n);
+  const chev = document.getElementById('chev-'+n);
+  if (openCards.has(n)) {
+    openCards.delete(n);
+    body.classList.remove('open');
+    chev.classList.remove('open');
+  } else {
+    openCards.add(n);
+    body.classList.add('open');
+    chev.classList.add('open');
+  }
+  document.getElementById('viewed-count').textContent = openCards.size;
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterQs();
+}
+
+function filterQs() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = QS;
+  if (activeFilter !== 'all') filtered = filtered.filter(x => x.tag === activeFilter);
+  if (q) filtered = filtered.filter(x => x.q.toLowerCase().includes(q) || x.body.toLowerCase().includes(q));
+  render(filtered);
+}
+
+render(QS);
+
+
+/* ── DARK MODE ────────────────────── */
+(function(){
+  var saved = localStorage.getItem('ekn-dark');
+  if (saved === '1') document.body.classList.add('dark');
+})();
+function toggleDark() {
+  var on = document.body.classList.toggle('dark');
+  localStorage.setItem('ekn-dark', on ? '1' : '0');
+  var btn = document.getElementById('dm-btn');
+  if (btn) btn.textContent = on ? '☀ Light' : '☾ Dark';
+}
+
+/* ── INTERVIEW MODE ───────────────── */
+var fmAll = [], fmIdx = 0, fmGot = 0, fmTotal = 0;
+
+function fmStart() {
+  // collect currently visible QS
+  fmAll = [];
+  var cards = document.querySelectorAll('.q-card');
+  cards.forEach(function(c) {
+    var n = parseInt(c.id.replace('card-',''));
+    var q = QS.find ? QS.find(function(x){ return x.n === n; })
+                    : (function(){ for(var i=0;i<QS.length;i++){ if(QS[i].n===n) return QS[i]; } })();
+    if (q) fmAll.push(q);
+  });
+  // shuffle
+  for (var i = fmAll.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = fmAll[i]; fmAll[i] = fmAll[j]; fmAll[j] = tmp;
+  }
+  fmIdx = 0; fmGot = 0; fmTotal = fmAll.length;
+  var bar = document.getElementById('fm-bar');
+  if (bar) { bar.classList.add('open'); fmShow(); }
+}
+function fmShow() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar || fmIdx >= fmTotal) { fmDone(); return; }
+  var q = fmAll[fmIdx];
+  var pct = fmTotal > 0 ? Math.round((fmIdx/fmTotal)*100) : 0;
+  document.getElementById('fm-prog').style.width = pct + '%';
+  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + fmTotal;
+  document.getElementById('fm-q-text').textContent = q.q;
+  document.getElementById('fm-answer').innerHTML = q.body;
+  document.getElementById('fm-answer').classList.remove('show');
+  document.getElementById('fm-reveal').style.display = '';
+  document.getElementById('fm-got').style.display    = 'none';
+  document.getElementById('fm-miss').style.display   = 'none';
+  document.getElementById('fm-score').textContent    = fmGot + ' / ' + fmIdx + ' correct';
+}
+function fmReveal() {
+  document.getElementById('fm-answer').classList.add('show');
+  document.getElementById('fm-reveal').style.display = 'none';
+  document.getElementById('fm-got').style.display    = '';
+  document.getElementById('fm-miss').style.display   = '';
+}
+function fmNext(ok) {
+  if (ok) fmGot++;
+  fmIdx++;
+  fmShow();
+}
+function fmStop() {
+  var bar = document.getElementById('fm-bar');
+  if (bar) bar.classList.remove('open');
+}
+function fmDone() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar) return;
+  bar.innerHTML = '<div class="fm-done">&#127881; Session complete! You got <strong>' + fmGot + ' / ' + fmTotal + '</strong> correct.</div>'
+    + '<button class="fm-stop" onclick="fmStop()">Close</button>';
+}
+
+</script>

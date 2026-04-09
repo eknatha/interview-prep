@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Production — EknathaLabs Interview Guide</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;}
+body.dark{--bg:#161616;--text:#e4e4e0;--surface:#1f1f1f;--border:#2e2e2e;--border-h:#484848;--muted:#a0a0a0;--faint:#606060;--code-bg:#252525;}
+body:not(.dark){--bg:#f5f5f0;--text:#1a1a1a;--surface:#fff;--border:#e4e4dc;--border-h:#b0b0a6;--muted:#666;--faint:#999;--code-bg:#f8f7f3;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hback{font-size:12px;font-weight:600;color:#FF9900;text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid #FFF3E0;background:#FFF3E0;transition:all .14s;white-space:nowrap;}
+.hback:hover{background:#FF9900;color:#fff;}
+header h1{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:100px;}
+.hspan{font-size:11px;background:#FFF3E0;color:#7A3E00;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;}
+.dm-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;font-size:13px;transition:all .14s;}
+.dm-btn:hover{background:var(--border);}
+.container{max-width:900px;margin:0 auto;padding:1.5rem;}
+.search-bar{position:relative;margin-bottom:1rem;}
+.search-bar input{width:100%;padding:10px 16px 10px 40px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border-color .15s;}
+.search-bar input:focus{border-color:#FF9900;}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;opacity:.4;stroke:var(--text);fill:none;stroke-width:1.8;stroke-linecap:round;}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1rem;}
+.chip{padding:5px 13px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;user-select:none;}
+.chip:hover{border-color:#FF9900;color:#CC6600;}
+.chip.active{background:#FF9900;color:#fff;border-color:#FF9900;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.1rem;}
+.stat{background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);}
+.stat-n{font-size:22px;font-weight:700;color:#FF9900;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+.stat-n.red{color:#A32D2D;}
+.count-bar{font-size:12px;color:var(--faint);margin-bottom:8px;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fmsbtn{padding:5px 13px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #FFF3E0;background:#FFF3E0;color:#CC6600;transition:all .14s;}
+.fmsbtn:hover{background:#FF9900;color:#fff;border-color:#FF9900;}
+.fm-bar{background:var(--surface);border:1.5px solid #FF9900;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:none;}
+.fm-bar.on{display:block;}
+.fm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;flex-wrap:wrap;gap:6px;}
+.fm-title{font-size:13px;font-weight:700;color:var(--text);}
+.fm-score{font-size:12px;color:var(--muted);}
+.fm-card{background:var(--code-bg);border-radius:10px;padding:1.1rem;margin-bottom:.7rem;min-height:70px;display:flex;align-items:center;justify-content:center;text-align:center;}
+.fm-q{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;}
+.fm-ans{display:none;font-size:13px;color:var(--muted);line-height:1.65;max-height:280px;overflow-y:auto;padding:4px;}
+.fm-ans.on{display:block;}
+.fm-ans .cmd{background:var(--surface);border-radius:5px;padding:5px 9px;font-family:monospace;font-size:11px;color:var(--text);border-left:2px solid #FF9900;margin:3px 0;white-space:pre-wrap;word-break:break-all;display:block;}
+.fm-btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:.6rem;}
+.fm-btn{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;}
+.fm-btn:hover{border-color:#FF9900;color:#FF9900;}
+.fm-btn.reveal{background:#FF9900;color:#fff;border-color:#FF9900;}
+.fm-btn.got{background:#EAF3DE;color:#27500A;border-color:#639922;}
+.fm-btn.miss{background:#FCEBEB;color:#791F1F;border-color:#E24B4A;}
+.fm-prog{height:4px;background:var(--border);border-radius:2px;margin-top:.7rem;overflow:hidden;}
+.fm-fill{height:100%;background:#FF9900;border-radius:2px;transition:width .3s;}
+.q-list{display:flex;flex-direction:column;gap:8px;}
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .14s;}
+.q-card:hover{border-color:var(--border-h);}
+.q-header{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+.q-num{font-size:11px;font-weight:600;color:var(--faint);min-width:28px;padding-top:2px;flex-shrink:0;}
+.q-title{font-size:14px;font-weight:600;color:var(--text);flex:1;line-height:1.5;}
+.q-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap;}
+  .badge.iam{background:#E6F1FB;color:#0C447C;}
+  .badge.compute{background:#E1F5EE;color:#085041;}
+  .badge.networking{background:#EEEDFE;color:#3C3489;}
+  .badge.storage{background:#FAEEDA;color:#633806;}
+  .badge.databases{background:#EAF5EE;color:#27500A;}
+  .badge.containers{background:#FCEBEB;color:#791F1F;}
+  .badge.monitoring{background:#F1EFE8;color:#444441;}
+  .badge.cost{background:#FBEAF0;color:#72243E;}
+  .badge.cicd{background:#FAC775;color:#412402;}
+  .badge.troubleshoot{background:#FAECE7;color:#712B13;}
+
+.chevron{font-size:11px;color:var(--faint);transition:transform .2s;flex-shrink:0;}
+.chevron.open{transform:rotate(180deg);}
+.q-body{display:none;padding:0 16px 16px 56px;border-top:1px solid var(--border);}
+.q-body.open{display:block;}
+.q-body p{font-size:13px;line-height:1.75;color:var(--muted);margin-bottom:8px;margin-top:10px;}
+.q-body p:last-child{margin-bottom:0;}
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin:12px 0 5px;}
+.cmds{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.cmd{background:var(--code-bg);border-radius:6px;padding:6px 10px;font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;color:var(--text);border-left:2.5px solid #FF9900;line-height:1.5;white-space:pre-wrap;word-break:break-all;}
+.tip{background:#FAEEDA;border-radius:7px;padding:9px 13px;font-size:12px;color:#412402;border-left:2.5px solid #BA7517;margin-top:8px;line-height:1.6;}
+.warn{background:#FCEBEB;border-radius:7px;padding:9px 13px;font-size:12px;color:#501313;border-left:2.5px solid #E24B4A;margin-top:8px;line-height:1.6;}
+.good{background:#EAF3DE;border-radius:7px;padding:9px 13px;font-size:12px;color:#173404;border-left:2.5px solid #639922;margin-top:8px;line-height:1.6;}
+.info{background:#EEEDFE;border-radius:7px;padding:9px 13px;font-size:12px;color:#26215C;border-left:2.5px solid #7F77DD;margin-top:8px;line-height:1.6;}
+.tip b,.warn b,.good b,.info b{font-weight:700;}
+body.dark .tip{background:#261a05;color:#FAC775;}
+body.dark .warn{background:#220a0a;color:#F09595;}
+body.dark .good{background:#081408;color:#C0DD97;}
+body.dark .info{background:#0e0b1f;color:#AFA9EC;}
+body.dark .fm-ans .cmd{background:#1a1a1a;}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr);}.q-body{padding-left:16px;}header{padding:.9rem 1rem;}header h1{font-size:13px;}.container{padding:1rem;}}
+
+/* ── DARK MODE VARIABLES ─────────────────────────────── */
+body {
+  --dm-bg:         #111314;
+  --dm-surface:    #1a1d1f;
+  --dm-surface2:   #222629;
+  --dm-border:     #2e3235;
+  --dm-text:       #e8eaec;
+  --dm-muted:      #8a9099;
+  --dm-cmd-bg:     #1e2123;
+  --dm-cmd-border: #1D9E75;
+}
+body.dark {
+  background:  var(--dm-bg)      !important;
+  color:       var(--dm-text)    !important;
+}
+body.dark header,
+body.dark .wrap > *:not(.q-list):not(#q-list) { color: var(--dm-text); }
+
+/* cards */
+body.dark .q-card  { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .q-header .q-title { color: var(--dm-text); }
+body.dark .q-body  { border-color: var(--dm-border); }
+body.dark .q-body p { color: var(--dm-muted); }
+
+/* commands */
+body.dark .cmd     { background: var(--dm-cmd-bg); color: #c9d1d9; border-left-color: var(--dm-cmd-border); }
+body.dark .cmds    { background: transparent; }
+
+/* filter chips */
+body.dark .chip    { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-muted); }
+body.dark .chip.active,
+body.dark .chip.on { background: #0F6E56; color: #fff; border-color: #1D9E75; }
+
+/* search */
+body.dark .search-bar input,
+body.dark #search  { background: var(--dm-surface); border-color: var(--dm-border); color: var(--dm-text); }
+body.dark .search-bar input::placeholder,
+body.dark #search::placeholder { color: var(--dm-muted); }
+
+/* stats */
+body.dark .stat    { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .stat-l  { color: var(--dm-muted); }
+
+/* tips/warns */
+body.dark .tip     { background: #231c09; color: #d4a847; }
+body.dark .warn    { background: #1f0f0f; color: #e07070; }
+body.dark .good    { background: #0d1f0d; color: #7aba5e; }
+body.dark .info    { background: #0d1226; color: #7aa8e0; }
+
+/* interview mode bar */
+body.dark .fm-bar  { background: var(--dm-surface); border-color: #1D9E75; }
+body.dark .fm-q    { color: var(--dm-text); }
+body.dark .fm-score { color: var(--dm-muted); }
+body.dark .fm-reveal { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-text); }
+
+/* header / portal link */
+body.dark .portal-link { color: #1D9E75; }
+body.dark .q-num   { color: var(--dm-muted); }
+body.dark .chevron { color: var(--dm-muted); }
+body.dark .count-bar { color: var(--dm-muted); }
+body.dark .sec     { color: var(--dm-muted); }
+
+/* dark toggle button */
+.dm-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
+  transition: all .14s; flex-shrink: 0;
+}
+.dm-btn:hover { border-color: #1D9E75; }
+body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); color: var(--dm-text); }
+
+/* interview mode toggle */
+.fm-btn {
+  background: #1D9E75; color: #fff; border: none; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .14s; flex-shrink: 0;
+}
+.fm-btn:hover { background: #0F6E56; }
+
+/* interview mode bar */
+.fm-bar {
+  display: none;
+  background: #fff;
+  border: 2px solid #1D9E75;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.fm-bar.open { display: block; }
+.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+.fm-prog      { height: 4px; background: #1D9E75; border-radius: 99px; transition: width .3s; }
+.fm-meta      { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fm-q         { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
+.fm-answer    { display: none; margin-bottom: 14px; }
+.fm-answer.show { display: block; }
+.fm-actions   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fm-reveal    { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-reveal:hover { background: #eee; }
+.fm-got       { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-got:hover { background: #d5ecb8; }
+.fm-miss      { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-miss:hover { background: #f9d5d5; }
+.fm-stop      { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
+.fm-stop:hover { border-color: #999; color: #555; }
+.fm-score     { font-size: 12px; color: #888; font-weight: 600; }
+.fm-done      { font-size: 14px; font-weight: 700; color: #1D9E75; margin-bottom: 8px; }
+
+/* toolbar row (count + IM button) */
+.toolbar      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+</style>
+</head>
+<body>
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#D85A30;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">AWS Production — EknathaLabs Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">30 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+  </div>
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (30)</div>
+    <div class="chip" onclick="setFilter('iam',this)">IAM & Security</div>
+    <div class="chip" onclick="setFilter('compute',this)">Compute</div>
+    <div class="chip" onclick="setFilter('networking',this)">Networking</div>
+    <div class="chip" onclick="setFilter('storage',this)">Storage</div>
+    <div class="chip" onclick="setFilter('databases',this)">Databases</div>
+    <div class="chip" onclick="setFilter('containers',this)">Containers</div>
+    <div class="chip" onclick="setFilter('monitoring',this)">Monitoring</div>
+    <div class="chip" onclick="setFilter('cost',this)">Cost Opt</div>
+    <div class="chip" onclick="setFilter('cicd',this)">CI/CD</div>
+    <div class="chip" onclick="setFilter('troubleshoot',this)">Troubleshooting</div>
+  </div>
+  <div class="fm-bar" id="fmBar">
+    <div class="fm-header">
+      <span class="fm-title">&#127183; Interview Mode</span>
+      <span class="fm-score" id="fmScore">0 correct / 0 seen</span>
+    </div>
+    <div class="fm-card"><div class="fm-q" id="fmQ">Click Interview Mode to begin...</div></div>
+    <div class="fm-ans" id="fmAns"></div>
+    <div class="fm-btns">
+      <button class="fm-btn reveal" id="fmRev" onclick="fmReveal()">Reveal answer</button>
+      <button class="fm-btn got" id="fmGot" onclick="fmNext(true)" style="display:none">&#10003; Got it</button>
+      <button class="fm-btn miss" id="fmMiss" onclick="fmNext(false)" style="display:none">&#10005; Missed</button>
+      <button class="fm-btn" onclick="fmStop()">&#215; Exit</button>
+    </div>
+    <div class="fm-prog"><div class="fm-fill" id="fmFill" style="width:0%"></div></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n">30</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n" id="visN">30</div><div class="stat-l">Showing</div></div>
+    <div class="stat"><div class="stat-n" id="viewN">0</div><div class="stat-l">Viewed</div></div>
+    <div class="stat"><div class="stat-n red" id="correctN">0</div><div class="stat-l">Correct in FM</div></div>
+  </div>
+  <div class="toolbar">
+    <span class="count-bar" id="countBar">Showing 30 questions</span>
+    <button class="fmsbtn" onclick="fmStart()">&#127183; Interview Mode</button>
+  </div>
+  <div class="q-list" id="qList"></div>
+</div>
+<script>
+var QS=[
+{n:1,tag:'iam',q:'What is the IAM model in AWS — how do principals, policies, and roles work?',body:'<div class="cmds"><div class="cmd">Principal types: IAM User, IAM Role, AWS Service, Federated identity</div><div class="cmd">Policy types: Identity-based, Resource-based, SCP (org-level), Permission boundary</div><div class="cmd"># Create role for EC2 to access S3:</div><div class="cmd">aws iam create-role --role-name ec2-s3-role --assume-role-policy-document file://trust.json</div><div class="cmd">aws iam attach-role-policy --role-name ec2-s3-role --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess</div><div class="cmd"># Assume role for cross-account access:</div><div class="cmd">aws sts assume-role --role-arn arn:aws:iam::123456789:role/CrossAccountRole --role-session-name session1</div></div><p>Least privilege principle: grant only the permissions needed for the task. IAM Roles are preferred over IAM Users for services — roles use temporary credentials via STS. SCPs (Service Control Policies) set maximum permissions for an entire AWS Organization account — they override IAM policies. Permission boundaries limit the maximum permissions an IAM entity can have, even if their policies allow more.</p><div class="tip"><b>IAM Access Analyzer:</b> Automatically identifies resource policies granting external access. Run regularly to find unintended public S3 buckets, overly permissive role trust policies, and cross-account access. Essential for security posture management.</div>'},
+{n:2,tag:'iam',q:'What is AWS STS and how does it work — how do you implement cross-account access?',body:'<div class="cmds"><div class="cmd"># Cross-account role assumption:</div><div class="cmd">aws sts assume-role --role-arn arn:aws:iam::ACCOUNT-B:role/DeployRole --role-session-name deploy</div><div class="cmd"># Returns temporary credentials (expire in 1-12 hours):</div><div class="cmd">export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_SESSION_TOKEN=...</div><div class="cmd"># Trust policy on target account role:</div><div class="cmd">{"Principal": {"AWS": "arn:aws:iam::ACCOUNT-A:role/CIRole"}, "Action": "sts:AssumeRole"}</div><div class="cmd"># OIDC federation for GitHub Actions:</div><div class="cmd">aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com</div></div><p>STS issues temporary credentials for role assumption. Cross-account pattern: Account A has a role, Account B has a role with trust policy allowing Account A to assume it. Account A\'s CI pipeline assumes Account B\'s DeployRole to deploy resources there. No long-lived credentials needed. OIDC federation for GitHub Actions: GitHub OIDC token exchanges for AWS credentials — no IAM User access keys in CI.</p>'},
+{n:3,tag:'networking',q:'What is a VPC — how do you design a production-grade VPC architecture?',body:'<div class="cmds"><div class="cmd">aws ec2 create-vpc --cidr-block 10.0.0.0/16</div><div class="cmd"># 3-tier subnet layout per AZ:</div><div class="cmd">Public subnets:   10.0.0.0/24, 10.0.1.0/24   — ALB, NAT Gateway</div><div class="cmd">Private subnets:  10.0.10.0/24, 10.0.11.0/24  — App servers, EKS nodes</div><div class="cmd">DB subnets:       10.0.20.0/24, 10.0.21.0/24  — RDS, ElastiCache</div><div class="cmd"># NAT Gateway (private subnet internet outbound):</div><div class="cmd">aws ec2 create-nat-gateway --subnet-id public-subnet-id --allocation-id eip-id</div><div class="cmd"># VPC Flow Logs for security audit:</div><div class="cmd">aws ec2 create-flow-logs --resource-type VPC --resource-ids vpc-id --traffic-type ALL --log-destination-type cloud-watch-logs</div></div><p>3-tier VPC: public subnets for load balancers and NAT Gateways, private subnets for application workloads, isolated subnets for databases. Resources in private subnets cannot be reached from the internet but can reach out via NAT Gateway. Security Groups act as stateful firewalls per resource. NACLs act as stateless firewalls per subnet. Always deploy across at least 2 AZs for high availability.</p>'},
+{n:4,tag:'networking',q:'What is the difference between Security Groups and NACLs?',body:'<div class="cmds"><div class="cmd"># Security Group (stateful - per instance/ENI):</div><div class="cmd">aws ec2 authorize-security-group-ingress --group-id sg-xxx --protocol tcp --port 443 --cidr 0.0.0.0/0</div><div class="cmd">aws ec2 describe-security-groups --group-ids sg-xxx</div><div class="cmd"># NACL (stateless - per subnet):</div><div class="cmd">aws ec2 create-network-acl-entry --network-acl-id acl-xxx --rule-number 100 --protocol tcp --port-range From=443,To=443 --cidr-block 0.0.0.0/0 --rule-action allow</div><div class="cmd"># NACL needs explicit DENY for outbound 443 response too (stateless)</div></div><p>Security Groups: stateful (return traffic automatically allowed), attached to instances/ENIs, allow-only rules (no explicit deny). NACLs: stateless (must explicitly allow return traffic), subnet-level, allow and deny rules, numbered rules evaluated in order. Use Security Groups for most cases (simpler). Use NACLs as an additional layer for subnet-level blocking (block specific CIDR ranges, add defence-in-depth).</p>'},
+{n:5,tag:'compute',q:'What is EC2 — how do you choose the right instance type and purchase model?',body:'<div class="cmds"><div class="cmd"># Instance families:</div><div class="cmd">t4g/t3   — burstable general purpose (dev/test)</div><div class="cmd">m7i/m6i  — balanced compute/memory (web servers)</div><div class="cmd">c7i/c6i  — compute optimised (CPU-intensive workloads)</div><div class="cmd">r7i/r6i  — memory optimised (databases, caches)</div><div class="cmd">p4/p3    — GPU instances (ML training)</div><div class="cmd"># Purchase models:</div><div class="cmd">On-Demand:     pay per hour, no commitment, full price</div><div class="cmd">Reserved:      1-3 year commitment, up to 72% discount</div><div class="cmd">Savings Plans: flexible commitment ($/hour), up to 66% discount</div><div class="cmd">Spot:          spare capacity, up to 90% discount, can be interrupted</div></div><p>Right-size first, then optimise purchase model. Graviton (arm64) instances (t4g, m7g, c7g) offer 20-40% better price/performance for most workloads. Spot instances are ideal for fault-tolerant batch jobs, CI runners, and stateless auto-scaled workloads. Use Compute Savings Plans for baseline capacity (predictable load), Spot for peak/burst. AWS Cost Explorer Recommendations identifies right-sizing opportunities automatically.</p>'},
+{n:6,tag:'containers',q:'What is EKS — how does it differ from self-managed Kubernetes?',body:'<div class="cmds"><div class="cmd">eksctl create cluster --name prod --region us-east-1 --nodes 3 --node-type m6i.large</div><div class="cmd">aws eks update-kubeconfig --region us-east-1 --name prod</div><div class="cmd"># EKS managed node groups:</div><div class="cmd">eksctl create nodegroup --cluster prod --name workers --node-type m6i.large --nodes-min 2 --nodes-max 10</div><div class="cmd"># Fargate profile (serverless pods):</div><div class="cmd">eksctl create fargateprofile --cluster prod --name fp-default --namespace default</div><div class="cmd">aws eks update-cluster-version --name prod --kubernetes-version 1.30</div></div><p>EKS: AWS manages the control plane (etcd, API server, scheduler) — you manage the data plane (nodes). Managed node groups handle node provisioning, AMI updates, and draining during upgrades. Fargate removes node management entirely — AWS runs each pod on isolated compute. Key EKS add-ons: aws-load-balancer-controller (ALB integration), EBS CSI driver, EFS CSI driver, VPC CNI. EKS Anywhere extends EKS to on-prem. Cluster upgrades: update control plane first, then node groups.</p>'},
+{n:7,tag:'containers',q:'What is the AWS Load Balancer Controller — how do you expose Kubernetes services on EKS?',body:'<div class="cmds"><div class="cmd"># Install ALB controller:</div><div class="cmd">helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system \\</div><div class="cmd">  --set clusterName=prod --set serviceAccountName=aws-load-balancer-controller</div><div class="cmd"># Ingress with ALB:</div><div class="cmd">annotations:</div><div class="cmd">  kubernetes.io/ingress.class: alb</div><div class="cmd">  alb.ingress.kubernetes.io/scheme: internet-facing</div><div class="cmd">  alb.ingress.kubernetes.io/target-type: ip</div><div class="cmd">  alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:xxx:certificate/xxx</div><div class="cmd"># NLB for TCP/UDP:</div><div class="cmd">service.beta.kubernetes.io/aws-load-balancer-type: "external"</div></div><p>ALB controller provisions AWS ALBs/NLBs from Ingress and Service resources. target-type: ip routes directly to pod IPs (bypasses NodePort, more efficient). Use NLB for TCP/UDP or when you need static IPs. ALB supports path-based and host-based routing, HTTPS termination with ACM certificates, WAF integration, and authentication via Cognito/OIDC. One ALB per Ingress by default — use IngressGroup annotation to share an ALB across multiple Ingress resources (reduces cost).</p>'},
+{n:8,tag:'storage',q:'What are the storage options in AWS — EBS, EFS, S3 — when do you use each?',body:'<div class="cmds"><div class="cmd">EBS:  block storage, single AZ, attached to one instance, high IOPS</div><div class="cmd">      gp3: general purpose SSD, 3000 IOPS baseline, up to 16000 IOPS</div><div class="cmd">      io2 Block Express: high performance DB (up to 256,000 IOPS)</div><div class="cmd">EFS:  NFS shared filesystem, multi-AZ, auto-scales, multiple instances</div><div class="cmd">      Use for: shared config, user uploads accessible from many pods</div><div class="cmd">S3:   object storage, unlimited scale, 11 nines durability</div><div class="cmd">      Use for: backups, static assets, data lake, ML training data</div><div class="cmd">aws s3 cp largefile.tar.gz s3://mybucket/ --storage-class INTELLIGENT_TIERING</div></div><p>EBS: databases (MySQL, PostgreSQL, MongoDB) — single-instance block storage with consistent low latency. EFS: shared storage for multiple EC2 instances or Kubernetes pods (ReadWriteMany PVC via EFS CSI driver). S3: everything else at scale — virtually unlimited, 99.999999999% durability, versioning, lifecycle policies, event notifications. S3 Intelligent-Tiering automatically moves objects between access tiers based on usage patterns — significant cost savings for data with unpredictable access.</p>'},
+{n:9,tag:'databases',q:'What is RDS — how do you set up a production-grade PostgreSQL on AWS?',body:'<div class="cmds"><div class="cmd">aws rds create-db-instance --db-instance-identifier mydb \\</div><div class="cmd">  --db-instance-class db.r6g.large \\</div><div class="cmd">  --engine postgres --engine-version 16 \\</div><div class="cmd">  --master-username admin --manage-master-user-password \\</div><div class="cmd">  --vpc-security-group-ids sg-xxx --db-subnet-group mysubnetgroup \\</div><div class="cmd">  --multi-az --storage-encrypted --allocated-storage 100</div><div class="cmd"># Read replica:</div><div class="cmd">aws rds create-db-instance-read-replica --source-db-instance-identifier mydb --db-instance-identifier mydb-read</div><div class="cmd"># RDS Proxy (connection pooling):</div><div class="cmd">aws rds create-db-proxy --db-proxy-name myproxy --engine-family POSTGRESQL</div></div><p>Production RDS: Multi-AZ (synchronous replication to standby, auto-failover in 60-120 seconds), encryption at rest and in transit, Private subnet only (no public access), automated backups (7-35 day retention), Performance Insights enabled. RDS Proxy: connection pooling reduces connection overhead for Lambda or Fargate workloads. --manage-master-user-password stores credentials in Secrets Manager automatically — no password in IaC code.</p>'},
+{n:10,tag:'monitoring',q:'What is CloudWatch — how do you use it for production monitoring?',body:'<div class="cmds"><div class="cmd"># Custom metric:</div><div class="cmd">aws cloudwatch put-metric-data --namespace MyApp --metric-name ErrorCount --value 5 --unit Count</div><div class="cmd"># Alarm:</div><div class="cmd">aws cloudwatch put-metric-alarm --alarm-name HighErrorRate \\</div><div class="cmd">  --metric-name ErrorCount --namespace MyApp \\</div><div class="cmd">  --statistic Sum --period 60 --threshold 10 \\</div><div class="cmd">  --comparison-operator GreaterThanThreshold \\</div><div class="cmd">  --alarm-actions arn:aws:sns:us-east-1:xxx:alerts</div><div class="cmd"># Container Insights (EKS/ECS metrics):</div><div class="cmd">aws eks update-addon --cluster-name prod --addon-name amazon-cloudwatch-observability</div><div class="cmd"># Log Insights query:</div><div class="cmd">fields @timestamp, @message | filter @message like "ERROR" | stats count(*) by bin(5m)</div></div><p>CloudWatch covers metrics (custom + AWS service metrics), logs (CloudWatch Logs), alarms (SNS/PagerDuty integration), dashboards, and Logs Insights (query language for structured logs). Container Insights adds K8s-aware metrics (per pod, per namespace) to EKS. For complex observability: Managed Prometheus + Grafana is more powerful than CloudWatch dashboards, but CloudWatch is zero-setup for AWS services.</p>'},
+{n:11,tag:'monitoring',q:'How do you set up AWS X-Ray for distributed tracing?',body:'<div class="cmds"><div class="cmd"># Python instrumentation:</div><div class="cmd">from aws_xray_sdk.core import xray_recorder, patch_all</div><div class="cmd">patch_all()   # auto-patches boto3, requests, mysql, etc.</div><div class="cmd">xray_recorder.configure(service="payments-service")</div><div class="cmd"># EKS: X-Ray daemon as DaemonSet:</div><div class="cmd">kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/x-ray/xray-k8s-daemonset.yaml</div><div class="cmd"># OR: use OpenTelemetry → AWS Distro for OpenTelemetry (ADOT)</div><div class="cmd">OTEL_EXPORTER_OTLP_ENDPOINT=http://aws-otel-collector:4317</div></div><p>X-Ray traces requests across Lambda, EC2, ECS, EKS, and API Gateway automatically with minimal SDK integration. Use AWS Distro for OpenTelemetry (ADOT) for standards-based tracing that works with both X-Ray and other backends — avoids vendor lock-in. X-Ray Service Map visualises service dependencies and latency between them automatically.</p>'},
+{n:12,tag:'cost',q:'How do you reduce AWS costs — what are the key levers?',body:'<div class="cmds"><div class="cmd"># Right-sizing (biggest lever):</div><div class="cmd">aws compute-optimizer get-ec2-instance-recommendations --region us-east-1</div><div class="cmd"># Commit-based discounts:</div><div class="cmd">Savings Plans: 1-3 year commitment, up to 66% off On-Demand</div><div class="cmd">Reserved Instances: 1-3 year, up to 72% off (less flexible)</div><div class="cmd"># Spot for non-critical workloads:</div><div class="cmd">EKS Karpenter: automatically uses Spot instances for node groups</div><div class="cmd"># S3 cost optimisation:</div><div class="cmd">aws s3api put-bucket-lifecycle-configuration --lifecycle-rules file://lifecycle.json</div><div class="cmd">S3 Intelligent-Tiering for unpredictable access patterns</div><div class="cmd"># Monitor spend:</div><div class="cmd">aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics AmortizedCost</div></div><p>Cost optimisation hierarchy: (1) Eliminate waste (unused resources, over-provisioned instances), (2) Right-size (match instance type to actual utilisation), (3) Purchase model (Savings Plans for predictable baseline, Spot for burst), (4) Architecture (Fargate vs EC2, Lambda for variable workloads). AWS Compute Optimizer analyses usage and recommends right-sized instances. Budget alerts prevent surprise bills.</p>'},
+{n:13,tag:'cicd',q:'How does AWS CodePipeline work — how does it compare to GitHub Actions?',body:'<div class="cmds"><div class="cmd"># CodePipeline stages:</div><div class="cmd">Source (CodeCommit/GitHub) → Build (CodeBuild) → Test (CodeBuild) → Deploy (CodeDeploy/ECS/EKS)</div><div class="cmd"># CodeBuild buildspec.yaml:</div><div class="cmd">phases:</div><div class="cmd">  build:</div><div class="cmd">    commands:</div><div class="cmd">    - docker build -t $IMAGE_URI .</div><div class="cmd">    - docker push $IMAGE_URI</div><div class="cmd">  post_build:</div><div class="cmd">    commands:</div><div class="cmd">    - kubectl apply -f k8s/ --record</div><div class="cmd"># CodeDeploy for blue/green ECS:</div><div class="cmd">aws deploy create-deployment --application-name myapp --deployment-group-name prod</div></div><p>CodePipeline is fully managed, integrates natively with AWS services, and keeps everything within your AWS account (no external secrets). CodeBuild runs build jobs in ephemeral containers. GitHub Actions is more flexible, has a larger action marketplace, and is preferred when the team already uses GitHub. For AWS-native shops: CodePipeline + CodeBuild + CodeDeploy is a coherent zero-ops CI/CD stack. For multi-cloud or GitHub-centric teams: GitHub Actions + AWS OIDC federation is simpler.</p>'},
+{n:14,tag:'containers',q:'What is Karpenter — how does it improve EKS auto-scaling?',body:'<div class="cmds"><div class="cmd">helm install karpenter oci://public.ecr.aws/karpenter/karpenter --version v0.33 -n karpenter</div><div class="cmd"># NodePool defines what nodes Karpenter can provision:</div><div class="cmd">spec:</div><div class="cmd">  template:</div><div class="cmd">    spec:</div><div class="cmd">      requirements:</div><div class="cmd">      - key: karpenter.sh/capacity-type</div><div class="cmd">        values: [spot, on-demand]</div><div class="cmd">      - key: node.kubernetes.io/instance-type</div><div class="cmd">        values: [m6i.large, m6i.xlarge, m5.large, m5.xlarge]</div><div class="cmd">      nodeClassRef:</div><div class="cmd">        name: default</div></div><p>Karpenter replaces the Cluster Autoscaler with a more intelligent approach: it provisions nodes specifically shaped for pending pods (right instance type, right size) rather than scaling predefined node groups. Results: faster scaling (seconds vs minutes), better bin-packing (higher utilisation), automatic Spot diversification (uses many instance types to reduce interruption risk), and consolidation (replaces multiple underutilised nodes with one larger node). Reduces both cost and scaling latency significantly.</p>'},
+{n:15,tag:'networking',q:'What is AWS PrivateLink — when do you use it vs VPC peering vs Transit Gateway?',body:'<div class="cmds"><div class="cmd">VPC Peering:         direct 1:1 VPC connection (non-transitive)</div><div class="cmd">PrivateLink:         expose a service privately (NLB endpoint service)</div><div class="cmd">Transit Gateway:     hub-and-spoke router for many VPCs</div><div class="cmd">VPN/Direct Connect:  on-premises to AWS</div><div class="cmd"># PrivateLink endpoint:</div><div class="cmd">aws ec2 create-vpc-endpoint --vpc-id vpc-xxx --service-name com.amazonaws.us-east-1.s3 --vpc-endpoint-type Interface</div><div class="cmd"># Transit Gateway (connects 3+ VPCs):</div><div class="cmd">aws ec2 create-transit-gateway</div><div class="cmd">aws ec2 attach-transit-gateway-vpc-attachment --transit-gateway-id tgw-xxx --vpc-id vpc-xxx</div></div><p>VPC Peering: simple 1:1 direct connection, non-transitive (A↔B and B↔C does not give A↔C). PrivateLink: expose a service (NLB) to other VPCs privately — no full VPC peering, no CIDR overlap issues. Use for: SaaS services, internal platform services consumed across many VPCs. Transit Gateway: hub-and-spoke for 10+ VPCs — one attachment per VPC, full mesh routing. Preferred for large-scale multi-VPC architectures. Direct Connect: dedicated physical connection to AWS data centre for consistent low-latency or compliance requirements.</p>'},
+{n:16,tag:'troubleshoot',q:'An EC2 instance has high CPU but your application is not doing extra work — how do you investigate?',body:'<div class="cmds"><div class="cmd">ssh ec2-user@instance-ip</div><div class="cmd">top -bn1 | head -20                  # overall CPU, top processes</div><div class="cmd">ps aux --sort=-%cpu | head -10        # top CPU-consuming processes</div><div class="cmd">mpstat -P ALL 1 5                     # per-CPU utilisation</div><div class="cmd">sar -u 1 10                           # system activity over time</div><div class="cmd">iostat -x 1 5                         # CPU wait time (iowait)</div><div class="cmd"># Check for steal time (hypervisor contention):</div><div class="cmd">top → %st (steal) — if high: instance is CPU-constrained by hypervisor</div><div class="cmd"># Check CloudWatch metrics:</div><div class="cmd">aws cloudwatch get-metric-statistics --metric-name CPUUtilization --namespace AWS/EC2</div></div><p>Common causes: noisy neighbour (high steal time on shared hardware → move to dedicated instance or Nitro-based type), runaway process (find with ps aux), kernel processes (kworker, ksoftirqd — check dmesg for errors), memory pressure causing swap usage (check free -h), and for t2/t3: CPU credit exhaustion (check CPUCreditBalance CloudWatch metric — unlimited mode prevents throttling).</p>'},
+{n:17,tag:'networking',q:'How does Route 53 work — what routing policies do you use for production?',body:'<div class="cmds"><div class="cmd">aws route53 list-hosted-zones</div><div class="cmd">aws route53 change-resource-record-sets --hosted-zone-id Z123 --change-batch file://record.json</div><div class="cmd"># Routing policies:</div><div class="cmd">Simple:           single resource, no health checks</div><div class="cmd">Failover:         primary + secondary, health-check-based failover</div><div class="cmd">Weighted:         split traffic by weight (canary: 90%/10%)</div><div class="cmd">Latency:          route to lowest-latency region</div><div class="cmd">Geolocation:      route by user location (GDPR compliance, content localisation)</div><div class="cmd">Multivalue:       return multiple IPs (basic load distribution)</div><div class="cmd"># Health check:</div><div class="cmd">aws route53 create-health-check --caller-reference $(date +%s) --health-check-config Type=HTTPS,FullyQualifiedDomainName=api.example.com,Port=443,ResourcePath=/health</div></div><p>Failover routing + health checks = DNS-based disaster recovery. Weighted routing enables DNS-level canary deployments (10% to new region). Latency routing reduces global P99 latency significantly. Always attach health checks to production DNS records — Route 53 stops routing to unhealthy endpoints automatically. Route 53 Resolver enables DNS resolution between VPCs and on-premises networks.</p>'},
+{n:18,tag:'iam',q:'What is AWS Organizations and SCPs — how do you use them for multi-account governance?',body:'<div class="cmds"><div class="cmd"># SCP that prevents disabling CloudTrail:</div><div class="cmd">{"Effect":"Deny","Action":["cloudtrail:StopLogging","cloudtrail:DeleteTrail"],"Resource":"*"}</div><div class="cmd"># SCP that restricts to approved regions:</div><div class="cmd">{"Effect":"Deny","Action":"*","Resource":"*","Condition":{"StringNotEquals":{"aws:RequestedRegion":["us-east-1","eu-west-1"]}}}</div><div class="cmd"># Check effective permissions (SCP + IAM):</div><div class="cmd">aws iam simulate-principal-policy --policy-source-arn arn:aws:iam::xxx:role/MyRole --action-names s3:DeleteBucket</div></div><p>Multi-account AWS: separate accounts for dev/staging/production, sandbox, security, logging. SCPs define the maximum permissions ceiling for an entire account — even the root user cannot exceed them. Common SCPs: prevent disabling security services (CloudTrail, GuardDuty, Security Hub), restrict to approved regions, prevent creating IAM users with console access, require MFA for sensitive actions. AWS Control Tower automates account vending and baseline security controls for new accounts.</p>'},
+{n:19,tag:'troubleshoot',q:'How do you troubleshoot connectivity issues between AWS services?',body:'<div class="cmds"><div class="cmd"># Test connectivity from EC2/EKS pod:</div><div class="cmd">curl -v https://rds-endpoint:5432        # does TCP connect?</div><div class="cmd">nmap -p 5432 rds-endpoint               # port scan</div><div class="cmd">traceroute rds-endpoint                  # path to host</div><div class="cmd"># VPC Flow Logs: check for REJECT</div><div class="cmd">aws logs filter-log-events --log-group-name /vpc-flowlogs --filter-pattern "REJECT"</div><div class="cmd"># Security Group: check inbound rules on RDS SG</div><div class="cmd">aws ec2 describe-security-groups --group-ids sg-rds-xxx</div><div class="cmd"># Route table: does private subnet route to target?</div><div class="cmd">aws ec2 describe-route-tables --filters Name=association.subnet-id,Values=subnet-xxx</div><div class="cmd"># Reachability Analyzer:</div><div class="cmd">aws ec2 start-network-insights-analysis --network-insights-path-id path-xxx</div></div><p>Systematic connectivity debugging: (1) Security Group inbound rules on the destination, (2) NACL rules on source and destination subnets, (3) Route table has a route to the destination, (4) VPC Flow Logs show REJECT if any, (5) EC2 Reachability Analyzer gives a visual path analysis with exact blocking point. Most connectivity issues are Security Group misconfiguration — check both source SG (outbound) and destination SG (inbound).</p>'},
+{n:20,tag:'storage',q:'How does S3 work — what are the key features for production use?',body:'<div class="cmds"><div class="cmd">aws s3 mb s3://mybucket --region us-east-1</div><div class="cmd"># Versioning:</div><div class="cmd">aws s3api put-bucket-versioning --bucket mybucket --versioning-configuration Status=Enabled</div><div class="cmd"># Block public access (essential):</div><div class="cmd">aws s3api put-public-access-block --bucket mybucket --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</div><div class="cmd"># Lifecycle rule (transition to Glacier after 90 days):</div><div class="cmd">aws s3api put-bucket-lifecycle-configuration --bucket mybucket --lifecycle-configuration file://lifecycle.json</div><div class="cmd"># Pre-signed URL (temporary access):</div><div class="cmd">aws s3 presign s3://mybucket/file.txt --expires-in 3600</div></div><p>S3 production checklist: versioning enabled (recover deleted/overwritten objects), Block Public Access enabled (prevent accidental public buckets), bucket policies over ACLs, encryption at rest (SSE-S3 or SSE-KMS), access logging, and lifecycle policies to manage cost. Pre-signed URLs grant time-limited access to private objects without making them public — use for user file downloads. S3 Object Lock enables WORM (Write Once Read Many) for compliance data that must not be modified or deleted.</p>'},
+{n:21,tag:'containers',q:'What is AWS Fargate — when do you use EKS on Fargate vs EC2 node groups?',body:'<div class="cmds"><div class="cmd"># EKS Fargate profile:</div><div class="cmd">eksctl create fargateprofile --cluster prod --name fp-app \\</div><div class="cmd">  --namespace production --labels app=myapp</div><div class="cmd"># Pod spec: no node selector needed — profile matches namespace/label</div><div class="cmd"># Each pod gets its own micro-VM (gVisor isolation)</div><div class="cmd"># No DaemonSets on Fargate (no node to run on)</div><div class="cmd"># EC2 node groups — use when you need:</div><div class="cmd">DaemonSets, privileged containers, GPU instances, custom AMIs</div></div><p>Fargate: no node management, per-pod billing, stronger isolation (each pod in its own micro-VM), scales to zero. EC2: more control, cheaper at scale, required for DaemonSets/GPU/privileged containers. Hybrid: use Fargate for variable/bursty workloads (auto-scales without node management), EC2 for steady baseline (Savings Plan pricing). Fargate does not support node-level metrics (no Node Exporter) — use Container Insights for pod-level metrics instead.</p>'},
+{n:22,tag:'monitoring',q:'What is CloudTrail — how do you use it for compliance and audit?',body:'<div class="cmds"><div class="cmd">aws cloudtrail create-trail --name prod-trail --s3-bucket-name my-audit-bucket --is-multi-region-trail</div><div class="cmd">aws cloudtrail start-logging --name prod-trail</div><div class="cmd"># Query CloudTrail with Athena:</div><div class="cmd">SELECT eventname, useridentity.arn, sourceipaddress, eventtime</div><div class="cmd">FROM cloudtrail_logs</div><div class="cmd">WHERE eventname = "DeleteBucket" AND eventtime > "2024-01-01"</div><div class="cmd"># Real-time: CloudWatch Events rule on CloudTrail</div><div class="cmd">aws events put-rule --event-pattern file://console-login-event.json</div></div><p>CloudTrail logs every AWS API call — who did what, when, and from where. Enable in all regions (--is-multi-region-trail) and log to an S3 bucket with versioning and MFA delete protection. Enable CloudTrail Insights to detect unusual API activity (burst of DescribeInstances calls might indicate reconnaissance). Atop CloudTrail, AWS Config continuously records resource configuration and detects drift. GuardDuty analyses CloudTrail, VPC Flow Logs, and DNS logs for threat detection.</p>'},
+{n:23,tag:'databases',q:'What is ElastiCache — Redis vs Memcached — how do you use it with EKS?',body:'<div class="cmds"><div class="cmd">aws elasticache create-replication-group --replication-group-id myredis \\</div><div class="cmd">  --replication-group-description "prod redis" \\</div><div class="cmd">  --engine redis --cache-node-type cache.r6g.large \\</div><div class="cmd">  --num-cache-clusters 2 --multi-az-enabled</div><div class="cmd"># Access from EKS (in same VPC, private subnet):</div><div class="cmd">redis-cli -h myredis.abc.cache.amazonaws.com -p 6379</div><div class="cmd"># Redis connection in Python:</div><div class="cmd">r = redis.Redis(host=os.environ["REDIS_HOST"], port=6379, ssl=True)</div></div><p>Redis vs Memcached: Redis supports persistence, replication, data structures (sorted sets, streams), pub/sub, Lua scripting — use for session store, leaderboards, queues, rate limiting. Memcached: pure in-memory, simpler, multi-threaded — use when you need only simple key-value caching and maximum throughput. For production: ElastiCache Redis with Multi-AZ (automatic failover), encryption in transit (TLS), encryption at rest, and AUTH token. Access from EKS only via private subnet — never expose cache publicly.</p>'},
+{n:24,tag:'troubleshoot',q:'An EKS pod cannot reach an external API — how do you debug it?',body:'<div class="cmds"><div class="cmd"># Step 1: can the pod resolve DNS?</div><div class="cmd">kubectl exec mypod -- nslookup api.external.com</div><div class="cmd"># Step 2: can the pod reach the IP?</div><div class="cmd">kubectl exec mypod -- curl -v https://api.external.com --max-time 5</div><div class="cmd"># Step 3: Check Security Group on the node</div><div class="cmd">aws ec2 describe-security-groups --group-ids sg-node-xxx  # allow 443 outbound?</div><div class="cmd"># Step 4: Does NAT Gateway exist for the private subnet?</div><div class="cmd">aws ec2 describe-route-tables --filters Name=association.subnet-id,Values=subnet-node</div><div class="cmd"># Step 5: VPC Flow Logs REJECT on the node IP</div><div class="cmd"># Step 6: If using VPC CNI, check pod IP in Security Group rules</div></div><p>EKS pod connectivity path: pod → node Security Group → route table → NAT Gateway (if private subnet) → internet. VPC CNI assigns pod IPs from the VPC CIDR — Security Group rules must allow from pod IPs, not just node IPs (use Security Groups for Pods feature for pod-level SG enforcement). Common fix: NAT Gateway not in the route table for the node subnet, or Security Group blocking outbound 443.</p>'},
+{n:25,tag:'iam',q:'What is AWS Secrets Manager vs Parameter Store — when do you use each?',body:'<div class="cmds"><div class="cmd"># Secrets Manager: full lifecycle management</div><div class="cmd">aws secretsmanager create-secret --name prod/db/password --secret-string "mysecretpassword"</div><div class="cmd">aws secretsmanager get-secret-value --secret-id prod/db/password</div><div class="cmd"># Automatic rotation (Lambda function):</div><div class="cmd">aws secretsmanager rotate-secret --secret-id prod/db/password --rotation-lambda-arn arn:xxx</div><div class="cmd"># Parameter Store: config + secrets (cheaper)</div><div class="cmd">aws ssm put-parameter --name /prod/db/password --value "mysecret" --type SecureString</div><div class="cmd">aws ssm get-parameter --name /prod/db/password --with-decryption</div></div><p>Secrets Manager: auto-rotation (natively integrates with RDS, Redshift, ElastiCache), cross-account access, versioning, cost $0.40/secret/month. Parameter Store: free tier (Standard), cheaper at scale, does not support auto-rotation. Use Secrets Manager for credentials requiring rotation (database passwords, API keys). Use Parameter Store for configuration values and non-sensitive parameters. External Secrets Operator syncs both into Kubernetes Secrets automatically — no application code changes needed.</p>'},
+{n:26,tag:'cost',q:'What is AWS Cost Explorer and how do you use it to identify waste?',body:'<div class="cmds"><div class="cmd">aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 \\</div><div class="cmd">  --granularity MONTHLY --metrics AmortizedCost \\</div><div class="cmd">  --group-by Type=DIMENSION,Key=SERVICE</div><div class="cmd"># Rightsizing recommendations:</div><div class="cmd">aws ce get-rightsizing-recommendation --service AmazonEC2</div><div class="cmd"># Reserved Instance coverage report:</div><div class="cmd">aws ce get-reservation-coverage --time-period Start=2024-01-01,End=2024-01-31</div><div class="cmd"># Savings Plan recommendations:</div><div class="cmd">aws ce get-savings-plans-purchase-recommendation --savings-plans-type COMPUTE_SP</div></div><p>Cost Explorer workflow: identify top 5 services by spend (usually EC2, EKS, RDS, data transfer, S3), drill into each by region and resource type. Rightsizing recommendations identify over-provisioned EC2/RDS instances. Reservation coverage shows what % of On-Demand is covered by commitments — under 60% coverage means overspending. Tag all resources with environment, team, and project to enable per-team cost allocation. Use AWS Budgets to alert when spend exceeds threshold.</p>'},
+{n:27,tag:'networking',q:'What is AWS WAF — how do you configure it for EKS/ALB?',body:'<div class="cmds"><div class="cmd"># Create WAF Web ACL:</div><div class="cmd">aws wafv2 create-web-acl --name prod-waf --scope REGIONAL \\</div><div class="cmd">  --default-action Allow={} --rules file://waf-rules.json</div><div class="cmd"># Attach to ALB:</div><div class="cmd">aws wafv2 associate-web-acl --web-acl-arn WAF_ARN --resource-arn ALB_ARN</div><div class="cmd"># Key managed rule groups:</div><div class="cmd">AWSManagedRulesCommonRuleSet      — OWASP Top 10 (SQLi, XSS)</div><div class="cmd">AWSManagedRulesAmazonIpReputationList — block known bad IPs</div><div class="cmd">AWSManagedRulesKnownBadInputsRuleSet  — log4j, Spring4shell</div><div class="cmd"># Rate limiting rule:</div><div class="cmd">{"Type":"RATE_BASED","Limit":2000,"AggregateKeyType":"IP"}</div></div><p>AWS WAF protects ALBs, API Gateway, and CloudFront from common web attacks. Start with AWS Managed Rule Groups (no custom rules needed) — they cover OWASP Top 10 automatically. Rate limiting prevents DDoS and credential stuffing. WAF logs to S3/CloudWatch for security analysis. Shield Advanced (paid) adds DDoS protection, 24/7 AWS DDoS Response Team access, and attack cost protection. For EKS + ALB: attach WAF to the ALB ARN provisioned by the AWS Load Balancer Controller.</p>'},
+{n:28,tag:'troubleshoot',q:'How do you diagnose high latency in an AWS-hosted application?',body:'<div class="cmds"><div class="cmd"># Step 1: Which component is slow? (ALB access logs)</div><div class="cmd">aws logs filter-log-events --log-group-name alb-access-logs --filter-pattern "[request_processing_time > 1]"</div><div class="cmd"># Step 2: Is it the application or the database?</div><div class="cmd">aws xray get-service-graph --start-time $(date -d "1 hour ago" +%s) --end-time $(date +%s)</div><div class="cmd"># Step 3: RDS Performance Insights</div><div class="cmd">aws pi get-resource-metrics --service-type RDS --identifier db-xxx --metric-queries file://queries.json</div><div class="cmd"># Step 4: EKS: check CPU throttling</div><div class="cmd">container_cpu_cfs_throttled_seconds_total rate</div><div class="cmd"># Step 5: Data transfer between AZs? (cross-AZ latency adds 1-3ms)</div></div><p>Latency diagnosis layers: (1) DNS resolution time (Route 53 latency dashboard), (2) TLS handshake time (ALB target response time), (3) Application processing time (X-Ray trace waterfall), (4) Database query time (RDS Performance Insights, slow query log), (5) Resource constraints (CPU throttling on pods, RDS CPU/IOPS limits). Cross-AZ data transfer adds latency AND cost — colocate application pods and RDS read replicas in the same AZ when possible.</div>'},
+{n:29,tag:'containers',q:'How do you manage EKS cluster upgrades safely?',body:'<div class="cmds"><div class="cmd"># Check current version:</div><div class="cmd">aws eks describe-cluster --name prod --query cluster.version</div><div class="cmd"># Upgrade control plane first:</div><div class="cmd">aws eks update-cluster-version --name prod --kubernetes-version 1.30</div><div class="cmd">aws eks wait cluster-active --name prod</div><div class="cmd"># Upgrade add-ons:</div><div class="cmd">aws eks update-addon --cluster-name prod --addon-name kube-proxy --addon-version v1.30.0-eksbuild.1</div><div class="cmd">aws eks update-addon --cluster-name prod --addon-name vpc-cni</div><div class="cmd">aws eks update-addon --cluster-name prod --addon-name coredns</div><div class="cmd"># Upgrade node groups:</div><div class="cmd">aws eks update-nodegroup-version --cluster-name prod --nodegroup-name workers</div></div><p>EKS upgrade sequence: always control plane first, then add-ons, then node groups. One minor version at a time (1.28 → 1.29, not 1.28 → 1.30). Test on non-production cluster first. Check deprecated API versions in workloads before upgrading (kubectl convert + pluto for deprecated API detection). EKS supports two minor versions behind current — upgrade before support ends to maintain managed node group patching. Use managed node groups for node upgrades — they drain nodes automatically.</p>'},
+{n:30,tag:'troubleshoot',q:'Walk through a production incident where an EKS service is returning 503s.',body:'<div class="cmds"><div class="cmd"># Step 1: Check ALB target health:</div><div class="cmd">aws elbv2 describe-target-health --target-group-arn tg-xxx  # targets healthy?</div><div class="cmd"># Step 2: Check pods:</div><div class="cmd">kubectl get pods -n prod -l app=myapp     # are pods Running?</div><div class="cmd">kubectl describe pod myapp-xxx -n prod    # events show issues</div><div class="cmd"># Step 3: Check endpoints:</div><div class="cmd">kubectl get endpoints myapp -n prod       # any IPs registered?</div><div class="cmd"># Step 4: Check logs:</div><div class="cmd">kubectl logs -l app=myapp -n prod --tail=50 | grep -i error</div><div class="cmd"># Step 5: Check HPA:</div><div class="cmd">kubectl get hpa -n prod                   # is max replicas reached?</div><div class="cmd"># Step 6: Check node capacity:</div><div class="cmd">kubectl get nodes                         # all Ready?</div><div class="cmd">kubectl top nodes                         # CPU/memory pressure?</div></div><p>503 from ALB means no healthy targets. Systematic checks: (1) ALB target group health — are pod IPs registered? (2) Pod status — any CrashLoopBackOff or Pending? (3) Kubernetes Endpoints — are pod IPs listed? (4) Readiness probe — is it passing? (5) Service selector — does it match pod labels? (6) Node capacity — are pods pending due to insufficient node resources? The most common cause: readiness probe failure (the pod starts but fails health check, so ALB never routes to it).</p>'}
+];
+var activeFilter='all',openCards=new Set(),viewedCount=0;
+var fmQ=[],fmIdx=0,fmCorrect=0,fmSeen=0;
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  document.getElementById('dmb').textContent=document.body.classList.contains('dark')?'☀':'☾';
+  try{localStorage.setItem('eklabs_dark',document.body.classList.contains('dark')?'1':'0');}catch(e){}
+}
+(function(){try{if(localStorage.getItem('eklabs_dark')==='1'){document.body.classList.add('dark');document.getElementById('dmb').textContent='☀';}}catch(e){}})();
+function badge(tag){var L={'iam':'IAM & Security','compute':'Compute','networking':'Networking','storage':'Storage','databases':'Databases','containers':'Containers','monitoring':'Monitoring','cost':'Cost Opt','cicd':'CI/CD','troubleshoot':'Troubleshooting'};return '<span class="badge '+tag+'">'+(L[tag]||tag)+'</span>';}
+function render(qs){
+  document.getElementById('countBar').textContent='Showing '+qs.length+' of 30 questions';
+  document.getElementById('visN').textContent=qs.length;
+  document.getElementById('qList').innerHTML=qs.map(function(q){
+    var open=openCards.has(q.n);
+    return '<div class="q-card" id="card-'+q.n+'"><div class="q-header" onclick="toggle('+q.n+')">'
+      +'<span class="q-num">Q'+q.n+'</span><span class="q-title">'+q.q+'</span>'
+      +'<div class="q-right">'+badge(q.tag)+'<span class="chevron'+(open?' open':'')+'" id="chev-'+q.n+'">&#9660;</span></div></div>'
+      +'<div class="q-body'+(open?' open':'')+'" id="body-'+q.n+'">'+q.body+'</div></div>';
+  }).join('');
+}
+function toggle(n){
+  var b=document.getElementById('body-'+n),c=document.getElementById('chev-'+n);
+  if(openCards.has(n)){openCards.delete(n);b.classList.remove('open');c.classList.remove('open');}
+  else{openCards.add(n);b.classList.add('open');c.classList.add('open');viewedCount++;document.getElementById('viewN').textContent=viewedCount;}
+}
+function setFilter(f,el){activeFilter=f;document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});el.classList.add('active');filterQs();}
+function filterQs(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var f=QS;
+  if(activeFilter!=='all') f=f.filter(function(x){return x.tag===activeFilter;});
+  if(q) f=f.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  render(f);
+}
+function fmStart(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var pool=QS.slice();
+  if(activeFilter!=='all') pool=pool.filter(function(x){return x.tag===activeFilter;});
+  if(q) pool=pool.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  if(!pool.length){alert('No questions match the current filter.');return;}
+  fmQ=pool.sort(function(){return Math.random()-.5;});
+  fmIdx=0;fmCorrect=0;fmSeen=0;
+  document.getElementById('fmBar').classList.add('on');fmShow();
+}
+function fmShow(){
+  if(fmIdx>=fmQ.length){
+    document.getElementById('fmQ').textContent='Done! '+fmCorrect+'/'+fmQ.length+' correct';
+    document.getElementById('fmAns').classList.remove('on');
+    ['fmRev','fmGot','fmMiss'].forEach(function(id){document.getElementById(id).style.display='none';});
+    document.getElementById('fmFill').style.width='100%';return;
+  }
+  var item=fmQ[fmIdx];
+  document.getElementById('fmQ').textContent='Q'+item.n+' - '+item.q;
+  document.getElementById('fmAns').innerHTML=item.body;
+  document.getElementById('fmAns').classList.remove('on');
+  document.getElementById('fmRev').style.display='';
+  document.getElementById('fmGot').style.display='none';
+  document.getElementById('fmMiss').style.display='none';
+  document.getElementById('fmFill').style.width=Math.round(fmIdx/fmQ.length*100)+'%';
+  document.getElementById('fmScore').textContent=fmCorrect+' correct / '+fmSeen+' seen';
+}
+function fmReveal(){
+  document.getElementById('fmAns').classList.add('on');
+  document.getElementById('fmRev').style.display='none';
+  document.getElementById('fmGot').style.display='';
+  document.getElementById('fmMiss').style.display='';
+  fmSeen++;
+}
+function fmNext(ok){if(ok){fmCorrect++;document.getElementById('correctN').textContent=fmCorrect;}fmIdx++;fmShow();}
+function fmStop(){document.getElementById('fmBar').classList.remove('on');}
+render(QS);
+
+
+/* ── DARK MODE ────────────────────── */
+(function(){
+  var saved = localStorage.getItem('ekn-dark');
+  if (saved === '1') document.body.classList.add('dark');
+})();
+function toggleDark() {
+  var on = document.body.classList.toggle('dark');
+  localStorage.setItem('ekn-dark', on ? '1' : '0');
+  var btn = document.getElementById('dm-btn');
+  if (btn) btn.textContent = on ? '☀ Light' : '☾ Dark';
+}
+
+/* ── INTERVIEW MODE ───────────────── */
+var fmAll = [], fmIdx = 0, fmGot = 0, fmTotal = 0;
+
+function fmStart() {
+  // collect currently visible QS
+  fmAll = [];
+  var cards = document.querySelectorAll('.q-card');
+  cards.forEach(function(c) {
+    var n = parseInt(c.id.replace('card-',''));
+    var q = QS.find ? QS.find(function(x){ return x.n === n; })
+                    : (function(){ for(var i=0;i<QS.length;i++){ if(QS[i].n===n) return QS[i]; } })();
+    if (q) fmAll.push(q);
+  });
+  // shuffle
+  for (var i = fmAll.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = fmAll[i]; fmAll[i] = fmAll[j]; fmAll[j] = tmp;
+  }
+  fmIdx = 0; fmGot = 0; fmTotal = fmAll.length;
+  var bar = document.getElementById('fm-bar');
+  if (bar) { bar.classList.add('open'); fmShow(); }
+}
+function fmShow() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar || fmIdx >= fmTotal) { fmDone(); return; }
+  var q = fmAll[fmIdx];
+  var pct = fmTotal > 0 ? Math.round((fmIdx/fmTotal)*100) : 0;
+  document.getElementById('fm-prog').style.width = pct + '%';
+  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + fmTotal;
+  document.getElementById('fm-q-text').textContent = q.q;
+  document.getElementById('fm-answer').innerHTML = q.body;
+  document.getElementById('fm-answer').classList.remove('show');
+  document.getElementById('fm-reveal').style.display = '';
+  document.getElementById('fm-got').style.display    = 'none';
+  document.getElementById('fm-miss').style.display   = 'none';
+  document.getElementById('fm-score').textContent    = fmGot + ' / ' + fmIdx + ' correct';
+}
+function fmReveal() {
+  document.getElementById('fm-answer').classList.add('show');
+  document.getElementById('fm-reveal').style.display = 'none';
+  document.getElementById('fm-got').style.display    = '';
+  document.getElementById('fm-miss').style.display   = '';
+}
+function fmNext(ok) {
+  if (ok) fmGot++;
+  fmIdx++;
+  fmShow();
+}
+function fmStop() {
+  var bar = document.getElementById('fm-bar');
+  if (bar) bar.classList.remove('open');
+}
+function fmDone() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar) return;
+  bar.innerHTML = '<div class="fm-done">&#127881; Session complete! You got <strong>' + fmGot + ' / ' + fmTotal + '</strong> correct.</div>'
+    + '<button class="fm-stop" onclick="fmStop()">Close</button>';
+}
+
+</script>
+</body>
+</html>

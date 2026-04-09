@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azure Production — EknathaLabs Interview Guide</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;}
+body.dark{--bg:#161616;--text:#e4e4e0;--surface:#1f1f1f;--border:#2e2e2e;--border-h:#484848;--muted:#a0a0a0;--faint:#606060;--code-bg:#252525;}
+body:not(.dark){--bg:#f5f5f0;--text:#1a1a1a;--surface:#fff;--border:#e4e4dc;--border-h:#b0b0a6;--muted:#666;--faint:#999;--code-bg:#f8f7f3;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hback{font-size:12px;font-weight:600;color:#0078D4;text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid #E3F2FD;background:#E3F2FD;transition:all .14s;white-space:nowrap;}
+.hback:hover{background:#0078D4;color:#fff;}
+header h1{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:100px;}
+.hspan{font-size:11px;background:#E3F2FD;color:#003A73;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;}
+.dm-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;font-size:13px;transition:all .14s;}
+.dm-btn:hover{background:var(--border);}
+.container{max-width:900px;margin:0 auto;padding:1.5rem;}
+.search-bar{position:relative;margin-bottom:1rem;}
+.search-bar input{width:100%;padding:10px 16px 10px 40px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border-color .15s;}
+.search-bar input:focus{border-color:#0078D4;}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;opacity:.4;stroke:var(--text);fill:none;stroke-width:1.8;stroke-linecap:round;}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1rem;}
+.chip{padding:5px 13px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;user-select:none;}
+.chip:hover{border-color:#0078D4;color:#005A9E;}
+.chip.active{background:#0078D4;color:#fff;border-color:#0078D4;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.1rem;}
+.stat{background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);}
+.stat-n{font-size:22px;font-weight:700;color:#0078D4;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+.stat-n.red{color:#A32D2D;}
+.count-bar{font-size:12px;color:var(--faint);margin-bottom:8px;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fmsbtn{padding:5px 13px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #E3F2FD;background:#E3F2FD;color:#005A9E;transition:all .14s;}
+.fmsbtn:hover{background:#0078D4;color:#fff;border-color:#0078D4;}
+.fm-bar{background:var(--surface);border:1.5px solid #0078D4;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:none;}
+.fm-bar.on{display:block;}
+.fm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;flex-wrap:wrap;gap:6px;}
+.fm-title{font-size:13px;font-weight:700;color:var(--text);}
+.fm-score{font-size:12px;color:var(--muted);}
+.fm-card{background:var(--code-bg);border-radius:10px;padding:1.1rem;margin-bottom:.7rem;min-height:70px;display:flex;align-items:center;justify-content:center;text-align:center;}
+.fm-q{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;}
+.fm-ans{display:none;font-size:13px;color:var(--muted);line-height:1.65;max-height:280px;overflow-y:auto;padding:4px;}
+.fm-ans.on{display:block;}
+.fm-ans .cmd{background:var(--surface);border-radius:5px;padding:5px 9px;font-family:monospace;font-size:11px;color:var(--text);border-left:2px solid #0078D4;margin:3px 0;white-space:pre-wrap;word-break:break-all;display:block;}
+.fm-btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:.6rem;}
+.fm-btn{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;}
+.fm-btn:hover{border-color:#0078D4;color:#0078D4;}
+.fm-btn.reveal{background:#0078D4;color:#fff;border-color:#0078D4;}
+.fm-btn.got{background:#EAF3DE;color:#27500A;border-color:#639922;}
+.fm-btn.miss{background:#FCEBEB;color:#791F1F;border-color:#E24B4A;}
+.fm-prog{height:4px;background:var(--border);border-radius:2px;margin-top:.7rem;overflow:hidden;}
+.fm-fill{height:100%;background:#0078D4;border-radius:2px;transition:width .3s;}
+.q-list{display:flex;flex-direction:column;gap:8px;}
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .14s;}
+.q-card:hover{border-color:var(--border-h);}
+.q-header{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+.q-num{font-size:11px;font-weight:600;color:var(--faint);min-width:28px;padding-top:2px;flex-shrink:0;}
+.q-title{font-size:14px;font-weight:600;color:var(--text);flex:1;line-height:1.5;}
+.q-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap;}
+  .badge.iam{background:#E6F1FB;color:#0C447C;}
+  .badge.networking{background:#E1F5EE;color:#085041;}
+  .badge.compute{background:#EEEDFE;color:#3C3489;}
+  .badge.containers{background:#FAEEDA;color:#633806;}
+  .badge.storage{background:#EAF5EE;color:#27500A;}
+  .badge.databases{background:#FCEBEB;color:#791F1F;}
+  .badge.monitoring{background:#F1EFE8;color:#444441;}
+  .badge.cost{background:#FBEAF0;color:#72243E;}
+  .badge.cicd{background:#FAC775;color:#412402;}
+  .badge.troubleshoot{background:#FAECE7;color:#712B13;}
+
+.chevron{font-size:11px;color:var(--faint);transition:transform .2s;flex-shrink:0;}
+.chevron.open{transform:rotate(180deg);}
+.q-body{display:none;padding:0 16px 16px 56px;border-top:1px solid var(--border);}
+.q-body.open{display:block;}
+.q-body p{font-size:13px;line-height:1.75;color:var(--muted);margin-bottom:8px;margin-top:10px;}
+.q-body p:last-child{margin-bottom:0;}
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin:12px 0 5px;}
+.cmds{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.cmd{background:var(--code-bg);border-radius:6px;padding:6px 10px;font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;color:var(--text);border-left:2.5px solid #0078D4;line-height:1.5;white-space:pre-wrap;word-break:break-all;}
+.tip{background:#FAEEDA;border-radius:7px;padding:9px 13px;font-size:12px;color:#412402;border-left:2.5px solid #BA7517;margin-top:8px;line-height:1.6;}
+.warn{background:#FCEBEB;border-radius:7px;padding:9px 13px;font-size:12px;color:#501313;border-left:2.5px solid #E24B4A;margin-top:8px;line-height:1.6;}
+.good{background:#EAF3DE;border-radius:7px;padding:9px 13px;font-size:12px;color:#173404;border-left:2.5px solid #639922;margin-top:8px;line-height:1.6;}
+.info{background:#EEEDFE;border-radius:7px;padding:9px 13px;font-size:12px;color:#26215C;border-left:2.5px solid #7F77DD;margin-top:8px;line-height:1.6;}
+.tip b,.warn b,.good b,.info b{font-weight:700;}
+body.dark .tip{background:#261a05;color:#FAC775;}
+body.dark .warn{background:#220a0a;color:#F09595;}
+body.dark .good{background:#081408;color:#C0DD97;}
+body.dark .info{background:#0e0b1f;color:#AFA9EC;}
+body.dark .fm-ans .cmd{background:#1a1a1a;}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr);}.q-body{padding-left:16px;}header{padding:.9rem 1rem;}header h1{font-size:13px;}.container{padding:1rem;}}
+
+/* ── DARK MODE VARIABLES ─────────────────────────────── */
+body {
+  --dm-bg:         #111314;
+  --dm-surface:    #1a1d1f;
+  --dm-surface2:   #222629;
+  --dm-border:     #2e3235;
+  --dm-text:       #e8eaec;
+  --dm-muted:      #8a9099;
+  --dm-cmd-bg:     #1e2123;
+  --dm-cmd-border: #1D9E75;
+}
+body.dark {
+  background:  var(--dm-bg)      !important;
+  color:       var(--dm-text)    !important;
+}
+body.dark header,
+body.dark .wrap > *:not(.q-list):not(#q-list) { color: var(--dm-text); }
+
+/* cards */
+body.dark .q-card  { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .q-header .q-title { color: var(--dm-text); }
+body.dark .q-body  { border-color: var(--dm-border); }
+body.dark .q-body p { color: var(--dm-muted); }
+
+/* commands */
+body.dark .cmd     { background: var(--dm-cmd-bg); color: #c9d1d9; border-left-color: var(--dm-cmd-border); }
+body.dark .cmds    { background: transparent; }
+
+/* filter chips */
+body.dark .chip    { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-muted); }
+body.dark .chip.active,
+body.dark .chip.on { background: #0F6E56; color: #fff; border-color: #1D9E75; }
+
+/* search */
+body.dark .search-bar input,
+body.dark #search  { background: var(--dm-surface); border-color: var(--dm-border); color: var(--dm-text); }
+body.dark .search-bar input::placeholder,
+body.dark #search::placeholder { color: var(--dm-muted); }
+
+/* stats */
+body.dark .stat    { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .stat-l  { color: var(--dm-muted); }
+
+/* tips/warns */
+body.dark .tip     { background: #231c09; color: #d4a847; }
+body.dark .warn    { background: #1f0f0f; color: #e07070; }
+body.dark .good    { background: #0d1f0d; color: #7aba5e; }
+body.dark .info    { background: #0d1226; color: #7aa8e0; }
+
+/* interview mode bar */
+body.dark .fm-bar  { background: var(--dm-surface); border-color: #1D9E75; }
+body.dark .fm-q    { color: var(--dm-text); }
+body.dark .fm-score { color: var(--dm-muted); }
+body.dark .fm-reveal { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-text); }
+
+/* header / portal link */
+body.dark .portal-link { color: #1D9E75; }
+body.dark .q-num   { color: var(--dm-muted); }
+body.dark .chevron { color: var(--dm-muted); }
+body.dark .count-bar { color: var(--dm-muted); }
+body.dark .sec     { color: var(--dm-muted); }
+
+/* dark toggle button */
+.dm-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
+  transition: all .14s; flex-shrink: 0;
+}
+.dm-btn:hover { border-color: #1D9E75; }
+body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); color: var(--dm-text); }
+
+/* interview mode toggle */
+.fm-btn {
+  background: #1D9E75; color: #fff; border: none; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .14s; flex-shrink: 0;
+}
+.fm-btn:hover { background: #0F6E56; }
+
+/* interview mode bar */
+.fm-bar {
+  display: none;
+  background: #fff;
+  border: 2px solid #1D9E75;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.fm-bar.open { display: block; }
+.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+.fm-prog      { height: 4px; background: #1D9E75; border-radius: 99px; transition: width .3s; }
+.fm-meta      { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fm-q         { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
+.fm-answer    { display: none; margin-bottom: 14px; }
+.fm-answer.show { display: block; }
+.fm-actions   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fm-reveal    { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-reveal:hover { background: #eee; }
+.fm-got       { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-got:hover { background: #d5ecb8; }
+.fm-miss      { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-miss:hover { background: #f9d5d5; }
+.fm-stop      { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
+.fm-stop:hover { border-color: #999; color: #555; }
+.fm-score     { font-size: 12px; color: #888; font-weight: 600; }
+.fm-done      { font-size: 14px; font-weight: 700; color: #1D9E75; margin-bottom: 8px; }
+
+/* toolbar row (count + IM button) */
+.toolbar      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+</style>
+</head>
+<body>
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#185FA5;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Azure Production — EknathaLabs Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">30 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+  </div>
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (30)</div>
+    <div class="chip" onclick="setFilter('iam',this)">IAM & EntraID</div>
+    <div class="chip" onclick="setFilter('networking',this)">Networking</div>
+    <div class="chip" onclick="setFilter('compute',this)">Compute</div>
+    <div class="chip" onclick="setFilter('containers',this)">Containers & AKS</div>
+    <div class="chip" onclick="setFilter('storage',this)">Storage</div>
+    <div class="chip" onclick="setFilter('databases',this)">Databases</div>
+    <div class="chip" onclick="setFilter('monitoring',this)">Monitoring</div>
+    <div class="chip" onclick="setFilter('cost',this)">Cost</div>
+    <div class="chip" onclick="setFilter('cicd',this)">CI/CD</div>
+    <div class="chip" onclick="setFilter('troubleshoot',this)">Troubleshooting</div>
+  </div>
+  <div class="fm-bar" id="fmBar">
+    <div class="fm-header">
+      <span class="fm-title">&#127183; Interview Mode</span>
+      <span class="fm-score" id="fmScore">0 correct / 0 seen</span>
+    </div>
+    <div class="fm-card"><div class="fm-q" id="fmQ">Click Interview Mode to begin...</div></div>
+    <div class="fm-ans" id="fmAns"></div>
+    <div class="fm-btns">
+      <button class="fm-btn reveal" id="fmRev" onclick="fmReveal()">Reveal answer</button>
+      <button class="fm-btn got" id="fmGot" onclick="fmNext(true)" style="display:none">&#10003; Got it</button>
+      <button class="fm-btn miss" id="fmMiss" onclick="fmNext(false)" style="display:none">&#10005; Missed</button>
+      <button class="fm-btn" onclick="fmStop()">&#215; Exit</button>
+    </div>
+    <div class="fm-prog"><div class="fm-fill" id="fmFill" style="width:0%"></div></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n">30</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n" id="visN">30</div><div class="stat-l">Showing</div></div>
+    <div class="stat"><div class="stat-n" id="viewN">0</div><div class="stat-l">Viewed</div></div>
+    <div class="stat"><div class="stat-n red" id="correctN">0</div><div class="stat-l">Correct in FM</div></div>
+  </div>
+  <div class="toolbar">
+    <span class="count-bar" id="countBar">Showing 30 questions</span>
+    <button class="fmsbtn" onclick="fmStart()">&#127183; Interview Mode</button>
+  </div>
+  <div class="q-list" id="qList"></div>
+</div>
+<script>
+var QS=[
+{n:1,tag:'iam',q:'What is Microsoft Entra ID (Azure AD) — how does RBAC work in Azure?',body:'<div class="cmds"><div class="cmd"># Assign a role to a user/SP on a resource group:</div><div class="cmd">az role assignment create --assignee user@company.com \\</div><div class="cmd">  --role "Contributor" --scope /subscriptions/SUB/resourceGroups/prod-rg</div><div class="cmd"># List role assignments:</div><div class="cmd">az role assignment list --scope /subscriptions/SUB --output table</div><div class="cmd"># Create custom role:</div><div class="cmd">az role definition create --role-definition file://custom-role.json</div><div class="cmd"># Workload Identity for AKS pods (no secrets):</div><div class="cmd">az aks update --resource-group rg --name aks --enable-workload-identity --enable-oidc-issuer</div></div><p>Azure RBAC: 4 fundamental roles (Owner, Contributor, Reader, User Access Administrator) plus 100+ built-in roles. Scope hierarchy: Management Group → Subscription → Resource Group → Resource. Assign at the highest appropriate scope — a Contributor on a Resource Group can manage everything in it. Service Principals (app identities) and Managed Identities replace username/password for service authentication. Workload Identity: AKS pod federated with Entra ID service principal — no credential files, auto-rotating tokens.</p>'},
+{n:2,tag:'iam',q:'What is a Managed Identity in Azure — how does it differ from a Service Principal?',body:'<div class="cmds"><div class="cmd"># System-assigned Managed Identity (tied to resource lifecycle):</div><div class="cmd">az vm identity assign --resource-group rg --name myvm  # auto-enabled for VM</div><div class="cmd"># User-assigned Managed Identity (reusable across resources):</div><div class="cmd">az identity create --resource-group rg --name myapp-identity</div><div class="cmd">az vm identity assign --resource-group rg --name myvm --identities myapp-identity</div><div class="cmd"># Grant identity access to Key Vault:</div><div class="cmd">az keyvault set-policy --name myvault --object-id &lt;identity-object-id&gt; \\</div><div class="cmd">  --secret-permissions get list</div><div class="cmd"># In application code: no credentials needed</div><div class="cmd">credential = DefaultAzureCredential()   # uses Managed Identity when on Azure</div></div><p>Managed Identity: Azure manages the credential lifecycle — no secrets to rotate, no credential leaks. System-assigned: created with the resource, deleted when the resource is deleted, 1:1 relationship. User-assigned: independent lifecycle, can be assigned to multiple resources — use when multiple services share the same identity. Service Principal with certificate/secret: use when Managed Identity is not available (cross-tenant, CI/CD outside Azure). For AKS: Workload Identity is the Kubernetes-aware equivalent.</p>'},
+{n:3,tag:'networking',q:'What is a Virtual Network (VNet) — how do you design one for production AKS?',body:'<div class="cmds"><div class="cmd">az network vnet create --resource-group rg --name prod-vnet --address-prefix 10.0.0.0/8</div><div class="cmd"># Subnets:</div><div class="cmd">az network vnet subnet create --vnet-name prod-vnet --name aks-nodes   --address-prefixes 10.240.0.0/16</div><div class="cmd">az network vnet subnet create --vnet-name prod-vnet --name aks-pods    --address-prefixes 10.241.0.0/16</div><div class="cmd">az network vnet subnet create --vnet-name prod-vnet --name ingress      --address-prefixes 10.242.0.0/24</div><div class="cmd">az network vnet subnet create --vnet-name prod-vnet --name db-subnet    --address-prefixes 10.243.0.0/24</div><div class="cmd"># NSG on subnet:</div><div class="cmd">az network nsg create --resource-group rg --name aks-nsg</div><div class="cmd">az network vnet subnet update --vnet-name prod-vnet --name aks-nodes --network-security-group aks-nsg</div></div><p>AKS uses Azure CNI (recommended for production): each pod gets a real VNet IP, enabling native VNet routing, NSG-level pod traffic control, and direct pod-to-service communication. Plan address space carefully: AKS clusters can have many pod IPs (N nodes × max_pods_per_node). Use Azure CNI Overlay or Cilium for larger clusters where IP exhaustion is a concern. Private AKS: API server on private IP, accessible only from VNet or peered networks.</p>'},
+{n:4,tag:'containers',q:'What is AKS — what does Azure manage vs what you manage?',body:'<div class="cmds"><div class="cmd">az aks create --resource-group rg --name prod-aks \\</div><div class="cmd">  --node-count 3 --node-vm-size Standard_D4s_v5 \\</div><div class="cmd">  --enable-managed-identity --network-plugin azure \\</div><div class="cmd">  --enable-workload-identity --enable-oidc-issuer \\</div><div class="cmd">  --enable-cluster-autoscaler --min-count 3 --max-count 10</div><div class="cmd">az aks get-credentials --resource-group rg --name prod-aks</div><div class="cmd"># Upgrade cluster:</div><div class="cmd">az aks upgrade --resource-group rg --name prod-aks --kubernetes-version 1.30</div></div><p>Azure manages: control plane (API server, etcd, scheduler), node OS security patches (auto-upgrade options), control plane SLA (99.95% with AZs). You manage: node pools, workloads, networking within VNet, RBAC for Kubernetes objects. Key AKS add-ons: Azure Monitor (Container Insights), Azure Key Vault CSI driver (mount secrets as volumes), Azure Policy for Kubernetes (OPA Gatekeeper policies), NGINX/AGIC ingress. Upgrade: control plane first, then node pools (az aks nodepool upgrade).</p>'},
+{n:5,tag:'containers',q:'What is the Application Gateway Ingress Controller (AGIC) — how does it work?',body:'<div class="cmds"><div class="cmd">az network application-gateway create --resource-group rg --name appgw \\</div><div class="cmd">  --sku Standard_v2 --capacity 2 --vnet-name prod-vnet --subnet ingress</div><div class="cmd">az aks enable-addons --resource-group rg --name prod-aks \\</div><div class="cmd">  --addons ingress-appgw --appgw-id /subscriptions/.../applicationGateways/appgw</div><div class="cmd"># Ingress resource uses AGIC annotations:</div><div class="cmd">kubernetes.io/ingress.class: azure/application-gateway</div><div class="cmd">appgw.ingress.kubernetes.io/ssl-redirect: "true"</div></div><p>AGIC provisions Azure Application Gateway rules from Kubernetes Ingress resources. Application Gateway is an L7 load balancer with WAF, SSL termination, URL routing, and session affinity. AGIC watches Ingress resources and translates them to App Gateway routing rules automatically. Alternative: NGINX ingress controller (simpler, more portable, no Azure dependency). Use AGIC when you need WAF integration, autoscaling (App Gateway v2 scales pods automatically), or Azure-native PaaS integration.</p>'},
+{n:6,tag:'storage',q:'What are the storage options in Azure — Blob, Disk, Files, NetApp?',body:'<div class="cmds"><div class="cmd">Azure Blob:   object storage (S3 equivalent), hot/cool/archive tiers</div><div class="cmd">Azure Disk:   block storage, attached to single VM (EBS equivalent)</div><div class="cmd">              Premium SSD (P10-P80), Ultra Disk (sub-ms latency)</div><div class="cmd">Azure Files:  SMB/NFS shared filesystem (EFS equivalent)</div><div class="cmd">Azure NetApp: enterprise NFS for latency-sensitive workloads</div><div class="cmd"># AKS persistent volume:</div><div class="cmd">kubectl get storageclass       # managed-premium, azurefile-csi, etc.</div><div class="cmd">kubectl apply -f pvc.yaml      # request a managed disk or Azure Files share</div><div class="cmd"># AKS CSI drivers handle provisioning and attachment</div></div><p>AKS storage: managed-premium StorageClass provisions Azure Premium SSD disks (ReadWriteOnce). azurefile-csi provisions Azure Files shares (ReadWriteMany — shared across pods). For databases: Premium SSD or Ultra Disk. For shared config or user uploads: Azure Files. For backup/archives: Blob with lifecycle management. Azure NetApp Files: high-performance NFS for SAP, Oracle, or latency-sensitive Linux workloads — expensive but very fast.</p>'},
+{n:7,tag:'databases',q:'What is Azure SQL Managed Instance — how does it differ from Azure SQL Database?',body:'<div class="cmds"><div class="cmd"># Azure SQL Database (PaaS, serverless option):</div><div class="cmd">az sql db create --resource-group rg --server myserver --name mydb --service-objective S3</div><div class="cmd"># Azure SQL Managed Instance (full SQL Server engine in VNet):</div><div class="cmd">az sql mi create --resource-group rg --name mymi --subnet /subscriptions/.../subnets/mi-subnet \\</div><div class="cmd">  --admin-user sqladmin --admin-password &lt;password&gt;</div><div class="cmd"># Connection string:</div><div class="cmd">mymi.public.abc123.database.windows.net,3342  # or private endpoint</div></div><p>Azure SQL Database: fully managed PaaS, serverless option (scales compute to zero when idle), geo-redundancy. Best for: new applications, microservices, variable load. Azure SQL Managed Instance: 99% SQL Server compatibility, runs in your VNet, supports SQL Server Agent, cross-database queries, CLR, linked servers. Best for: lift-and-shift of on-prem SQL Server workloads. PostgreSQL Flexible Server: fully managed PostgreSQL in your VNet, high availability with zone-redundant standby, read replicas.</p>'},
+{n:8,tag:'monitoring',q:'What is Azure Monitor — how do you use it with AKS?',body:'<div class="cmds"><div class="cmd"># Enable Container Insights on AKS:</div><div class="cmd">az aks enable-addons --addons monitoring --name prod-aks --resource-group rg \\</div><div class="cmd">  --workspace-resource-id /subscriptions/.../workspaces/myworkspace</div><div class="cmd"># KQL query in Log Analytics:</div><div class="cmd">KubeEvents | where Reason == "OOMKilling" | project TimeGenerated, Name, Message</div><div class="cmd">ContainerLog | where LogEntry contains "ERROR" | summarize count() by bin(TimeGenerated,5m), ContainerName</div><div class="cmd"># Metric alert:</div><div class="cmd">az monitor metrics alert create --name cpu-high --resource $AKS_ID \\</div><div class="cmd">  --condition "avg Percentage CPU > 80" --action $ACTION_GROUP_ID</div></div><p>Azure Monitor: metrics (platform + custom), logs (Log Analytics workspace), alerts (metric and log-based), dashboards, Application Insights (APM for application code). Container Insights adds AKS-aware views: node/pod CPU/memory, controller health, container logs. KQL (Kusto Query Language) is the query language for Log Analytics — powerful for aggregation, joining tables, and time-series analysis. For Prometheus-compatible metrics: Azure Monitor Managed Prometheus + Azure Managed Grafana (zero-ops equivalent of kube-prometheus-stack).</p>'},
+{n:9,tag:'monitoring',q:'What is Azure Managed Prometheus and Managed Grafana — how do you set them up?',body:'<div class="cmds"><div class="cmd"># Enable Managed Prometheus on AKS:</div><div class="cmd">az aks update --resource-group rg --name prod-aks \\</div><div class="cmd">  --enable-azure-monitor-metrics \\</div><div class="cmd">  --azure-monitor-workspace-resource-id /subscriptions/.../accounts/mypromws</div><div class="cmd"># Create Managed Grafana:</div><div class="cmd">az grafana create --name mygrafana --resource-group rg</div><div class="cmd"># Link Prometheus workspace to Grafana:</div><div class="cmd">az grafana data-source create --name mygrafana --definition file://prometheus-datasource.json</div><div class="cmd"># Same Prometheus PromQL, same Grafana dashboards, zero infra to manage</div></div><p>Azure Managed Prometheus: Prometheus-compatible (same SDKs, ServiceMonitors, PromQL, recording rules) but fully managed — no StatefulSets, no storage management. Stores data in Azure Monitor Workspace. Azure Managed Grafana: managed Grafana service, auto-connected to Azure data sources (Azure Monitor, Managed Prometheus, Log Analytics). For AKS teams, this is the zero-ops path to full observability — equivalent to GCP Managed Prometheus on the Azure side.</p>'},
+{n:10,tag:'cicd',q:'How does Azure DevOps work — Pipelines, Repos, Artifacts?',body:'<div class="cmds"><div class="cmd"># azure-pipelines.yml:</div><div class="cmd">trigger: [main]</div><div class="cmd">pool: {vmImage: ubuntu-latest}</div><div class="cmd">stages:</div><div class="cmd">- stage: Build</div><div class="cmd">  jobs:</div><div class="cmd">  - job: BuildTest</div><div class="cmd">    steps:</div><div class="cmd">    - task: Docker@2</div><div class="cmd">      inputs: {command: buildAndPush, containerRegistry: my-acr}</div><div class="cmd">- stage: Deploy</div><div class="cmd">  environment: production   # requires approval</div><div class="cmd">  jobs:</div><div class="cmd">  - deployment: DeployAKS</div><div class="cmd">    strategy:</div><div class="cmd">      runOnce:</div><div class="cmd">        deploy:</div><div class="cmd">          steps:</div><div class="cmd">          - task: KubernetesManifest@1</div></div><p>Azure DevOps is a complete platform: Repos (Git hosting), Pipelines (CI/CD), Boards (Agile), Artifacts (package registry), Test Plans. Pipelines: multi-stage YAML, environment gates (manual approval), service connections (to Azure subscriptions, Docker registries, Kubernetes clusters). Azure Container Registry (ACR) is the native image registry — use Managed Identity for AKS to pull from ACR without credentials. GitHub Actions + OIDC federation is increasingly preferred over Azure DevOps Pipelines for teams on GitHub.</p>'},
+{n:11,tag:'cicd',q:'How do you deploy to AKS from a CI/CD pipeline securely?',body:'<div class="cmds"><div class="cmd"># GitHub Actions: OIDC federation (no credentials)</div><div class="cmd">- uses: azure/login@v2</div><div class="cmd">  with:</div><div class="cmd">    client-id: ${{ secrets.AZURE_CLIENT_ID }}</div><div class="cmd">    tenant-id: ${{ secrets.AZURE_TENANT_ID }}</div><div class="cmd">    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}</div><div class="cmd">- uses: azure/aks-set-context@v3</div><div class="cmd">  with: {resource-group: rg, cluster-name: prod-aks}</div><div class="cmd">- run: kubectl apply -f k8s/</div><div class="cmd"># Or: update Helm values / Kustomize manifests in GitOps repo</div><div class="cmd"># ArgoCD or Flux watches the manifests repo and syncs to AKS</div></div><p>OIDC federation: configure a Federated Identity Credential on an Entra ID app/managed identity, mapping it to the GitHub Actions OIDC token. No client secret needed — GitHub OIDC token exchanges for a short-lived Azure access token. The service principal needs AKS Cluster User role + deployment permissions in Kubernetes RBAC. For GitOps: the pipeline pushes to the manifests repo, ArgoCD/Flux handles the actual kubectl apply — this keeps deployment credentials out of CI entirely.</p>'},
+{n:12,tag:'networking',q:'What is Azure Private Endpoint — how does it differ from Service Endpoint?',body:'<div class="cmds"><div class="cmd"># Private Endpoint (private IP in your VNet for PaaS service):</div><div class="cmd">az network private-endpoint create --resource-group rg --name mydb-pe \\</div><div class="cmd">  --vnet-name prod-vnet --subnet db-subnet \\</div><div class="cmd">  --private-connection-resource-id /subscriptions/.../servers/mydb \\</div><div class="cmd">  --group-id sqlServer --connection-name mydb-conn</div><div class="cmd"># DNS: mydb.database.windows.net resolves to 10.x.x.x (private IP)</div><div class="cmd">az network private-dns zone create --resource-group rg --name privatelink.database.windows.net</div><div class="cmd"># Service Endpoint (extend VNet identity to public endpoint):</div><div class="cmd">az network vnet subnet update --vnet-name prod-vnet --name db-subnet --service-endpoints Microsoft.Sql</div></div><p>Private Endpoint: PaaS service (SQL, Storage, Key Vault) gets a private IP in your VNet — traffic never leaves Azure backbone network, service can disable public access. Full network isolation. Service Endpoint: optimises routing from subnet to Azure backbone but the service still has a public IP — less secure than Private Endpoint. Use Private Endpoints for production databases and storage. Private DNS zones are required to resolve PaaS service hostnames to private IPs.</p>'},
+{n:13,tag:'compute',q:'What is Azure Virtual Machine Scale Sets — how does it work with AKS node pools?',body:'<div class="cmds"><div class="cmd"># AKS node pool = VMSS under the hood</div><div class="cmd">az aks nodepool add --resource-group rg --cluster-name prod-aks \\</div><div class="cmd">  --name gpunodes --node-vm-size Standard_NC6s_v3 --node-count 1 \\</div><div class="cmd">  --enable-cluster-autoscaler --min-count 0 --max-count 5</div><div class="cmd"># Manual scale:</div><div class="cmd">az aks nodepool scale --resource-group rg --cluster-name prod-aks --name workers --node-count 5</div><div class="cmd"># Node pool upgrade:</div><div class="cmd">az aks nodepool upgrade --resource-group rg --cluster-name prod-aks --name workers --kubernetes-version 1.30</div></div><p>AKS node pools are backed by VMSS — the Cluster Autoscaler scales VMSS instances based on pending pod requirements. Multiple node pools: system pool (system-critical pods — use at least Standard_D2s_v3), user pools (workload pods), specialised pools (GPU, spot). Spot node pools: 60-90% cost savings, can be evicted with 30 seconds notice — use for batch jobs or fault-tolerant workloads with toleration. Node auto-provisioning (KEDA-based) is the Azure equivalent of Karpenter for dynamic node type selection.</p>'},
+{n:14,tag:'compute',q:'What is Azure Functions and when do you use it vs containers on AKS?',body:'<div class="cmds"><div class="cmd">az functionapp create --resource-group rg --name myfunc \\</div><div class="cmd">  --storage-account mystorage --consumption-plan-location eastus \\</div><div class="cmd">  --runtime python --runtime-version 3.11 --functions-version 4</div><div class="cmd"># Deploy function:</div><div class="cmd">func azure functionapp publish myfunc</div><div class="cmd"># Trigger types: HTTP, Timer, Service Bus, Event Hub, Blob, Cosmos DB</div><div class="cmd"># KEDA (Kubernetes Event-Driven Autoscaling) on AKS:</div><div class="cmd">helm install keda kedacore/keda -n keda</div><div class="cmd"># Scale to zero based on queue depth, no Functions needed</div></div><p>Azure Functions: serverless, scales to zero, pay-per-execution, up to 10-minute timeout (Premium plan: unlimited). Best for: event-driven processing, short-lived tasks, variable/unpredictable traffic. AKS: persistent workloads, long-running processes, stateful services. KEDA (Kubernetes Event-Driven Autoscaling) brings Functions-like scale-to-zero to AKS — scale pods based on queue depth, event hub lag, or custom metrics. For platform teams: KEDA on AKS is often preferred over Functions for standardisation (same K8s tooling everywhere).</p>'},
+{n:15,tag:'iam',q:'How does Azure Key Vault integrate with AKS — what are the patterns?',body:'<div class="cmds"><div class="cmd"># Key Vault CSI Driver (mount secrets as volumes):</div><div class="cmd">az aks enable-addons --addons azure-keyvault-secrets-provider --name prod-aks --resource-group rg</div><div class="cmd"># SecretProviderClass:</div><div class="cmd">spec:</div><div class="cmd">  provider: azure</div><div class="cmd">  parameters:</div><div class="cmd">    vaultName: myvault</div><div class="cmd">    objects: |</div><div class="cmd">      array:</div><div class="cmd">      - objectName: db-password</div><div class="cmd">        objectType: secret</div><div class="cmd"># Pod mounts /mnt/secrets-store/db-password as a file</div><div class="cmd"># External Secrets Operator (sync to K8s Secrets):</div><div class="cmd">kubectl get externalsecret db-credentials  # syncs Key Vault → K8s Secret</div></div><p>Two patterns: CSI Driver mounts secrets as files/env vars directly from Key Vault (no K8s Secret created). External Secrets Operator syncs Key Vault secrets into native K8s Secrets (applications read normal K8s Secrets — no Key Vault SDK needed). CSI Driver is more secure (secret never stored in etcd). ESO is more compatible (works with any application that reads K8s Secrets). Both use Workload Identity — no credentials in pod specs.</p>'},
+{n:16,tag:'networking',q:'What is Azure DDoS Protection — how does it work with Application Gateway?',body:'<div class="cmds"><div class="cmd"># Enable DDoS Network Protection on VNet:</div><div class="cmd">az network ddos-protection create --resource-group rg --name myplan</div><div class="cmd">az network vnet update --resource-group rg --name prod-vnet --ddos-protection-plan myplan</div><div class="cmd"># App Gateway WAF policy:</div><div class="cmd">az network application-gateway waf-policy create --resource-group rg --name mywaf</div><div class="cmd">az network application-gateway waf-policy managed-rules rule-set add \\</div><div class="cmd">  --policy-name mywaf --type OWASP --version 3.2</div><div class="cmd">az network application-gateway update --name appgw --waf-policy mywaf</div></div><p>DDoS Network Protection: volumetric and protocol attacks mitigated automatically at the Azure network edge — L3/L4 DDoS. WAF on Application Gateway: L7 attacks (SQLi, XSS, command injection) — OWASP 3.2 managed rules + custom rules. Together they cover all DDoS layers. For AKS exposed via Application Gateway: App Gateway WAF protects against web attacks, DDoS Protection handles volumetric attacks. Azure DDoS Response Team available 24/7 with Standard plan for attack assistance.</p>'},
+{n:17,tag:'troubleshoot',q:'How do you debug a CrashLoopBackOff pod on AKS?',body:'<div class="cmds"><div class="cmd">kubectl get pods -n prod</div><div class="cmd">kubectl describe pod myapp-xxx -n prod  # check Events section</div><div class="cmd">kubectl logs myapp-xxx -n prod --previous  # logs from crashed container</div><div class="cmd">kubectl logs myapp-xxx -n prod -c initcontainer  # init container logs</div><div class="cmd"># Check resource limits:</div><div class="cmd">kubectl describe node &lt;node&gt; | grep -A10 Allocated</div><div class="cmd"># Check events for OOMKill:</div><div class="cmd">kubectl get events -n prod --sort-by=.lastTimestamp | grep -i oom</div><div class="cmd"># Exec into a working pod for comparison:</div><div class="cmd">kubectl run debug --image=myapp:v1 --rm -it -- /bin/sh</div></div><p>CrashLoopBackOff: container starts, crashes, Kubernetes restarts it, exponential backoff kicks in. Common causes: application error on startup (missing env var, failed DB connection), OOMKill (memory limit too low), liveness probe failing and killing a healthy container, init container failing (dependency not ready), and permission errors (file not readable, port binding failure). Always check --previous logs first — current container may have no logs if it crashes immediately.</p>'},
+{n:18,tag:'cost',q:'How do you optimise AKS costs on Azure?',body:'<div class="cmds"><div class="cmd"># Spot node pools for non-critical workloads:</div><div class="cmd">az aks nodepool add --name spot --spot-max-price -1 --priority Spot --eviction-policy Delete</div><div class="cmd"># Right-size nodes with Azure Advisor:</div><div class="cmd">az advisor recommendation list --category Cost --output table</div><div class="cmd"># Stop/start AKS cluster (dev/test):</div><div class="cmd">az aks stop --resource-group rg --name dev-aks    # pause billing on nodes</div><div class="cmd">az aks start --resource-group rg --name dev-aks</div><div class="cmd"># Azure Reservations (1-3 year VM commitment):</div><div class="cmd"># 40-72% savings on VM compute vs PAYG</div><div class="cmd"># Microsoft Azure Hybrid Benefit (if you have Windows Server licences)</div></div><p>AKS cost levers: Spot node pools for batch/fault-tolerant workloads (60-80% savings), right-sizing via Azure Advisor and Container Insights metrics, stopping dev/test clusters outside business hours, Azure Reserved VM Instances for predictable baseline (1-3 year commitment), and cluster consolidation (fewer larger clusters vs many small ones). Container Insights + Azure Cost Management tags enable per-namespace, per-team cost allocation for chargeback.</p>'},
+{n:19,tag:'containers',q:'How do you configure Horizontal Pod Autoscaling on AKS?',body:'<div class="cmds"><div class="cmd">kubectl autoscale deployment myapp --cpu-percent=70 --min=3 --max=20</div><div class="cmd"># Custom metric HPA (KEDA):</div><div class="cmd">apiVersion: keda.sh/v1alpha1</div><div class="cmd">kind: ScaledObject</div><div class="cmd">spec:</div><div class="cmd">  scaleTargetRef: {name: myapp}</div><div class="cmd">  minReplicaCount: 0</div><div class="cmd">  maxReplicaCount: 50</div><div class="cmd">  triggers:</div><div class="cmd">  - type: azure-servicebus</div><div class="cmd">    metadata:</div><div class="cmd">      queueName: orders</div><div class="cmd">      queueLength: "10"     # scale when queue depth exceeds 10 messages/replica</div></div><p>HPA v2: scale on CPU, memory, custom metrics (Prometheus), or external metrics (Azure Service Bus queue depth). KEDA extends HPA to scale on any event source (Service Bus, Event Hub, Storage Queue, HTTP traffic, Cron schedule). Scale-to-zero with KEDA: pods go to 0 when queue is empty, scale up when messages arrive — impossible with native HPA. Cluster Autoscaler scales nodes to accommodate scaled-up pods. The full stack: KEDA scales pods → Cluster Autoscaler scales nodes.</p>'},
+{n:20,tag:'troubleshoot',q:'An AKS pod is running but the Service is not routing traffic to it — how do you debug?',body:'<div class="cmds"><div class="cmd"># Step 1: Check pod is actually Ready</div><div class="cmd">kubectl get pods -l app=myapp -o wide   # STATUS and READY columns</div><div class="cmd"># Step 2: Check Service selector matches pod labels</div><div class="cmd">kubectl describe service myapp          # Selector vs pod labels</div><div class="cmd"># Step 3: Check Endpoints</div><div class="cmd">kubectl get endpoints myapp             # should list pod IPs</div><div class="cmd"># Step 4: Check readiness probe</div><div class="cmd">kubectl describe pod myapp-xxx | grep -A5 Readiness</div><div class="cmd"># Step 5: Test directly to pod IP</div><div class="cmd">kubectl run tmp --rm -it --image=curlimages/curl -- curl http://10.240.0.5:8080/health</div><div class="cmd"># Step 6: NSG blocking pod subnet traffic?</div><div class="cmd">az network nsg rule list --resource-group MC_rg_prod-aks_eastus --nsg-name aks-nsg</div></div><p>Most common causes: readiness probe failing (pod Running but not Ready, so Endpoints are empty), Service selector does not match pod labels (typo in label name/value), pod listening on wrong port (containerPort != service targetPort), and on AKS with Azure CNI: NSG rule blocking traffic between subnets. If Endpoints is empty, check selector. If Endpoints has IPs but traffic fails, check the port and readiness probe.</p>'},
+{n:21,tag:'databases',q:'What is Azure Cosmos DB — when do you use it?',body:'<div class="cmds"><div class="cmd">az cosmosdb create --resource-group rg --name mycosmosdb \\</div><div class="cmd">  --default-consistency-level Session --locations regionName=eastus</div><div class="cmd">az cosmosdb sql database create --account-name mycosmosdb --name mydb</div><div class="cmd">az cosmosdb sql container create --account-name mycosmosdb --database-name mydb \\</div><div class="cmd">  --name mycontainer --partition-key-path /userId --throughput 400</div></div><p>Cosmos DB: globally distributed NoSQL database with multi-model API (SQL/Core, MongoDB, Cassandra, Gremlin, Table). Turnkey global distribution — replicate to any Azure region with one click. Five consistency levels (Strong to Eventual). 99.999% availability SLA with multi-region writes. Use for: globally distributed apps where latency matters, high-throughput workloads that need horizontal scale, flexible schema documents. Partition key choice is critical — poor partitioning causes hot partitions and throttling. Use Autoscale throughput to avoid over-provisioning.</p>'},
+{n:22,tag:'networking',q:'What is Azure Front Door — how does it differ from Application Gateway?',body:'<div class="cmds"><div class="cmd">az afd profile create --resource-group rg --profile-name myfd --sku Premium_AzureFrontDoor</div><div class="cmd">az afd endpoint create --resource-group rg --profile-name myfd --endpoint-name api</div><div class="cmd">az afd origin-group create --resource-group rg --profile-name myfd --origin-group-name backends</div><div class="cmd">az afd origin create --origin-group-name backends --host-name app1.eastus.cloudapp.azure.com --origin-host-header app1.eastus.cloudapp.azure.com</div></div><p>Application Gateway: regional (single Azure region), L7 load balancer, WAF, best for intra-region traffic. Azure Front Door: global CDN and L7 load balancer, routes to the nearest healthy backend across regions, edge PoPs in 100+ locations worldwide. Use Front Door for: global user base (reduces latency by routing to nearest region), global failover (health-check-based routing away from unhealthy regions), DDoS + WAF at the edge, and SSL offload at the CDN edge. The combination: Front Door (global) → App Gateway (regional WAF) → AKS is a common enterprise pattern.</p>'},
+{n:23,tag:'monitoring',q:'How do you use Azure Monitor alerts and action groups for incident response?',body:'<div class="cmds"><div class="cmd"># Action Group (where to send alerts):</div><div class="cmd">az monitor action-group create --resource-group rg --name ops-team \\</div><div class="cmd">  --action email ops ops-team@company.com \\</div><div class="cmd">  --action webhook pagerduty https://events.pagerduty.com/integration/xxx/enqueue</div><div class="cmd"># Metric alert:</div><div class="cmd">az monitor metrics alert create --name pod-oom --resource $AKS_ID \\</div><div class="cmd">  --condition "count kube_pod_container_status_last_terminated_reason where reason includes OOMKilled &gt; 0" \\</div><div class="cmd">  --action /subscriptions/.../actionGroups/ops-team</div><div class="cmd"># Log alert (KQL):</div><div class="cmd">az monitor scheduled-query create --resource-group rg --name high-errors \\</div><div class="cmd">  --condition-query "ContainerLog | where LogEntry contains "ERROR" | summarize count() &gt; 10"</div></div><p>Action Groups define who gets notified and how (email, SMS, webhook, PagerDuty, Logic App, Azure Function). Reuse action groups across multiple alerts — update once, changes everywhere. Metric alerts fire within 1-5 minutes. Log alerts (KQL) fire within 5-15 minutes. Smart Groups automatically cluster related alerts to reduce noise. Alert processing rules can suppress alerts during maintenance windows without disabling them.</p>'},
+{n:24,tag:'troubleshoot',q:'AKS nodes are NotReady — how do you diagnose and recover?',body:'<div class="cmds"><div class="cmd">kubectl get nodes                          # which nodes are NotReady?</div><div class="cmd">kubectl describe node mynode | tail -30    # Events section</div><div class="cmd">kubectl get pods --all-namespaces --field-selector spec.nodeName=mynode  # pods on the node</div><div class="cmd"># SSH to node (via AKS debug pod):</div><div class="cmd">kubectl debug node/mynode -it --image=mcr.microsoft.com/cbl-mariner/busybox:2.0</div><div class="cmd">chroot /host</div><div class="cmd">journalctl -u kubelet --since "10 minutes ago" | tail -50</div><div class="cmd">systemctl status kubelet</div><div class="cmd"># Check node resource pressure:</div><div class="cmd">kubectl describe node mynode | grep -A10 Conditions</div></div><p>Common causes: kubelet crash (check journalctl -u kubelet), disk pressure (check ephemeral storage, /var/log, container image cache), memory pressure (OOMKiller killed kubelet), network plugin failure (Azure CNI misconfiguration), or node unresponsive (Azure VM health issue). For persistent node failures: cordon, drain, and delete the node — the VMSS will provision a replacement automatically. AKS Node Auto-Repair detects and replaces unhealthy nodes automatically in managed node pools.</p>'},
+{n:25,tag:'iam',q:'What is Azure Policy — how do you enforce governance on AKS workloads?',body:'<div class="cmds"><div class="cmd"># Assign built-in policy to subscription:</div><div class="cmd">az policy assignment create --name require-pod-limits \\</div><div class="cmd">  --policy "/providers/Microsoft.Authorization/policyDefinitions/e345eecc-fa47-480f-9e88-67dcc122b164" \\</div><div class="cmd">  --scope /subscriptions/SUB \\</div><div class="cmd">  --params "{"allowedContainerImagesRegex":{"value":"myregistry.azurecr.io/.*"}}"</div><div class="cmd"># Enable Azure Policy add-on for AKS (OPA Gatekeeper):</div><div class="cmd">az aks enable-addons --addons azure-policy --name prod-aks --resource-group rg</div><div class="cmd">kubectl get constrainttemplate                     # Gatekeeper constraint templates</div><div class="cmd">kubectl get k8srequiredlabels                       # custom constraints</div></div><p>Azure Policy for Kubernetes: uses OPA Gatekeeper under the hood to enforce policies at pod admission time. Built-in policies: require resource limits, require readiness/liveness probes, restrict privileged containers, require specific labels, allow only images from approved registries. Policy effects: Audit (log violations), Deny (block non-compliant deployments). Policies can be assigned at Management Group → Subscription → Resource Group scope — inherit hierarchically. Essential for SOC2, CIS Benchmark, and internal governance requirements.</p>'},
+{n:26,tag:'compute',q:'What is Azure Spot VMs — how do you use them with AKS safely?',body:'<div class="cmds"><div class="cmd"># Create spot node pool:</div><div class="cmd">az aks nodepool add --resource-group rg --cluster-name prod-aks \\</div><div class="cmd">  --name spot --priority Spot --eviction-policy Delete \\</div><div class="cmd">  --spot-max-price -1 --node-vm-size Standard_D4s_v5</div><div class="cmd"># Toleration for spot nodes:</div><div class="cmd">tolerations:</div><div class="cmd">- key: "kubernetes.azure.com/scalesetpriority"</div><div class="cmd">  operator: "Equal"</div><div class="cmd">  value: "spot"</div><div class="cmd">  effect: "NoSchedule"</div><div class="cmd"># Use node affinity to target spot nodes explicitly</div></div><p>Spot VMs: 60-80% cheaper, can be evicted with 30 seconds notice when Azure needs capacity. Design workloads for eviction: use Pod Disruption Budgets to ensure minimum replicas survive eviction, use spot for stateless horizontal workloads (batch processing, CI runners, ML training). Never run stateful services on spot without replication. Use multiple VM sizes in the spot pool to increase capacity availability. SPOT_INSTANCE_TERMINATION_NOTICE environment variable (via metadata service) gives 30 seconds warning — use a SIGTERM handler to checkpoint state.</p>'},
+{n:27,tag:'networking',q:'What is Azure Service Mesh (Istio add-on) — when do you enable it on AKS?',body:'<div class="cmds"><div class="cmd"># Enable Istio service mesh on AKS:</div><div class="cmd">az aks mesh enable --resource-group rg --name prod-aks</div><div class="cmd">az aks mesh enable-ingress-gateway --resource-group rg --name prod-aks --ingress-gateway-type external</div><div class="cmd"># Enable sidecar injection for namespace:</div><div class="cmd">kubectl label namespace production istio.io/rev=asm-1-18</div><div class="cmd"># Traffic management:</div><div class="cmd">kubectl apply -f virtual-service.yaml   # canary: 90/10 traffic split</div><div class="cmd">kubectl apply -f destination-rule.yaml  # circuit breaker, mTLS</div></div><p>Service mesh adds: mTLS between services (zero-trust networking), traffic management (canary, circuit breaker, retries), and L7 observability (per-service golden signals, distributed traces). AKS Istio add-on: managed Istio (Azure updates the control plane). When to enable: you need mTLS for compliance, advanced traffic management (canary without redeployment), or need L7 metrics between services without code instrumentation. Cost: every pod gets a sidecar proxy — 15-20% overhead in CPU/memory. Not worth it for small clusters or simple architectures.</p>'},
+{n:28,tag:'storage',q:'How does Azure Backup work — how do you protect AKS data?',body:'<div class="cmds"><div class="cmd"># Azure Backup for AKS (preview/GA depending on region):</div><div class="cmd">az dataprotection backup-vault create --resource-group rg --vault-name myvault --storage-settings type=LocallyRedundant</div><div class="cmd">az dataprotection backup-policy create --resource-group rg --vault-name myvault --policy file://aks-policy.json</div><div class="cmd"># Velero (open-source, multi-cloud alternative):</div><div class="cmd">velero install --provider azure --plugins velero/velero-plugin-for-microsoft-azure:v1.8 \\</div><div class="cmd">  --bucket velero-backups --secret-file ./credentials-velero</div><div class="cmd">velero backup create prod-backup --include-namespaces production</div><div class="cmd">velero restore create --from-backup prod-backup</div></div><p>AKS data protection: Azure Backup for AKS (persistent volume snapshots + Kubernetes resource backup), Velero (open-source, backs up K8s resources and PVs to Azure Blob). Backup strategy: take daily snapshots of PVs, backup Kubernetes manifests (or rely on GitOps — manifests are already in Git), test restore quarterly. For stateful workloads: the database backup policy (RTO/RPO) usually determines the backup frequency more than the Kubernetes backup policy.</p>'},
+{n:29,tag:'troubleshoot',q:'How do you investigate high memory usage in an AKS cluster?',body:'<div class="cmds"><div class="cmd"># Node-level memory:</div><div class="cmd">kubectl top nodes                              # memory usage %</div><div class="cmd">kubectl describe node mynode | grep -A10 Allocated  # memory requests vs capacity</div><div class="cmd"># Pod-level memory:</div><div class="cmd">kubectl top pods -n prod --sort-by=memory      # top memory consumers</div><div class="cmd">kubectl describe pod myapp-xxx | grep -A5 Limits  # configured limits</div><div class="cmd"># OOMKill events:</div><div class="cmd">kubectl get events -n prod | grep OOMKill</div><div class="cmd"># Container Insights KQL:</div><div class="cmd">KubePodInventory | join KubeNodeInventory on Computer | where OomKilled == true</div><div class="cmd"># Node memory saturation (leaves no room for burst):</div><div class="cmd">container_memory_working_set_bytes / container_spec_memory_limit_bytes &gt; 0.9</div></div><p>Memory investigation path: identify top memory-consuming pods (kubectl top pods), compare actual usage against memory limits (if close to limit, OOMKill risk), check if any pods were recently OOMKilled (kubectl get events), and verify memory requests are accurate (over-requested memory causes node waste, under-requested causes OOMKill). Increase memory limits for legitimate high-memory workloads. For memory leaks: take heap dumps, analyse with application-specific profiling tools. Node memory pressure (allocatable - requests) must remain positive or new pods cannot schedule.</p>'},
+{n:30,tag:'troubleshoot',q:'Walk through diagnosing a production AKS performance issue reported by users.',body:'<p>Principal-level systematic diagnosis — cover the full investigation flow.</p><div class="cmds"><div class="cmd">Step 1: Quantify — error rate, P99 latency, affected users (Azure Monitor)</div><div class="cmd">Step 2: Golden signals — which signal is anomalous? (Grafana or Insights)</div><div class="cmd">Step 3: Recent changes — kubectl rollout history, recent CI/CD deployments</div><div class="cmd">Step 4: Pod health — kubectl get pods -n prod (any Pending/CrashLoop?)</div><div class="cmd">Step 5: Node health — kubectl get nodes (all Ready?)</div><div class="cmd">Step 6: CPU throttling — container_cpu_cfs_throttled_seconds_total</div><div class="cmd">Step 7: Database — RDS/Cosmos DB slow query logs, connection pool exhaustion</div><div class="cmd">Step 8: Downstream — is a dependency (external API, cache) slow?</div><div class="cmd">Step 9: Network — NSG blocking? Private Endpoint DNS resolution?</div><div class="cmd">Step 10: Rollback if recent change — restore known-good state first</div></div><p>The most common production AKS performance issues: CPU throttling (invisible, silent), memory pressure causing pod eviction, HPA not scaling fast enough (scale-up latency), Cluster Autoscaler slow to provision nodes, database connection pool exhaustion, and cross-AZ data transfer causing latency. Rollback first if there was a recent deployment — restore the known-good state, then diagnose at leisure without user impact.</p>'}
+];
+var activeFilter='all',openCards=new Set(),viewedCount=0;
+var fmQ=[],fmIdx=0,fmCorrect=0,fmSeen=0;
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  document.getElementById('dmb').textContent=document.body.classList.contains('dark')?'☀':'☾';
+  try{localStorage.setItem('eklabs_dark',document.body.classList.contains('dark')?'1':'0');}catch(e){}
+}
+(function(){try{if(localStorage.getItem('eklabs_dark')==='1'){document.body.classList.add('dark');document.getElementById('dmb').textContent='☀';}}catch(e){}})();
+function badge(tag){var L={'iam':'IAM & EntraID','networking':'Networking','compute':'Compute','containers':'Containers & AKS','storage':'Storage','databases':'Databases','monitoring':'Monitoring','cost':'Cost','cicd':'CI/CD','troubleshoot':'Troubleshooting'};return '<span class="badge '+tag+'">'+(L[tag]||tag)+'</span>';}
+function render(qs){
+  document.getElementById('countBar').textContent='Showing '+qs.length+' of 30 questions';
+  document.getElementById('visN').textContent=qs.length;
+  document.getElementById('qList').innerHTML=qs.map(function(q){
+    var open=openCards.has(q.n);
+    return '<div class="q-card" id="card-'+q.n+'"><div class="q-header" onclick="toggle('+q.n+')">'
+      +'<span class="q-num">Q'+q.n+'</span><span class="q-title">'+q.q+'</span>'
+      +'<div class="q-right">'+badge(q.tag)+'<span class="chevron'+(open?' open':'')+'" id="chev-'+q.n+'">&#9660;</span></div></div>'
+      +'<div class="q-body'+(open?' open':'')+'" id="body-'+q.n+'">'+q.body+'</div></div>';
+  }).join('');
+}
+function toggle(n){
+  var b=document.getElementById('body-'+n),c=document.getElementById('chev-'+n);
+  if(openCards.has(n)){openCards.delete(n);b.classList.remove('open');c.classList.remove('open');}
+  else{openCards.add(n);b.classList.add('open');c.classList.add('open');viewedCount++;document.getElementById('viewN').textContent=viewedCount;}
+}
+function setFilter(f,el){activeFilter=f;document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});el.classList.add('active');filterQs();}
+function filterQs(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var f=QS;
+  if(activeFilter!=='all') f=f.filter(function(x){return x.tag===activeFilter;});
+  if(q) f=f.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  render(f);
+}
+function fmStart(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var pool=QS.slice();
+  if(activeFilter!=='all') pool=pool.filter(function(x){return x.tag===activeFilter;});
+  if(q) pool=pool.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  if(!pool.length){alert('No questions match the current filter.');return;}
+  fmQ=pool.sort(function(){return Math.random()-.5;});
+  fmIdx=0;fmCorrect=0;fmSeen=0;
+  document.getElementById('fmBar').classList.add('on');fmShow();
+}
+function fmShow(){
+  if(fmIdx>=fmQ.length){
+    document.getElementById('fmQ').textContent='Done! '+fmCorrect+'/'+fmQ.length+' correct';
+    document.getElementById('fmAns').classList.remove('on');
+    ['fmRev','fmGot','fmMiss'].forEach(function(id){document.getElementById(id).style.display='none';});
+    document.getElementById('fmFill').style.width='100%';return;
+  }
+  var item=fmQ[fmIdx];
+  document.getElementById('fmQ').textContent='Q'+item.n+' - '+item.q;
+  document.getElementById('fmAns').innerHTML=item.body;
+  document.getElementById('fmAns').classList.remove('on');
+  document.getElementById('fmRev').style.display='';
+  document.getElementById('fmGot').style.display='none';
+  document.getElementById('fmMiss').style.display='none';
+  document.getElementById('fmFill').style.width=Math.round(fmIdx/fmQ.length*100)+'%';
+  document.getElementById('fmScore').textContent=fmCorrect+' correct / '+fmSeen+' seen';
+}
+function fmReveal(){
+  document.getElementById('fmAns').classList.add('on');
+  document.getElementById('fmRev').style.display='none';
+  document.getElementById('fmGot').style.display='';
+  document.getElementById('fmMiss').style.display='';
+  fmSeen++;
+}
+function fmNext(ok){if(ok){fmCorrect++;document.getElementById('correctN').textContent=fmCorrect;}fmIdx++;fmShow();}
+function fmStop(){document.getElementById('fmBar').classList.remove('on');}
+render(QS);
+
+
+/* ── DARK MODE ────────────────────── */
+(function(){
+  var saved = localStorage.getItem('ekn-dark');
+  if (saved === '1') document.body.classList.add('dark');
+})();
+function toggleDark() {
+  var on = document.body.classList.toggle('dark');
+  localStorage.setItem('ekn-dark', on ? '1' : '0');
+  var btn = document.getElementById('dm-btn');
+  if (btn) btn.textContent = on ? '☀ Light' : '☾ Dark';
+}
+
+/* ── INTERVIEW MODE ───────────────── */
+var fmAll = [], fmIdx = 0, fmGot = 0, fmTotal = 0;
+
+function fmStart() {
+  // collect currently visible QS
+  fmAll = [];
+  var cards = document.querySelectorAll('.q-card');
+  cards.forEach(function(c) {
+    var n = parseInt(c.id.replace('card-',''));
+    var q = QS.find ? QS.find(function(x){ return x.n === n; })
+                    : (function(){ for(var i=0;i<QS.length;i++){ if(QS[i].n===n) return QS[i]; } })();
+    if (q) fmAll.push(q);
+  });
+  // shuffle
+  for (var i = fmAll.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = fmAll[i]; fmAll[i] = fmAll[j]; fmAll[j] = tmp;
+  }
+  fmIdx = 0; fmGot = 0; fmTotal = fmAll.length;
+  var bar = document.getElementById('fm-bar');
+  if (bar) { bar.classList.add('open'); fmShow(); }
+}
+function fmShow() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar || fmIdx >= fmTotal) { fmDone(); return; }
+  var q = fmAll[fmIdx];
+  var pct = fmTotal > 0 ? Math.round((fmIdx/fmTotal)*100) : 0;
+  document.getElementById('fm-prog').style.width = pct + '%';
+  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + fmTotal;
+  document.getElementById('fm-q-text').textContent = q.q;
+  document.getElementById('fm-answer').innerHTML = q.body;
+  document.getElementById('fm-answer').classList.remove('show');
+  document.getElementById('fm-reveal').style.display = '';
+  document.getElementById('fm-got').style.display    = 'none';
+  document.getElementById('fm-miss').style.display   = 'none';
+  document.getElementById('fm-score').textContent    = fmGot + ' / ' + fmIdx + ' correct';
+}
+function fmReveal() {
+  document.getElementById('fm-answer').classList.add('show');
+  document.getElementById('fm-reveal').style.display = 'none';
+  document.getElementById('fm-got').style.display    = '';
+  document.getElementById('fm-miss').style.display   = '';
+}
+function fmNext(ok) {
+  if (ok) fmGot++;
+  fmIdx++;
+  fmShow();
+}
+function fmStop() {
+  var bar = document.getElementById('fm-bar');
+  if (bar) bar.classList.remove('open');
+}
+function fmDone() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar) return;
+  bar.innerHTML = '<div class="fm-done">&#127881; Session complete! You got <strong>' + fmGot + ' / ' + fmTotal + '</strong> correct.</div>'
+    + '<button class="fm-stop" onclick="fmStop()">Close</button>';
+}
+
+</script>
+</body>
+</html>

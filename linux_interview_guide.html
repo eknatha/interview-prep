@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Systems Administration Interview Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 1.25rem 2rem; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  header span { font-size: 12px; background: #EEEDFE; color: #3C3489; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .search-bar { position: relative; margin-bottom: 1.25rem; }
+  .search-bar input { width: 100%; padding: 11px 18px 11px 42px; border: 1px solid #ddd; border-radius: 10px; background: #fff; color: #1a1a1a; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .search-bar input:focus { border-color: #534AB7; }
+  .search-bar svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; opacity: 0.4; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .chip { padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #555; transition: all 0.15s; user-select: none; }
+  .chip:hover { border-color: #534AB7; color: #3C3489; }
+  .chip.active { background: #EEEDFE; color: #3C3489; border-color: #534AB7; font-weight: 600; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e8e8e0; }
+  .stat-n { font-size: 24px; font-weight: 600; }
+  .stat-l { font-size: 12px; color: #666; margin-top: 3px; }
+  .n-purple { color: #534AB7; } .n-teal { color: #0F6E56; } .n-amber { color: #854F0B; } .n-red { color: #A32D2D; }
+  .count-bar { font-size: 12px; color: #888; margin-bottom: 10px; }
+  .q-list { display: flex; flex-direction: column; gap: 8px; }
+  .q-card { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; overflow: hidden; transition: border-color 0.15s; }
+  .q-card:hover { border-color: #c0c0b8; }
+  .q-header { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; cursor: pointer; user-select: none; }
+  .q-num { font-size: 11px; font-weight: 600; color: #aaa; min-width: 30px; padding-top: 2px; flex-shrink: 0; }
+  .q-title { font-size: 14px; font-weight: 600; color: #1a1a1a; flex: 1; line-height: 1.5; }
+  .q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+  .badge.process    { background: #EEEDFE; color: #3C3489; }
+  .badge.filesystem { background: #FAEEDA; color: #633806; }
+  .badge.networking { background: #E6F1FB; color: #0C447C; }
+  .badge.performance{ background: #EAF3DE; color: #27500A; }
+  .badge.security   { background: #FCEBEB; color: #791F1F; }
+  .badge.storage    { background: #F1EFE8; color: #444441; }
+  .badge.boot       { background: #FBEAF0; color: #72243E; }
+  .badge.users      { background: #E1F5EE; color: #085041; }
+  .badge.scripting  { background: #FAC775; color: #412402; }
+  .badge.troubleshoot { background: #F5C4B3; color: #712B13; }
+  .chevron { font-size: 12px; color: #bbb; transition: transform 0.2s; flex-shrink: 0; margin-top: 2px; }
+  .chevron.open { transform: rotate(180deg); }
+  .q-body { display: none; padding: 0 18px 18px 60px; border-top: 1px solid #f0f0e8; }
+  .q-body.open { display: block; }
+  .q-body p { font-size: 13px; line-height: 1.75; color: #555; margin-bottom: 10px; margin-top: 12px; }
+  .q-body p:last-child { margin-bottom: 0; }
+  .sec { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #aaa; margin: 14px 0 6px; }
+  .cmds { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .cmd { background: #f8f7f3; border-radius: 6px; padding: 7px 12px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; color: #1a1a1a; border-left: 3px solid #534AB7; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+  .tip  { background: #FAEEDA; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #412402; border-left: 3px solid #BA7517; margin-top: 10px; line-height: 1.6; }
+  .warn { background: #FCEBEB; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #501313; border-left: 3px solid #E24B4A; margin-top: 10px; line-height: 1.6; }
+  .good { background: #EAF3DE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #173404; border-left: 3px solid #639922; margin-top: 10px; line-height: 1.6; }
+  .info { background: #EEEDFE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #26215C; border-left: 3px solid #7F77DD; margin-top: 10px; line-height: 1.6; }
+  .tip b, .warn b, .good b, .info b { font-weight: 700; }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .q-body { padding-left: 18px; }
+    header { padding: 1rem; }
+    .container { padding: 1rem; }
+  }
+
+/* ── DARK MODE VARIABLES ─────────────────────────────── */
+body {
+  --dm-bg:         #111314;
+  --dm-surface:    #1a1d1f;
+  --dm-surface2:   #222629;
+  --dm-border:     #2e3235;
+  --dm-text:       #e8eaec;
+  --dm-muted:      #8a9099;
+  --dm-cmd-bg:     #1e2123;
+  --dm-cmd-border: #1D9E75;
+}
+body.dark {
+  background:  var(--dm-bg)      !important;
+  color:       var(--dm-text)    !important;
+}
+body.dark header,
+body.dark .wrap > *:not(.q-list):not(#q-list) { color: var(--dm-text); }
+
+/* cards */
+body.dark .q-card  { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .q-header .q-title { color: var(--dm-text); }
+body.dark .q-body  { border-color: var(--dm-border); }
+body.dark .q-body p { color: var(--dm-muted); }
+
+/* commands */
+body.dark .cmd     { background: var(--dm-cmd-bg); color: #c9d1d9; border-left-color: var(--dm-cmd-border); }
+body.dark .cmds    { background: transparent; }
+
+/* filter chips */
+body.dark .chip    { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-muted); }
+body.dark .chip.active,
+body.dark .chip.on { background: #0F6E56; color: #fff; border-color: #1D9E75; }
+
+/* search */
+body.dark .search-bar input,
+body.dark #search  { background: var(--dm-surface); border-color: var(--dm-border); color: var(--dm-text); }
+body.dark .search-bar input::placeholder,
+body.dark #search::placeholder { color: var(--dm-muted); }
+
+/* stats */
+body.dark .stat    { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .stat-l  { color: var(--dm-muted); }
+
+/* tips/warns */
+body.dark .tip     { background: #231c09; color: #d4a847; }
+body.dark .warn    { background: #1f0f0f; color: #e07070; }
+body.dark .good    { background: #0d1f0d; color: #7aba5e; }
+body.dark .info    { background: #0d1226; color: #7aa8e0; }
+
+/* interview mode bar */
+body.dark .fm-bar  { background: var(--dm-surface); border-color: #1D9E75; }
+body.dark .fm-q    { color: var(--dm-text); }
+body.dark .fm-score { color: var(--dm-muted); }
+body.dark .fm-reveal { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-text); }
+
+/* header / portal link */
+body.dark .portal-link { color: #1D9E75; }
+body.dark .q-num   { color: var(--dm-muted); }
+body.dark .chevron { color: var(--dm-muted); }
+body.dark .count-bar { color: var(--dm-muted); }
+body.dark .sec     { color: var(--dm-muted); }
+
+/* dark toggle button */
+.dm-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
+  transition: all .14s; flex-shrink: 0;
+}
+.dm-btn:hover { border-color: #1D9E75; }
+body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); color: var(--dm-text); }
+
+/* interview mode toggle */
+.fm-btn {
+  background: #1D9E75; color: #fff; border: none; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .14s; flex-shrink: 0;
+}
+.fm-btn:hover { background: #0F6E56; }
+
+/* interview mode bar */
+.fm-bar {
+  display: none;
+  background: #fff;
+  border: 2px solid #1D9E75;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.fm-bar.open { display: block; }
+.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+.fm-prog      { height: 4px; background: #1D9E75; border-radius: 99px; transition: width .3s; }
+.fm-meta      { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fm-q         { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
+.fm-answer    { display: none; margin-bottom: 14px; }
+.fm-answer.show { display: block; }
+.fm-actions   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fm-reveal    { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-reveal:hover { background: #eee; }
+.fm-got       { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-got:hover { background: #d5ecb8; }
+.fm-miss      { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-miss:hover { background: #f9d5d5; }
+.fm-stop      { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
+.fm-stop:hover { border-color: #999; color: #555; }
+.fm-score     { font-size: 12px; color: #888; font-weight: 600; }
+.fm-done      { font-size: 14px; font-weight: 700; color: #1D9E75; margin-bottom: 8px; }
+
+/* toolbar row (count + IM button) */
+.toolbar      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+</style>
+</head>
+<body>
+
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#BA7517;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Linux Systems Administration Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">50 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="#555" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers..." oninput="filterQs()">
+  </div>
+
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (50)</div>
+    <div class="chip" onclick="setFilter('process',this)">Processes</div>
+    <div class="chip" onclick="setFilter('filesystem',this)">Filesystem</div>
+    <div class="chip" onclick="setFilter('networking',this)">Networking</div>
+    <div class="chip" onclick="setFilter('performance',this)">Performance</div>
+    <div class="chip" onclick="setFilter('security',this)">Security</div>
+    <div class="chip" onclick="setFilter('storage',this)">Storage &amp; disks</div>
+    <div class="chip" onclick="setFilter('boot',this)">Boot &amp; systemd</div>
+    <div class="chip" onclick="setFilter('users',this)">Users &amp; permissions</div>
+    <div class="chip" onclick="setFilter('scripting',this)">Scripting &amp; automation</div>
+    <div class="chip" onclick="setFilter('troubleshoot',this)">Troubleshooting</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n n-purple">50</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n n-teal">25</div><div class="stat-l">Core concepts</div></div>
+    <div class="stat"><div class="stat-n n-amber">25</div><div class="stat-l">Production scenarios</div></div>
+    <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
+  </div>
+
+  
+<div class="toolbar"><div class="count-bar" id="count-bar" style="margin:0;font-size:12px;color:#888;"></div><button class="fm-btn" onclick="fmStart()">&#9654; Interview mode</button></div>
+<div class="fm-bar" id="fm-bar"><div class="fm-prog-wrap"><div class="fm-prog" id="fm-prog" style="width:0%"></div></div><div class="fm-meta" id="fm-meta">Question 1 of N</div><div class="fm-q" id="fm-q-text"></div><div class="fm-answer" id="fm-answer"></div><div class="fm-actions"><button class="fm-reveal" id="fm-reveal" onclick="fmReveal()">&#128065; Reveal answer</button><button class="fm-got"  id="fm-got"  onclick="fmNext(true)"  style="display:none">&#10003; Got it</button><button class="fm-miss" id="fm-miss" onclick="fmNext(false)" style="display:none">&#10007; Missed it</button><span class="fm-score" id="fm-score"></span><button class="fm-stop" onclick="fmStop()">&#10005; Stop</button></div></div>
+
+  <div class="q-list" id="q-list"></div>
+</div>
+
+<script>
+const QS = [
+
+  // ── PROCESSES ──────────────────────────────────────────────────────────────
+  {n:1,tag:'process',q:'How do you find and kill a process consuming excessive CPU or memory?',
+  body:`<div class='sec'>Identify</div>
+<div class='cmds'>
+  <div class='cmd'>top -o %CPU          # sort by CPU (press M to sort by memory)</div>
+  <div class='cmd'>htop                 # interactive, easier to read</div>
+  <div class='cmd'>ps aux --sort=-%cpu | head -15   # snapshot sorted by CPU</div>
+  <div class='cmd'>ps aux --sort=-%mem | head -15   # snapshot sorted by memory</div>
+  <div class='cmd'>pidof nginx          # find PID by name</div>
+  <div class='cmd'>pgrep -fl java       # find PIDs matching pattern + show cmdline</div>
+</div>
+<div class='sec'>Kill</div>
+<div class='cmds'>
+  <div class='cmd'>kill -15 &lt;pid&gt;      # SIGTERM — graceful shutdown (try this first)</div>
+  <div class='cmd'>kill -9  &lt;pid&gt;      # SIGKILL — force kill (use when -15 fails)</div>
+  <div class='cmd'>killall nginx        # kill all processes named nginx</div>
+  <div class='cmd'>pkill -f "java.*myapp"  # kill by regex matching full command line</div>
+</div>
+<p>Always try SIGTERM (15) first — it allows the process to clean up (flush buffers, close connections, remove temp files). SIGKILL (9) cannot be caught or ignored — the kernel terminates the process immediately with no cleanup. Use SIGKILL only when SIGTERM fails or the process is unkillable.</p>
+<div class='tip'><b>Interview tip:</b> Explain the difference between SIGTERM and SIGKILL. A process ignoring SIGTERM is either buggy or intentionally handling it (e.g., daemontools keeping a service alive). SIGKILL always works except for zombie processes — which cannot be killed at all (must reap the parent).</div>`},
+
+  {n:2,tag:'process',q:'What is a zombie process — why does it appear and how do you deal with it?',
+  body:`<p>A zombie process has finished executing but still has an entry in the process table because its parent has not yet read its exit status via wait(). It holds no resources — just a PID slot.</p>
+<div class='cmds'>
+  <div class='cmd'>ps aux | grep 'Z'           # Z state = zombie</div>
+  <div class='cmd'>ps -el | grep defunct       # another way to list zombies</div>
+  <div class='cmd'>cat /proc/&lt;zombie-pid&gt;/status | grep PPid  # find parent PID</div>
+  <div class='cmd'>kill -SIGCHLD &lt;parent-pid&gt;  # signal parent to reap children</div>
+</div>
+<p>You cannot kill a zombie with kill -9 — it has no running code. The fix is to signal or restart the parent process so it calls wait() to reap the zombie. If the parent is buggy and never reaps children, the parent itself must be killed — init (PID 1) will then adopt and reap the orphaned zombie. A few zombies are harmless; hundreds indicate a parent process leak.</p>
+<div class='warn'><b>PID table exhaustion:</b> Each zombie holds one PID. Linux has a PID limit (default 32768, check /proc/sys/kernel/pid_max). Thousands of zombies can exhaust PIDs, preventing any new process from starting — a full system outage. Monitor zombie count in production.</div>`},
+
+  {n:3,tag:'process',q:'What is the difference between a process and a thread — how does Linux manage them?',
+  body:`<p>In Linux, threads and processes are both represented as "tasks" and created with clone(). The difference is what they share.</p>
+<div class='cmds'>
+  <div class='cmd'>ps -eLf | grep &lt;pid&gt;     # show all threads of a process (LWP = Light Weight Process)</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/status | grep Threads  # thread count for a process</div>
+  <div class='cmd'>ls /proc/&lt;pid&gt;/task/      # each subdirectory = one thread</div>
+  <div class='cmd'>pstree -p &lt;pid&gt;           # show process tree with PIDs</div>
+</div>
+<p>Process: separate address space, file descriptors, signal handlers. Thread: shares address space, heap, file descriptors with siblings — has its own stack and registers. fork() creates a new process (copy-on-write). clone() with CLONE_VM|CLONE_FILES creates a thread. In Linux, the scheduler sees threads and processes equally — both are schedulable tasks. This matters when diagnosing CPU usage: a Java app with 200 threads can show 200 entries in /proc/&lt;pid&gt;/task.</p>
+<div class='tip'><b>Practical use:</b> When a Java or Go application is using unexpected CPU, use <code>top -H -p &lt;pid&gt;</code> to see per-thread CPU usage. This pinpoints which specific thread (and thus which goroutine or Java thread) is spinning.</div>`},
+
+  {n:4,tag:'process',q:'How does process scheduling work in Linux — what is load average and when is it a problem?',
+  body:`<div class='cmds'>
+  <div class='cmd'>uptime                    # load average: 1min 5min 15min</div>
+  <div class='cmd'>cat /proc/loadavg         # same, plus running/total tasks and last PID</div>
+  <div class='cmd'>nproc                     # number of CPU cores</div>
+  <div class='cmd'>sar -u 1 5                # CPU utilization over 5 samples</div>
+  <div class='cmd'>vmstat 1 5                # r column = runnable processes (key metric)</div>
+</div>
+<p>Load average = average number of tasks in runnable OR uninterruptible sleep (D state, waiting for I/O) state. It is NOT CPU percentage. A load of 1.0 on a 4-core system means 25% utilization — fine. A load of 8.0 on a 4-core system means the queue is 2× overloaded. Rule of thumb: load / nproc &gt; 1.0 for sustained periods = investigate. High load with low CPU% = I/O bound (disk or network). High load with high CPU% = CPU bound. Check vmstat's 'r' (runnable) and 'b' (blocked on I/O) columns to distinguish.</p>
+<div class='good'><b>D-state processes:</b> Processes in D (uninterruptible sleep) are waiting for I/O and cannot be killed. They inflate load average significantly. <code>ps aux | awk '$8=="D"'</code> lists D-state processes. High D-state count with high load and low CPU = storage I/O bottleneck.</div>`},
+
+  {n:5,tag:'process',q:'What are Linux signals — which ones matter most for DevOps/Platform engineers?',
+  body:`<div class='cmds'>
+  <div class='cmd'>kill -l               # list all signals</div>
+  <div class='cmd'>SIGHUP  (1)  — reload config (nginx, sshd respond to this)</div>
+  <div class='cmd'>SIGINT  (2)  — Ctrl+C (interrupt from terminal)</div>
+  <div class='cmd'>SIGTERM (15) — graceful shutdown request (catchable)</div>
+  <div class='cmd'>SIGKILL (9)  — force kill (cannot be caught or ignored)</div>
+  <div class='cmd'>SIGSTOP (19) — pause process (cannot be caught, Ctrl+Z sends SIGTSTP)</div>
+  <div class='cmd'>SIGCHLD (17) — child process changed state (parent notified)</div>
+  <div class='cmd'>SIGUSR1/2   — user-defined (apps use for log rotation, graceful reload)</div>
+</div>
+<p>SIGHUP is commonly used to reload configuration without restart — nginx, sshd, and many daemons reload their config on SIGHUP. SIGUSR1 is used by nginx for log rotation (reopens log files after they've been moved). In containers: Kubernetes sends SIGTERM when terminating a pod, then SIGKILL after terminationGracePeriodSeconds. Make sure your application handles SIGTERM to drain connections gracefully — otherwise you get 502 errors during deployments.</p>
+<div class='tip'><b>Kubernetes graceful shutdown:</b> When a pod is deleted, Kubernetes sends SIGTERM to PID 1 inside the container. If your app is not PID 1 (it's a child of a shell script), it may never receive SIGTERM. Use exec form in Dockerfile (ENTRYPOINT ["app"]) not shell form (ENTRYPOINT app) so your app is PID 1.</div>`},
+
+  {n:6,tag:'process',q:'What is /proc filesystem — what useful information can you extract from it?',
+  body:`<div class='cmds'>
+  <div class='cmd'>cat /proc/cpuinfo         # CPU model, cores, flags</div>
+  <div class='cmd'>cat /proc/meminfo         # memory breakdown: MemTotal, MemFree, Cached, Buffers</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/cmdline  # full command line of a process (null-separated)</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/environ  # environment variables of a running process</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/fd/ | ls -la  # open file descriptors</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/net/tcp  # TCP connections for a process's namespace</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/limits   # ulimits for the process</div>
+  <div class='cmd'>cat /proc/sys/vm/swappiness  # kernel tunable</div>
+  <div class='cmd'>cat /proc/net/dev         # network interface statistics</div>
+</div>
+<p>/proc is a virtual filesystem exposing kernel data structures as files. Everything is readable as text. Key use cases: inspect a running process's open files and connections without any external tool, read kernel tunables (all /proc/sys/ entries are tunable via sysctl), and debug networking issues per-namespace. In containers, /proc/1/environ reveals environment variables of PID 1 — useful for debugging misconfigured containers.</p>
+<div class='warn'><b>Security note:</b> /proc/&lt;pid&gt;/environ may expose secrets passed as env vars to processes. Ensure container runtimes and OS permissions restrict cross-process /proc access. This is why Kubernetes recommends using mounted Secrets files instead of env vars for sensitive values.</div>`},
+
+  // ── FILESYSTEM ─────────────────────────────────────────────────────────────
+  {n:7,tag:'filesystem',q:'Filesystem is full but du shows available space — how do you find and recover the space?',
+  body:`<p>This classic problem occurs when a file is deleted but a process still has it open — the inode is not freed until the file handle is closed.</p>
+<div class='cmds'>
+  <div class='cmd'>df -h                        # shows filesystem usage (may show 100% full)</div>
+  <div class='cmd'>du -sh /* 2>/dev/null | sort -rh | head -20  # find largest directories</div>
+  <div class='cmd'>du -sh /var/log/* | sort -rh | head -10      # common culprit</div>
+  <div class='cmd'># Find deleted-but-open files (holding space):</div>
+  <div class='cmd'>lsof +L1                     # list files with link count 0 (deleted but open)</div>
+  <div class='cmd'>lsof | grep deleted          # same, different filter</div>
+  <div class='cmd'># Recover without restart: truncate the file via its fd:</div>
+  <div class='cmd'>truncate -s 0 /proc/&lt;pid&gt;/fd/&lt;fd-number&gt;</div>
+</div>
+<p>The truncate trick is invaluable in production — it empties the file in-place without closing it, immediately freeing disk space without restarting the process holding it open. Common culprits: log files being written to after logrotate moved them, application keeping a large temp file open, or a core dump file being written by a crashing process.</p>
+<div class='warn'><b>Inode exhaustion:</b> df -h shows space available but writes fail with "No space left on device". Check inodes: <code>df -i</code>. Inode exhaustion happens when millions of tiny files are created (email queues, session files, package manager caches). Fix: delete many small files or reformat with larger inode ratio.</div>`},
+
+  {n:8,tag:'filesystem',q:'What are hard links vs soft links — when does the distinction matter?',
+  body:`<div class='cmds'>
+  <div class='cmd'>ln /etc/hosts /tmp/hosts_hard    # hard link (same inode)</div>
+  <div class='cmd'>ln -s /etc/hosts /tmp/hosts_soft # soft link (symlink, new inode)</div>
+  <div class='cmd'>ls -li /etc/hosts /tmp/hosts_hard  # same inode number = hard link</div>
+  <div class='cmd'>ls -la /tmp/hosts_soft            # shows -> /etc/hosts</div>
+  <div class='cmd'>stat /etc/hosts                   # see link count (nlink)</div>
+</div>
+<p>Hard link: another directory entry pointing to the same inode. The file is not deleted until ALL hard links are removed AND no process has it open. Hard links cannot span filesystems. Soft link: a special file containing a path to the target. If the target is deleted, the symlink dangles. Symlinks can span filesystems and can point to directories. Practical distinction: logrotate uses hard links when rotating logs to ensure no log entries are lost. Container image layers use hard links to share files between layers without duplication.</p>
+<div class='tip'><b>Finding dangling symlinks:</b> <code>find /etc -type l ! -exec test -e {} \; -print</code> — finds symlinks whose targets don't exist. Dangling symlinks from removed packages are common and harmless but can confuse diagnostics.</div>`},
+
+  {n:9,tag:'filesystem',q:'How do Linux file permissions work — explain chmod, chown, SUID, SGID, and sticky bit?',
+  body:`<div class='cmds'>
+  <div class='cmd'>ls -la /etc/passwd           # -rw-r--r-- root root</div>
+  <div class='cmd'>chmod 755 script.sh          # rwxr-xr-x (octal)</div>
+  <div class='cmd'>chmod u+x,g-w,o-rwx file     # symbolic notation</div>
+  <div class='cmd'>chown user:group file        # change owner and group</div>
+  <div class='cmd'>chmod u+s /usr/bin/sudo      # set SUID bit (runs as file owner)</div>
+  <div class='cmd'>chmod g+s /shared/dir        # set SGID on dir (new files inherit group)</div>
+  <div class='cmd'>chmod +t /tmp                # sticky bit (only owner can delete their files)</div>
+  <div class='cmd'>find / -perm -4000 2>/dev/null  # find all SUID files</div>
+</div>
+<p>Permission bits: 3 sets of rwx for owner/group/other. Octal: 4=read, 2=write, 1=execute. SUID on executables: runs with file owner's privileges (passwd, sudo use this). SGID on directories: new files inherit the directory's group — used for shared project directories. Sticky bit on directories: users can only delete their own files (used on /tmp to prevent users deleting each other's temp files).</p>
+<div class='warn'><b>SUID security risk:</b> SUID binaries run with elevated privileges — a vulnerability in a SUID binary is a privilege escalation vector. Audit with <code>find / -perm /4000</code> and investigate unexpected SUID files. This is a standard security hardening step and CKS exam topic.</div>`},
+
+  {n:10,tag:'filesystem',q:'What is the Linux Virtual Filesystem (VFS) — why does everything in Linux appear as a file?',
+  body:`<div class='cmds'>
+  <div class='cmd'>ls /proc           # process info as files</div>
+  <div class='cmd'>ls /sys/class/net  # network interfaces as files</div>
+  <div class='cmd'>ls /dev            # hardware devices as files</div>
+  <div class='cmd'>cat /dev/urandom | head -c 10 | od -An -tu1  # read from random device</div>
+  <div class='cmd'>echo "data" > /dev/tcp/example.com/80  # write to network socket as file (bash)</div>
+  <div class='cmd'>mount | head -10   # see all mounted filesystems including virtual ones</div>
+</div>
+<p>The VFS (Virtual File System) is an abstraction layer in the kernel that provides a uniform interface (open, read, write, close) for all I/O — whether talking to disk, a device, a network socket, or kernel data structures. "Everything is a file" means you can use standard Unix tools on all of these. tmpfs is a RAM-backed filesystem (used by /run, /tmp). cgroups and namespaces are exposed via /sys/fs/cgroup and /proc/&lt;pid&gt;/ns — this is how container runtimes manage container isolation.</p>
+<div class='tip'><b>Container relevance:</b> Kubernetes uses /proc and /sys to inspect container processes. The kubelet reads cgroup memory limits from /sys/fs/cgroup. Understanding VFS helps debug "why does my container think it has 128GB RAM" (it's reading from /proc/meminfo which shows host memory, not container limits).</div>`},
+
+  {n:11,tag:'filesystem',q:'How do you find large files, find files modified recently, and find files by type across a filesystem?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Large files:</div>
+  <div class='cmd'>find / -type f -size +100M 2>/dev/null | sort -k5 -rn</div>
+  <div class='cmd'>find /var -type f -size +500M -exec ls -lh {} \;</div>
+  <div class='cmd'># Recently modified (last 60 minutes):</div>
+  <div class='cmd'>find /etc -type f -mmin -60 2>/dev/null</div>
+  <div class='cmd'>find / -newer /tmp/reference_file 2>/dev/null  # modified after reference file</div>
+  <div class='cmd'># By type:</div>
+  <div class='cmd'>find / -type f -name "*.log" -mtime +30 -delete  # delete logs older than 30 days</div>
+  <div class='cmd'>find /proc -type l -name "exe" -exec ls -la {} \; 2>/dev/null  # running binaries</div>
+  <div class='cmd'># By permission:</div>
+  <div class='cmd'>find /etc -perm /o+w 2>/dev/null  # world-writable files (security audit)</div>
+</div>
+<p>find is the Swiss Army knife of filesystem queries. Key options: -type (f=file, d=dir, l=symlink), -size (+/-N[ckMG]), -mtime/-mmin (modified N days/minutes ago), -perm, -user, -group. Combine with -exec to act on results. Use 2>/dev/null to suppress permission errors. For disk cleanup automation, combine find with -delete or pipe to xargs rm.</p>
+<div class='good'><b>locate vs find:</b> <code>locate filename</code> searches a pre-built database (fast but stale). <code>find</code> walks the filesystem in real time (slower but current). Use locate for quick lookups, find for scripts and when recency matters. Update locate db with <code>updatedb</code>.</div>`},
+
+  {n:12,tag:'filesystem',q:'What is LVM (Logical Volume Manager) — how do you extend a filesystem online?',
+  body:`<div class='cmds'>
+  <div class='cmd'>pvdisplay                         # physical volumes</div>
+  <div class='cmd'>vgdisplay                         # volume groups</div>
+  <div class='cmd'>lvdisplay                         # logical volumes</div>
+  <div class='cmd'># Extend an LV and resize filesystem online:</div>
+  <div class='cmd'>lvextend -L +10G /dev/vg0/lv_data           # extend LV by 10GB</div>
+  <div class='cmd'>resize2fs /dev/vg0/lv_data                   # resize ext4 filesystem (online)</div>
+  <div class='cmd'>xfs_growfs /mount/point                      # resize XFS (must use mount point)</div>
+  <div class='cmd'># Add a new disk to an existing VG:</div>
+  <div class='cmd'>pvcreate /dev/sdb                             # initialize new disk as PV</div>
+  <div class='cmd'>vgextend vg0 /dev/sdb                        # add PV to VG</div>
+  <div class='cmd'>lvextend -l +100%FREE /dev/vg0/lv_data       # use all new free space</div>
+</div>
+<p>LVM adds a virtualization layer between physical disks and filesystems: Physical Volumes (disks) → Volume Groups (pools) → Logical Volumes (virtual disks). Benefits: online resize, snapshots (for consistent backups), striping across disks. Ext4 supports online grow (resize2fs on mounted filesystem). XFS supports online grow but NOT shrink. Neither supports online shrink — unmount first.</p>
+<div class='tip'><b>Cloud disk resize workflow:</b> In GCP/AWS, resize the persistent disk in the console/CLI → resize the partition (if needed, using growpart or parted) → resize the LV (if LVM) → resize the filesystem. All steps can be done on a running system for ext4 and XFS.</div>`},
+
+  // ── NETWORKING ─────────────────────────────────────────────────────────────
+  {n:13,tag:'networking',q:'How do you diagnose network connectivity issues on Linux — what is your systematic approach?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Layer by layer approach:</div>
+  <div class='cmd'>ip link show                       # L2: interfaces up? carrier detected?</div>
+  <div class='cmd'>ip addr show                       # L3: IP addresses assigned?</div>
+  <div class='cmd'>ip route show                      # L3: default route exists?</div>
+  <div class='cmd'>ping -c 4 8.8.8.8                  # L3: can reach internet?</div>
+  <div class='cmd'>ping -c 4 &lt;gateway-ip&gt;            # L3: can reach gateway?</div>
+  <div class='cmd'>traceroute -T -p 443 &lt;host&gt;       # L3: where does routing break?</div>
+  <div class='cmd'>nc -zv &lt;host&gt; &lt;port&gt;              # L4: is the port open?</div>
+  <div class='cmd'>curl -v https://&lt;host&gt;            # L7: does the app respond?</div>
+  <div class='cmd'>ss -tlnp                           # what is listening on which port?</div>
+  <div class='cmd'>iptables -L -n -v                  # any firewall rules blocking?</div>
+</div>
+<p>Work bottom-up: physical link → IP config → routing → port reachability → application. Each layer narrows the problem. If ping works but nc fails: the network path is fine but the service isn't listening or is firewalled. If ping fails but the gateway pings: routing issue. If the gateway doesn't ping: either IP misconfigured or L2/L1 issue.</p>
+<div class='tip'><b>ss vs netstat:</b> <code>ss</code> is the modern replacement for <code>netstat</code> — faster (reads from kernel directly), more features. Learn ss: <code>ss -tlnp</code> (TCP listen), <code>ss -tnp state established</code> (active connections), <code>ss -s</code> (summary stats).</div>`},
+
+  {n:14,tag:'networking',q:'How do iptables work — how do you debug and write firewall rules?',
+  body:`<div class='cmds'>
+  <div class='cmd'>iptables -L -n -v --line-numbers    # list all rules with packet counts</div>
+  <div class='cmd'>iptables -t nat -L -n -v            # NAT table rules (DNAT, SNAT)</div>
+  <div class='cmd'>iptables -t mangle -L -n            # mangle table (QoS, TTL)</div>
+  <div class='cmd'># Allow incoming SSH:</div>
+  <div class='cmd'>iptables -A INPUT -p tcp --dport 22 -j ACCEPT</div>
+  <div class='cmd'># Block specific IP:</div>
+  <div class='cmd'>iptables -I INPUT 1 -s 1.2.3.4 -j DROP</div>
+  <div class='cmd'># Log dropped packets (for debugging):</div>
+  <div class='cmd'>iptables -A INPUT -j LOG --log-prefix "DROPPED: " --log-level 4</div>
+  <div class='cmd'>iptables -A INPUT -j DROP</div>
+  <div class='cmd'># Save rules (Debian/Ubuntu):</div>
+  <div class='cmd'>iptables-save > /etc/iptables/rules.v4</div>
+</div>
+<p>iptables processes packets through chains (INPUT, OUTPUT, FORWARD) in tables (filter, nat, mangle). Rules are processed in order — first match wins. Default chains have a policy (ACCEPT or DROP). Kubernetes uses iptables extensively: kube-proxy writes DNAT rules for every Service (ClusterIP → pod IPs), and NetworkPolicies generate iptables rules per pod. Understanding iptables is essential for debugging why a Kubernetes service isn't reachable.</p>
+<div class='warn'><b>iptables vs nftables:</b> Modern Linux (RHEL 8+, Debian 11+) uses nftables as the backend. iptables commands still work via iptables-nft compatibility layer. Kubernetes is migrating kube-proxy to nftables mode. Know both exist; iptables syntax still dominates CKA/CKS exams.</div>`},
+
+  {n:15,tag:'networking',q:'How do you capture and analyze network traffic on Linux?',
+  body:`<div class='cmds'>
+  <div class='cmd'>tcpdump -i eth0 -n port 80               # capture HTTP on eth0</div>
+  <div class='cmd'>tcpdump -i any host 10.0.0.5             # all traffic to/from IP</div>
+  <div class='cmd'>tcpdump -i eth0 -w /tmp/cap.pcap         # write to file for Wireshark</div>
+  <div class='cmd'>tcpdump -i eth0 'tcp[tcpflags] & tcp-rst != 0'  # capture RST packets</div>
+  <div class='cmd'>tcpdump -i any port 53 -n                # DNS queries</div>
+  <div class='cmd'># tshark (Wireshark CLI):</div>
+  <div class='cmd'>tshark -i eth0 -f "port 443" -T fields -e http.request.uri  # extract URIs</div>
+  <div class='cmd'># ss with detailed TCP info:</div>
+  <div class='cmd'>ss -tin dst 10.0.0.5                     # TCP internals: rtt, cwnd, retransmits</div>
+</div>
+<p>tcpdump is the primary packet capture tool. Filters use Berkeley Packet Filter (BPF) syntax: host, port, proto, src/dst, and/or/not. Key patterns: capture DNS (port 53) to debug resolver issues, capture RST packets to find rejected connections, capture SYN packets to see connection attempts. Always write to file (-w) for complex analysis in Wireshark. In Kubernetes, use kubectl-sniff or a debug container in the pod's network namespace to capture from a running pod.</p>
+<div class='good'><b>Bandwidth measurement:</b> <code>iperf3 -s</code> on server, <code>iperf3 -c &lt;server&gt;</code> on client. Use <code>nload</code> or <code>iftop</code> for real-time bandwidth monitoring per interface. <code>nethogs</code> shows bandwidth per process — invaluable for finding which process is saturating the network.</div>`},
+
+  {n:16,tag:'networking',q:'How do you configure static IP, routes, and DNS on a Linux server?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Modern (systemd-networkd / netplan on Ubuntu 18+):</div>
+  <div class='cmd'>cat /etc/netplan/01-netcfg.yaml</div>
+  <div class='cmd'>netplan apply               # apply config changes</div>
+  <div class='cmd'># Legacy (ifcfg files on RHEL/CentOS):</div>
+  <div class='cmd'>cat /etc/sysconfig/network-scripts/ifcfg-eth0</div>
+  <div class='cmd'># Runtime changes (not persistent):</div>
+  <div class='cmd'>ip addr add 10.0.0.100/24 dev eth0</div>
+  <div class='cmd'>ip route add default via 10.0.0.1</div>
+  <div class='cmd'>ip route add 192.168.1.0/24 via 10.0.0.254</div>
+  <div class='cmd'># DNS:</div>
+  <div class='cmd'>cat /etc/resolv.conf         # current nameservers</div>
+  <div class='cmd'>resolvectl status            # systemd-resolved status</div>
+  <div class='cmd'>resolvectl dns eth0 8.8.8.8  # set DNS for interface</div>
+</div>
+<p>Network configuration has fragmented across tools: legacy ifupdown (/etc/network/interfaces), RHEL's NetworkManager (/etc/sysconfig), and modern systemd-networkd with Netplan (Ubuntu). Cloud instances typically use DHCP with cloud-init setting initial config. Changes to /etc/resolv.conf may be overwritten by systemd-resolved or NetworkManager — edit the source config, not resolv.conf directly.</p>
+<div class='tip'><b>Cloud metadata routes:</b> Cloud VMs have a link-local route to 169.254.169.254 (metadata server). Never remove this route — it's used by the guest agent, credential fetching, and Workload Identity. Check with <code>ip route show | grep 169.254</code>.</div>`},
+
+  {n:17,tag:'networking',q:'What is /etc/hosts and /etc/nsswitch.conf — how does DNS resolution order work?',
+  body:`<div class='cmds'>
+  <div class='cmd'>cat /etc/nsswitch.conf | grep hosts  # resolution order</div>
+  <div class='cmd'># Typical: hosts: files dns  (check /etc/hosts first, then DNS)</div>
+  <div class='cmd'>cat /etc/hosts              # static hostname → IP mappings</div>
+  <div class='cmd'>getent hosts example.com    # test resolution using NSS (respects nsswitch)</div>
+  <div class='cmd'>strace -e trace=network getent hosts example.com  # trace exactly what happens</div>
+  <div class='cmd'># Override DNS for testing (add to /etc/hosts):</div>
+  <div class='cmd'>echo "1.2.3.4 staging.example.com" >> /etc/hosts</div>
+</div>
+<p>nsswitch.conf controls resolution order for hosts, users, groups, and more. "files dns" means: check /etc/hosts first, then query nameservers in /etc/resolv.conf. "dns files" reverses this. In containers: /etc/hosts is writable by the container runtime (Kubernetes adds pod IPs to /etc/hosts). The ndots option in /etc/resolv.conf controls how many dots a hostname needs before it's treated as fully qualified — critical for Kubernetes DNS performance.</p>
+<div class='warn'><b>getent vs nslookup:</b> <code>nslookup</code> and <code>dig</code> bypass nsswitch and query DNS directly. <code>getent hosts</code> uses the full NSS stack including /etc/hosts. Use getent when you want to test exactly what the application sees. Use dig when you want to test DNS specifically.</div>`},
+
+  // ── PERFORMANCE ────────────────────────────────────────────────────────────
+  {n:18,tag:'performance',q:'How do you diagnose high CPU usage on a Linux server?',
+  body:`<div class='cmds'>
+  <div class='cmd'>top                          # real-time CPU per process</div>
+  <div class='cmd'>top -1                       # show per-CPU breakdown (press 1 in top)</div>
+  <div class='cmd'>mpstat -P ALL 1 5            # per-CPU utilization: usr, sys, iowait, si (softirq)</div>
+  <div class='cmd'>sar -u 1 5                   # CPU utilization history</div>
+  <div class='cmd'>ps -eo pid,ppid,cmd,%cpu,%mem --sort=-%cpu | head -15</div>
+  <div class='cmd'># Find which CPU is hot (for IRQ affinity issues):</div>
+  <div class='cmd'>cat /proc/interrupts | sort -k2 -rn | head -10</div>
+  <div class='cmd'># Profile what the CPU is actually doing:</div>
+  <div class='cmd'>perf top                     # live kernel/userspace profiling (needs perf pkg)</div>
+  <div class='cmd'>perf record -g -p &lt;pid&gt; sleep 10 &amp;&amp; perf report  # flame graph data</div>
+</div>
+<p>CPU breakdown: us (user), sy (system/kernel), ni (niced), id (idle), wa (I/O wait), hi (hardware IRQ), si (software IRQ), st (stolen by hypervisor). High sy = kernel-intensive work (syscall-heavy, iptables rules, context switching). High si = network interrupt processing (high-traffic network interface). High wa = I/O bound. High us = application CPU. Use perf for deep profiling — it shows exactly which function the CPU spends time in.</p>
+<div class='tip'><b>Stolen CPU (st):</b> In VMs, high %st means the hypervisor is not scheduling your VM's vCPUs promptly — the physical host is overcommitted. No application-level fix; escalate to the cloud provider or move to a dedicated host. On GCP/AWS, st &gt; 5% consistently signals a noisy-neighbor problem.</div>`},
+
+  {n:19,tag:'performance',q:'How do you diagnose memory issues — OOM killer, swap usage, and memory leaks?',
+  body:`<div class='cmds'>
+  <div class='cmd'>free -h                       # overview: total, used, free, buff/cache, available</div>
+  <div class='cmd'>cat /proc/meminfo             # detailed breakdown</div>
+  <div class='cmd'>vmstat -s                     # memory stats summary</div>
+  <div class='cmd'># OOM killer events:</div>
+  <div class='cmd'>dmesg | grep -i "oom\|killed process\|out of memory"</div>
+  <div class='cmd'>journalctl -k | grep -i oom   # systemd journal kernel messages</div>
+  <div class='cmd'># Per-process memory:</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/status | grep -E "VmRSS|VmSwap|VmPeak"</div>
+  <div class='cmd'>smem -r -k | head -15        # accurate memory accounting per process</div>
+  <div class='cmd'># Swap:</div>
+  <div class='cmd'>swapon --show                 # swap devices and usage</div>
+  <div class='cmd'>cat /proc/sys/vm/swappiness   # 60=default, 1=avoid swap, 100=aggressive swap</div>
+</div>
+<p>Available memory (not Free) is what matters — Linux uses RAM for cache aggressively. Available = free + reclaimable cache. A system with 500MB free but 20GB available is healthy. OOM killer: when available memory is exhausted, the kernel scores processes by OOM score (larger RSS and lower priority = higher score) and kills the highest scorer. Check dmesg for "Killed process" to identify OOM victims.</p>
+<div class='warn'><b>Kubernetes OOM:</b> A container that hits its memory limit gets OOM-killed (Exit Code 137). The kernel's OOM killer operates inside the container's cgroup. Set memory limits accurately — too low causes constant OOMKills, too high allows memory leaks to grow unchecked. Always set both requests and limits for memory in production pods.</div>`},
+
+  {n:20,tag:'performance',q:'How do you diagnose I/O performance issues — high disk latency or throughput problems?',
+  body:`<div class='cmds'>
+  <div class='cmd'>iostat -xz 1 5                    # per-disk: r/w IOPS, throughput, await, util%</div>
+  <div class='cmd'>iotop -o                          # per-process I/O (like top but for disk)</div>
+  <div class='cmd'>iotop -bod 1                      # batch mode for logging</div>
+  <div class='cmd'>pidstat -d 1 5                    # per-process disk I/O stats</div>
+  <div class='cmd'># Key iostat columns:</div>
+  <div class='cmd'>await   = average I/O wait time (ms). &gt; 20ms SSD / &gt; 100ms HDD = problem</div>
+  <div class='cmd'>util%   = disk utilization. &gt; 80% = saturated</div>
+  <div class='cmd'>r_await = read latency, w_await = write latency</div>
+  <div class='cmd'># Check for I/O scheduler:</div>
+  <div class='cmd'>cat /sys/block/sda/queue/scheduler   # current I/O scheduler</div>
+  <div class='cmd'># Benchmark disk:</div>
+  <div class='cmd'>fio --name=randread --rw=randread --bs=4k --size=1G --runtime=30 --iodepth=32</div>
+</div>
+<p>iostat await is the most important metric — it measures how long I/O requests wait in the device queue plus actual I/O time. High await with low util% = high queue depth or device latency. High util% = device saturated. Use iotop to identify which process is causing I/O. For cloud VMs: disk IOPS and throughput are limited by the disk type and VM type — check GCP/AWS console for throttling metrics.</p>
+<div class='good'><b>Page cache tuning:</b> Linux caches disk reads/writes in RAM. <code>vm.dirty_ratio</code> (default 20%) = max RAM used for dirty (unwritten) pages before sync. High dirty_ratio delays writes but improves throughput. Lower it for databases that need durable writes. <code>vm.dirty_background_ratio</code> = when background writeback starts.</div>`},
+
+  {n:21,tag:'performance',q:'What are the key sysctl parameters every Platform Engineer should know?',
+  body:`<div class='cmds'>
+  <div class='cmd'>sysctl -a | grep &lt;param&gt;       # view current value</div>
+  <div class='cmd'>sysctl -w net.ipv4.ip_forward=1 # set temporarily</div>
+  <div class='cmd'>echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf  # persist</div>
+  <div class='cmd'>sysctl -p                       # reload /etc/sysctl.conf</div>
+  <div class='cmd'># Networking:</div>
+  <div class='cmd'>net.ipv4.ip_forward = 1                  # enable IP routing (required for K8s)</div>
+  <div class='cmd'>net.bridge.bridge-nf-call-iptables = 1   # iptables sees bridged traffic (K8s CNI)</div>
+  <div class='cmd'>net.ipv4.tcp_tw_reuse = 1                # reuse TIME_WAIT sockets</div>
+  <div class='cmd'>net.core.somaxconn = 65535               # max listen backlog (for high-conn services)</div>
+  <div class='cmd'>net.ipv4.tcp_max_syn_backlog = 65535     # SYN queue size</div>
+  <div class='cmd'>net.ipv4.ip_local_port_range = 1024 65535  # ephemeral port range</div>
+  <div class='cmd'># Memory:</div>
+  <div class='cmd'>vm.swappiness = 1                        # minimize swap (for DB servers)</div>
+  <div class='cmd'>vm.overcommit_memory = 1                 # allow overcommit (Redis requirement)</div>
+  <div class='cmd'>vm.max_map_count = 262144                # max mmap regions (Elasticsearch)</div>
+  <div class='cmd'># File descriptors:</div>
+  <div class='cmd'>fs.file-max = 2097152                    # system-wide fd limit</div>
+  <div class='cmd'>fs.inotify.max_user_watches = 524288     # for IDE/file watchers (K8s needs this)</div>
+</div>
+<p>These parameters are the standard tuning set for production Kubernetes nodes. net.ipv4.ip_forward and bridge-nf-call-iptables are required for pod networking. inotify limits are hit by development tools and Kubernetes controllers watching many files. Redis requires vm.overcommit_memory=1 to avoid background save failures. Elasticsearch requires vm.max_map_count=262144 for memory-mapped index files.</p>
+<div class='tip'><b>Kubernetes node requirements:</b> kubeadm preflight checks validate several of these sysctl values. Failing preflight on a new node is almost always a missing sysctl setting. Keep a node preparation playbook with all required sysctl values for your Kubernetes version.</div>`},
+
+  {n:22,tag:'performance',q:'How do you use strace and lsof to debug a misbehaving application?',
+  body:`<div class='cmds'>
+  <div class='cmd'># strace: trace system calls made by a process</div>
+  <div class='cmd'>strace -p &lt;pid&gt;                    # attach to running process</div>
+  <div class='cmd'>strace -p &lt;pid&gt; -e trace=network   # only network syscalls</div>
+  <div class='cmd'>strace -p &lt;pid&gt; -e trace=file      # only file syscalls</div>
+  <div class='cmd'>strace -c -p &lt;pid&gt; sleep 10       # count syscalls over 10s (summary)</div>
+  <div class='cmd'>strace -T -p &lt;pid&gt; 2>&amp;1 | grep -v "0.0000"  # show slow syscalls only</div>
+  <div class='cmd'># lsof: list open files and connections</div>
+  <div class='cmd'>lsof -p &lt;pid&gt;                      # all open files for process</div>
+  <div class='cmd'>lsof -i :8080                      # what process is using port 8080</div>
+  <div class='cmd'>lsof -u www-data                   # all files opened by user</div>
+  <div class='cmd'>lsof -i TCP -s TCP:ESTABLISHED     # all established TCP connections</div>
+  <div class='cmd'>lsof +D /var/log                   # all processes with files open in /var/log</div>
+</div>
+<p>strace reveals exactly what a process is doing at the kernel level — which files it's opening, which sockets it's connecting to, what errors it's getting. Use -T to show time spent per syscall (find slow operations). Use -e trace=network to focus on network activity. lsof answers "what has this port/file/directory open?" — essential for finding port conflicts and leaked file descriptors.</p>
+<div class='warn'><b>strace overhead:</b> strace adds significant overhead (2-10x slowdown) — it intercepts every syscall. Use it for debugging, not production monitoring. For production-safe tracing, use bpftrace or perf with eBPF probes.</div>`},
+
+  // ── SECURITY ───────────────────────────────────────────────────────────────
+  {n:23,tag:'security',q:'How do you audit and harden SSH configuration on a Linux server?',
+  body:`<div class='cmds'>
+  <div class='cmd'>cat /etc/ssh/sshd_config       # current config</div>
+  <div class='cmd'># Key hardening settings:</div>
+  <div class='cmd'>PermitRootLogin no            # never allow direct root SSH</div>
+  <div class='cmd'>PasswordAuthentication no     # keys only (no password brute force)</div>
+  <div class='cmd'>PubkeyAuthentication yes</div>
+  <div class='cmd'>AllowUsers deployer admin     # whitelist specific users</div>
+  <div class='cmd'>Port 22                       # consider non-standard port (obscurity only)</div>
+  <div class='cmd'>MaxAuthTries 3</div>
+  <div class='cmd'>ClientAliveInterval 300       # disconnect idle sessions after 5 min</div>
+  <div class='cmd'>X11Forwarding no</div>
+  <div class='cmd'>UseDNS no                     # skip DNS lookup (faster login)</div>
+  <div class='cmd'>systemctl reload sshd          # apply config changes</div>
+  <div class='cmd'># Audit login attempts:</div>
+  <div class='cmd'>journalctl -u sshd | grep "Failed\|Accepted" | tail -20</div>
+  <div class='cmd'>lastb | head -20               # failed login attempts</div>
+  <div class='cmd'>last | head -20                # successful logins</div>
+</div>
+<p>Disable password authentication immediately on any internet-facing server — this eliminates 99% of brute-force attacks. Use key-based authentication exclusively. AllowUsers creates an explicit whitelist — accounts not listed cannot SSH even with valid keys. Consider fail2ban for automatic IP banning after repeated failures. For cloud environments, prefer IAP (Identity-Aware Proxy) or Systems Manager Session Manager over direct SSH — no need to expose port 22 at all.</p>
+<div class='good'><b>GCP OS Login:</b> OS Login ties SSH access to GCP IAM identity — add roles/compute.osLogin to a user's IAM policy instead of managing authorized_keys files. Login events appear in Cloud Audit Logs. No SSH key management required. Enable org-wide with Organization Policy.</div>`},
+
+  {n:24,tag:'security',q:'What are Linux capabilities — how do they reduce attack surface compared to running as root?',
+  body:`<div class='cmds'>
+  <div class='cmd'>capsh --print                  # current process capabilities</div>
+  <div class='cmd'>cat /proc/&lt;pid&gt;/status | grep Cap  # hex-encoded capability sets</div>
+  <div class='cmd'>capsh --decode=0000000000003000   # decode capability hex</div>
+  <div class='cmd'>getcap /usr/bin/ping            # view capabilities on a binary</div>
+  <div class='cmd'>setcap cap_net_bind_service+ep /usr/bin/node  # bind ports &lt;1024 without root</div>
+  <div class='cmd'># In containers (K8s securityContext):</div>
+  <div class='cmd'>securityContext:</div>
+  <div class='cmd'>  capabilities:</div>
+  <div class='cmd'>    drop: ["ALL"]</div>
+  <div class='cmd'>    add: ["NET_BIND_SERVICE"]</div>
+</div>
+<p>Linux capabilities split root privileges into ~40 distinct units. CAP_NET_BIND_SERVICE: bind ports below 1024. CAP_SYS_PTRACE: trace/debug processes. CAP_NET_ADMIN: configure network interfaces, iptables. CAP_SYS_ADMIN: almost everything (avoid). Running as root grants all capabilities. Running as non-root with specific capabilities is far safer — compromise of the process gives only those specific privileges. In Kubernetes, drop ALL capabilities and add back only what's needed — this is the "restricted" Pod Security Standard requirement.</p>
+<div class='tip'><b>Interview depth:</b> Explaining capabilities vs root shows security maturity. A common follow-up is "how does a container escape work?" — many escapes rely on containers having CAP_SYS_ADMIN or running as root with --privileged. Dropping capabilities and running as non-root eliminates most container escape vectors.</div>`},
+
+  {n:25,tag:'security',q:'How do you use auditd to track file access and command execution on a Linux system?',
+  body:`<div class='cmds'>
+  <div class='cmd'>systemctl status auditd        # auditd running?</div>
+  <div class='cmd'># Add audit rules:</div>
+  <div class='cmd'>auditctl -w /etc/passwd -p wa -k passwd_changes  # watch file for writes/attribs</div>
+  <div class='cmd'>auditctl -w /etc/sudoers -p wa -k sudoers_changes</div>
+  <div class='cmd'>auditctl -a always,exit -F arch=b64 -S execve -k command_exec  # log all commands</div>
+  <div class='cmd'>auditctl -l                    # list current rules</div>
+  <div class='cmd'># Query audit log:</div>
+  <div class='cmd'>ausearch -k passwd_changes     # search by key</div>
+  <div class='cmd'>ausearch -ua 1000              # all events for UID 1000</div>
+  <div class='cmd'>aureport --summary             # summary report</div>
+  <div class='cmd'>aureport -x --summary          # executable summary</div>
+  <div class='cmd'>cat /var/log/audit/audit.log | grep execve  # raw log</div>
+</div>
+<p>auditd provides kernel-level audit logging — it captures syscall events with full context (who, what, when, from which process). Rules watch files (-w) or syscalls (-a). The -k flag tags rules with a searchable key. Use for compliance requirements (PCI-DSS, CIS benchmarks), incident forensics, and detecting privilege escalation attempts. Export logs to SIEM (Splunk, Chronicle) for long-term retention and alerting.</p>
+<div class='warn'><b>Performance impact:</b> Auditing every execve syscall generates enormous log volume on busy servers. Be selective: watch sensitive files (/etc/passwd, /etc/sudoers, /etc/ssh/) and specific directories rather than logging every command system-wide. Use rate limiting with -F to reduce noise.</div>`},
+
+  {n:26,tag:'security',q:'What is SELinux / AppArmor — how do mandatory access controls work?',
+  body:`<div class='cmds'>
+  <div class='cmd'># SELinux (RHEL/CentOS):</div>
+  <div class='cmd'>getenforce                     # Enforcing / Permissive / Disabled</div>
+  <div class='cmd'>sestatus                       # detailed SELinux status</div>
+  <div class='cmd'>setenforce 0                   # set Permissive (for testing, NOT production)</div>
+  <div class='cmd'>ausearch -m avc -ts recent     # SELinux denial messages</div>
+  <div class='cmd'>sealert -a /var/log/audit/audit.log  # human-readable denial explanations</div>
+  <div class='cmd'>restorecon -Rv /var/www/html    # fix file context after copy</div>
+  <div class='cmd'># AppArmor (Ubuntu/Debian):</div>
+  <div class='cmd'>aa-status                      # profile status</div>
+  <div class='cmd'>aa-complain /usr/sbin/nginx    # put nginx profile in complain mode</div>
+  <div class='cmd'>aa-enforce /usr/sbin/nginx     # enforce nginx profile</div>
+  <div class='cmd'>journalctl | grep apparmor     # AppArmor denials</div>
+</div>
+<p>DAC (Discretionary Access Control) = traditional Unix permissions — file owner controls access. MAC (Mandatory Access Control) = kernel enforces policies that override file permissions. SELinux labels every file, process, and port with a security context — access is only allowed when the policy explicitly permits it. A web server process confined by SELinux cannot read /etc/shadow even if the file permissions allow it. In containers: seccomp and AppArmor profiles restrict syscalls and filesystem access — GKE's default runtime/default seccomp profile blocks ~100 risky syscalls.</div>
+<div class='warn'><b>Never permanently disable SELinux.</b> "setenforce 0" is a debug step, not a fix. If SELinux is blocking a legitimate operation, generate the correct policy addition with audit2allow. Disabling SELinux on a RHEL production server is a security failure and a compliance violation.</div>`},
+
+  // ── STORAGE ────────────────────────────────────────────────────────────────
+  {n:27,tag:'storage',q:'How do you manage disks and partitions on Linux — MBR vs GPT?',
+  body:`<div class='cmds'>
+  <div class='cmd'>lsblk                          # block devices tree view</div>
+  <div class='cmd'>fdisk -l                       # list all disks and partitions</div>
+  <div class='cmd'>blkid                          # show UUID and filesystem type per partition</div>
+  <div class='cmd'># Create partition (GPT, modern):</div>
+  <div class='cmd'>gdisk /dev/sdb                 # GPT partition tool</div>
+  <div class='cmd'>parted /dev/sdb mklabel gpt</div>
+  <div class='cmd'>parted /dev/sdb mkpart primary ext4 0% 100%</div>
+  <div class='cmd'># Format:</div>
+  <div class='cmd'>mkfs.ext4 /dev/sdb1            # create ext4 filesystem</div>
+  <div class='cmd'>mkfs.xfs /dev/sdb1             # create XFS filesystem</div>
+  <div class='cmd'># Mount persistently:</div>
+  <div class='cmd'>echo "UUID=xxxx /data ext4 defaults,nofail 0 2" >> /etc/fstab</div>
+  <div class='cmd'>mount -a                       # test fstab without reboot</div>
+</div>
+<p>MBR (Master Boot Record): max 4 primary partitions, max 2TB disk. GPT (GUID Partition Table): 128 partitions, up to 9.4 ZB. Use GPT for all new disks. Always use UUID in /etc/fstab instead of device names (/dev/sdb) — device names can change on reboot, UUIDs are stable. The nofail mount option prevents boot failure if the disk is missing (important for data disks that may not always be attached).</p>
+<div class='tip'><b>Cloud disk attach workflow:</b> Attach disk in GCP/AWS console → <code>lsblk</code> to see new device → <code>mkfs</code> if new disk → <code>blkid</code> to get UUID → add to /etc/fstab with nofail → <code>mount -a</code> to verify. This is a daily operation for platform engineers managing data volumes.</div>`},
+
+  {n:28,tag:'storage',q:'What is RAID — what levels matter and when do you use software RAID in production?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Software RAID with mdadm:</div>
+  <div class='cmd'>mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb /dev/sdc  # RAID 1</div>
+  <div class='cmd'>cat /proc/mdstat                # RAID status</div>
+  <div class='cmd'>mdadm --detail /dev/md0         # detailed array status</div>
+  <div class='cmd'>mdadm --manage /dev/md0 --add /dev/sdd   # add spare/replace failed disk</div>
+  <div class='cmd'># Common RAID levels:</div>
+  <div class='cmd'>RAID 0: striping — max performance/capacity, zero redundancy (any disk failure = data loss)</div>
+  <div class='cmd'>RAID 1: mirroring — 2 disks, full redundancy, 50% capacity</div>
+  <div class='cmd'>RAID 5: striping + parity — 3+ disks, 1 disk fault tolerance, (n-1) capacity</div>
+  <div class='cmd'>RAID 6: striping + 2 parity — 2 disk fault tolerance</div>
+  <div class='cmd'>RAID 10: RAID 1+0 — mirrored stripes, best performance + redundancy, 50% capacity</div>
+</div>
+<p>In cloud environments, RAID is largely replaced by cloud storage redundancy (GCP Persistent Disks, AWS EBS have built-in replication). Use software RAID on bare metal or when you need: local NVMe RAID 0 for extreme IOPS (databases, scratch storage), or RAID 10 for bare-metal database servers. RAID is not a backup — it protects against disk failure, not data corruption or accidental deletion.</p>
+<div class='warn'><b>RAID 5 rebuild risk:</b> During rebuild after a disk failure, the remaining disks are under stress. A second failure during rebuild (common for old drives from the same batch) causes total data loss. RAID 6 or RAID 10 is safer for production. Many DBAs prefer RAID 10 over RAID 5 for write-heavy databases.</div>`},
+
+  {n:29,tag:'storage',q:'How do you diagnose and fix filesystem corruption on Linux?',
+  body:`<div class='cmds'>
+  <div class='cmd'>dmesg | grep -i "error\|corrupt\|EXT4-fs\|XFS"   # kernel filesystem errors</div>
+  <div class='cmd'>journalctl -k | grep -i "filesystem\|ext4\|xfs"  # journal filesystem messages</div>
+  <div class='cmd'># Check and repair ext4 (must be unmounted):</div>
+  <div class='cmd'>umount /dev/sdb1               # unmount first</div>
+  <div class='cmd'>fsck -y /dev/sdb1              # check and auto-fix ext4</div>
+  <div class='cmd'>e2fsck -f -y /dev/sdb1         # more thorough ext4 check</div>
+  <div class='cmd'># XFS repair (must be unmounted):</div>
+  <div class='cmd'>xfs_check /dev/sdb1            # check (read-only)</div>
+  <div class='cmd'>xfs_repair /dev/sdb1           # repair XFS</div>
+  <div class='cmd'># Remount read-only if filesystem errors detected:</div>
+  <div class='cmd'>mount -o remount,ro /data      # prevent further corruption</div>
+</div>
+<p>Filesystem corruption causes: improper shutdown (power loss during writes), hardware failure (failing disk, bad RAM causing bit flips), kernel bugs, or full filesystem (writes failing partially). When the kernel detects errors, it remounts the filesystem read-only to prevent further damage. Fix: fsck/xfs_repair on unmounted filesystem. For production systems: always have journaling enabled (ext4 journal, XFS journal) to minimize corruption on unclean shutdown.</p>
+<div class='tip'><b>Root filesystem fsck:</b> You can't unmount the root filesystem while the system is running. Boot into rescue/single-user mode, or use a live CD, to run fsck on the root partition. Modern Linux runs fsck automatically on boot if the filesystem was not cleanly unmounted.</div>`},
+
+  // ── BOOT & SYSTEMD ─────────────────────────────────────────────────────────
+  {n:30,tag:'boot',q:'Explain the Linux boot process — from power-on to login prompt.',
+  body:`<div class='cmds'>
+  <div class='cmd'>1. BIOS/UEFI — hardware init, finds bootable disk</div>
+  <div class='cmd'>2. Bootloader (GRUB2) — loads kernel + initramfs from /boot</div>
+  <div class='cmd'>3. Kernel init — decompresses, initializes hardware, mounts initramfs</div>
+  <div class='cmd'>4. initramfs — temporary root FS with drivers to mount real root FS</div>
+  <div class='cmd'>5. Kernel mounts real root filesystem (from /etc/fstab or kernel cmdline)</div>
+  <div class='cmd'>6. systemd (PID 1) starts — reads /etc/systemd/system/default.target</div>
+  <div class='cmd'>7. systemd activates services in dependency order</div>
+  <div class='cmd'>8. getty (login prompt) or display manager starts</div>
+  <div class='cmd'># Debug boot:</div>
+  <div class='cmd'>journalctl -b               # all logs from current boot</div>
+  <div class='cmd'>journalctl -b -1            # logs from previous boot (useful after crash)</div>
+  <div class='cmd'>systemd-analyze             # total boot time</div>
+  <div class='cmd'>systemd-analyze blame       # time per service (find slow boot services)</div>
+  <div class='cmd'>systemd-analyze critical-chain  # critical path of boot</div>
+</div>
+<p>GRUB2 is the bootloader on most modern Linux. It reads /boot/grub/grub.cfg, loads the kernel image and initrd. The kernel cmdline (visible in /proc/cmdline) can pass parameters: root= (root device), quiet (suppress messages), ro (mount root read-only initially). systemd replaces sysvinit — it parallelizes service startup and tracks dependencies. Containers skip all of this — the kernel is provided by the host, the container runtime starts PID 1 directly.</p>
+<div class='tip'><b>Rescue mode:</b> If systemd fails to start (corrupted unit file, bad fstab), boot with <code>systemd.unit=rescue.target</code> on the kernel cmdline in GRUB. Or append <code>init=/bin/bash</code> for a root shell before systemd starts. These rescue techniques are tested in CKA.</div>`},
+
+  {n:31,tag:'boot',q:'How do you manage services with systemd — what are the key commands and unit file structure?',
+  body:`<div class='cmds'>
+  <div class='cmd'>systemctl status nginx         # service status + recent logs</div>
+  <div class='cmd'>systemctl start/stop/restart nginx</div>
+  <div class='cmd'>systemctl enable nginx         # start on boot (creates symlink in wants/)</div>
+  <div class='cmd'>systemctl disable nginx        # remove from boot</div>
+  <div class='cmd'>systemctl daemon-reload        # reload unit files after editing</div>
+  <div class='cmd'>systemctl list-units --type=service --state=failed</div>
+  <div class='cmd'>journalctl -u nginx -f         # follow nginx service logs</div>
+  <div class='cmd'>journalctl -u nginx --since "1 hour ago"</div>
+  <div class='cmd'># Create a custom service unit:</div>
+  <div class='cmd'>cat /etc/systemd/system/myapp.service</div>
+  <div class='cmd'>[Unit]</div>
+  <div class='cmd'>Description=My Application</div>
+  <div class='cmd'>After=network.target</div>
+  <div class='cmd'>[Service]</div>
+  <div class='cmd'>Type=simple</div>
+  <div class='cmd'>User=myapp</div>
+  <div class='cmd'>ExecStart=/usr/bin/myapp --config /etc/myapp/config.yaml</div>
+  <div class='cmd'>Restart=on-failure</div>
+  <div class='cmd'>RestartSec=5</div>
+  <div class='cmd'>[Install]</div>
+  <div class='cmd'>WantedBy=multi-user.target</div>
+</div>
+<p>Unit files define services, timers, sockets, and mounts. The [Service] section key settings: Type (simple, forking, notify, oneshot), ExecStart/ExecStop/ExecReload, Restart (always/on-failure/on-abnormal), User/Group for privilege dropping, Environment/EnvironmentFile for config. After=network.target ensures networking is up before the service starts. systemd replaces both /etc/init.d scripts and cron (use .timer units instead of cron for systemd-managed services).</p>
+<div class='good'><b>Restart policies:</b> Restart=on-failure restarts only on non-zero exit code. Restart=always restarts even on clean exit (good for long-running services). RestartSec=5 adds a delay to prevent rapid restart loops from hammering the system. Combine with StartLimitIntervalSec and StartLimitBurst to limit restart frequency.</div>`},
+
+  {n:32,tag:'boot',q:'A server is not booting — how do you diagnose and recover from boot failures?',
+  body:`<div class='cmds'>
+  <div class='cmd'># From GRUB: edit kernel cmdline (press 'e' on GRUB entry)</div>
+  <div class='cmd'>Append: systemd.unit=rescue.target   # boot to rescue shell</div>
+  <div class='cmd'>Append: init=/bin/bash               # bypass systemd entirely</div>
+  <div class='cmd'>Remove: quiet splash                  # see all boot messages</div>
+  <div class='cmd'># In rescue shell:</div>
+  <div class='cmd'>mount -o remount,rw /               # remount root read-write</div>
+  <div class='cmd'>journalctl -b -p err               # errors from this boot</div>
+  <div class='cmd'>systemctl list-units --failed      # which units failed</div>
+  <div class='cmd'>fsck /dev/sda1                     # check root filesystem</div>
+  <div class='cmd'>cat /etc/fstab                     # check for bad entries</div>
+  <div class='cmd'># For cloud VMs — rescue disk approach:</div>
+  <div class='cmd'># Snapshot the boot disk → detach → attach to rescue VM → mount → fix → reattach</div>
+</div>
+<p>Common boot failures: bad /etc/fstab entry (missing nofail on non-critical disk causes boot hang), corrupted filesystem (fsck needed), failed systemd service in required boot chain (disable or fix the unit), kernel panic (bad kernel module — boot old kernel from GRUB), or full root filesystem (can't write to disk). For cloud VMs: use serial console access (GCP Serial Console, AWS EC2 Serial Console) to see boot messages without needing SSH.</p>
+<div class='warn'><b>fstab mistakes:</b> A typo in /etc/fstab is one of the most common ways to break a server. Always test with <code>mount -a</code> before rebooting. Use <code>nofail</code> for non-root filesystems so a missing disk doesn't halt boot. Never reboot after editing fstab without testing.</div>`},
+
+  // ── USERS & PERMISSIONS ────────────────────────────────────────────────────
+  {n:33,tag:'users',q:'How do you manage users, groups, and sudo on a Linux system?',
+  body:`<div class='cmds'>
+  <div class='cmd'>useradd -m -s /bin/bash -G sudo deployer   # create user with home dir and sudo</div>
+  <div class='cmd'>usermod -aG docker,sudo existing_user      # add to groups (-a = append)</div>
+  <div class='cmd'>passwd deployer                            # set password</div>
+  <div class='cmd'>userdel -r olduser                         # delete user + home dir</div>
+  <div class='cmd'>id username                                # show UID, GID, groups</div>
+  <div class='cmd'>groups username                            # list groups</div>
+  <div class='cmd'>cat /etc/passwd | cut -d: -f1              # list all users</div>
+  <div class='cmd'># sudo configuration:</div>
+  <div class='cmd'>visudo                                     # edit /etc/sudoers safely</div>
+  <div class='cmd'>deployer ALL=(ALL) NOPASSWD: /usr/bin/systemctl  # passwordless specific command</div>
+  <div class='cmd'>%ops ALL=(ALL) ALL                         # all users in ops group get full sudo</div>
+  <div class='cmd'>cat /etc/sudoers.d/deployer                # per-user sudo config in drop-in dir</div>
+</div>
+<p>Always use visudo to edit sudoers — it validates syntax before saving, preventing lockout from a syntax error. Use /etc/sudoers.d/ for per-user/group configs instead of editing the main sudoers file. NOPASSWD should be limited to specific commands, never ALL, to minimize risk. For cloud environments: prefer IAM-based access (OS Login for GCP) over managing local users — it scales and audits better.</p>
+<div class='tip'><b>Group membership:</b> Users must log out and back in after group changes for new groups to take effect (the login shell reads group membership at session start). Or use <code>newgrp docker</code> to start a new shell with the updated group without logging out.</div>`},
+
+  {n:34,tag:'users',q:'What is PAM (Pluggable Authentication Modules) — how does it control login?',
+  body:`<div class='cmds'>
+  <div class='cmd'>cat /etc/pam.d/sshd             # PAM config for SSH login</div>
+  <div class='cmd'>cat /etc/pam.d/sudo             # PAM config for sudo</div>
+  <div class='cmd'>cat /etc/pam.d/common-auth      # included by most PAM configs</div>
+  <div class='cmd'># PAM module types:</div>
+  <div class='cmd'>auth    — verify identity (password, LDAP, 2FA, SSH key)</div>
+  <div class='cmd'>account — check account restrictions (expiry, time of day, lockout)</div>
+  <div class='cmd'>session — setup/teardown session (mount home, set env, log)</div>
+  <div class='cmd'>password — manage password changes</div>
+  <div class='cmd'># Control flags:</div>
+  <div class='cmd'>required   — must pass, failure continues chain (reveals all errors at end)</div>
+  <div class='cmd'>requisite  — must pass, failure stops chain immediately</div>
+  <div class='cmd'>sufficient — if passes, stop chain (success without later checks)</div>
+  <div class='cmd'>optional   — result ignored</div>
+</div>
+<p>PAM is the Linux authentication framework — it makes authentication pluggable without recompiling applications. SSH, sudo, login, su all use PAM. Common modules: pam_unix (local passwords), pam_ldap (LDAP auth), pam_google_authenticator (TOTP 2FA), pam_limits (enforce ulimits on login), pam_faillock (account lockout after failed attempts). When an SSH login is slow, PAM modules (especially LDAP or DNS lookups) are often the cause.</p>
+<div class='warn'><b>PAM misconfiguration:</b> A syntax error or wrong module path in a PAM config file can make it impossible to log in via that method. Always test on a second open session before closing the current one. pam_tally2/pam_faillock can lock out all users including root — know how to unlock: <code>faillock --user root --reset</code>.</div>`},
+
+  {n:35,tag:'users',q:'How do you implement and audit access controls using ACLs (Access Control Lists)?',
+  body:`<div class='cmds'>
+  <div class='cmd'>getfacl /shared/project         # view current ACLs</div>
+  <div class='cmd'>setfacl -m u:alice:rwx /shared/project   # give alice rwx</div>
+  <div class='cmd'>setfacl -m g:devteam:rx /shared/project  # give devteam r-x</div>
+  <div class='cmd'>setfacl -m d:g:devteam:rx /shared/project  # default ACL for new files</div>
+  <div class='cmd'>setfacl -x u:alice /shared/project   # remove alice's ACL</div>
+  <div class='cmd'>setfacl -b /shared/project           # remove all ACLs</div>
+  <div class='cmd'># Find files with ACLs:</div>
+  <div class='cmd'>find / -acl 2>/dev/null              # files with extended ACLs</div>
+  <div class='cmd'>ls -la /shared/project               # + sign after permissions = has ACL</div>
+</div>
+<p>POSIX ACLs extend standard rwx permissions — you can grant specific users or groups access to files without changing the owning user/group or using SUID/SGID. Default ACLs on directories propagate to newly created files inside — critical for shared project directories where you want consistent permissions on all files. The + in ls -la output indicates ACLs are present. Filesystem must be mounted with acl option (ext4/XFS support ACLs natively, enabled by default in modern Linux).</p>
+<div class='good'><b>Practical use case:</b> A shared /data/project directory owned by root:engineering. Engineers need write access, CI service account needs read-only. Without ACLs: you need complex group arrangements. With ACLs: setfacl -m u:ci-user:rx and u:alice:rwx solves it cleanly without touching group membership.</div>`},
+
+  // ── SCRIPTING ──────────────────────────────────────────────────────────────
+  {n:36,tag:'scripting',q:'What are essential bash scripting practices for production automation scripts?',
+  body:`<div class='cmds'>
+  <div class='cmd'>#!/bin/bash</div>
+  <div class='cmd'>set -euo pipefail              # exit on error, undefined var, pipe failure</div>
+  <div class='cmd'>set -x                         # trace (print each command before execution)</div>
+  <div class='cmd'># Trap for cleanup on exit:</div>
+  <div class='cmd'>trap 'cleanup; echo "Script failed on line $LINENO"' ERR</div>
+  <div class='cmd'>trap cleanup EXIT</div>
+  <div class='cmd'># Safe variable use:</div>
+  <div class='cmd'>var="\${1:-default_value}"       # parameter with default</div>
+  <div class='cmd'>[ -z "\${VAR:-}" ] &amp;&amp; echo "VAR is empty"</div>
+  <div class='cmd'># Avoid word splitting with quotes:</div>
+  <div class='cmd'>file="my file.txt"; rm "$file"  # quotes prevent word splitting</div>
+  <div class='cmd'># Lockfile to prevent concurrent runs:</div>
+  <div class='cmd'>LOCKFILE=/tmp/myscript.lock</div>
+  <div class='cmd'>exec 200>"$LOCKFILE"; flock -n 200 || { echo "Already running"; exit 1; }</div>
+  <div class='cmd'># Logging:</div>
+  <div class='cmd'>log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a /var/log/myscript.log; }</div>
+</div>
+<p>set -euo pipefail is the most important line in any production bash script. -e: exit on command failure. -u: treat unset variables as errors (catches typos). -o pipefail: a pipe fails if any command in it fails (without this, <code>false | echo "ok"</code> succeeds). trap ERR catches failures and cleans up temp files, releases locks. Never write production scripts without these — a missing set -e means errors are silently ignored and the script continues in a broken state.</p>
+<div class='warn'><b>set -e caveats:</b> <code>set -e</code> has surprising behavior: it doesn't trigger inside if conditions (<code>if grep foo file; then</code>), function calls assigned to variables, or expressions after || and &&. Test scripts thoroughly and consider using explicit error checking for critical commands: <code>cmd || { echo "cmd failed"; exit 1; }</code>.</div>`},
+
+  {n:37,tag:'scripting',q:'How do you write efficient text processing pipelines with grep, awk, sed, and sort?',
+  body:`<div class='cmds'>
+  <div class='cmd'># grep — search and filter:</div>
+  <div class='cmd'>grep -r "ERROR" /var/log/ --include="*.log" -l   # recursive, filenames only</div>
+  <div class='cmd'>grep -E "ERROR|WARN" app.log | grep -v "expected" # exclude pattern</div>
+  <div class='cmd'>grep -c "404" access.log                          # count matches</div>
+  <div class='cmd'>grep -A3 -B1 "Exception" app.log                  # context lines</div>
+  <div class='cmd'># awk — columnar processing:</div>
+  <div class='cmd'>awk '{print $1, $NF}' access.log                  # first and last field</div>
+  <div class='cmd'>awk -F: '$3 >= 1000 {print $1}' /etc/passwd       # users with UID >= 1000</div>
+  <div class='cmd'>awk '{sum+=$NF} END {print "Total:", sum}' file    # sum last column</div>
+  <div class='cmd'>awk '/START/,/END/' logfile                        # print between patterns</div>
+  <div class='cmd'># sed — stream editing:</div>
+  <div class='cmd'>sed -i 's/old_value/new_value/g' config.yaml      # in-place replacement</div>
+  <div class='cmd'>sed -n '10,20p' largefile                         # print lines 10-20</div>
+  <div class='cmd'>sed '/^#/d; /^$/d' config.yaml                    # remove comments + blank lines</div>
+  <div class='cmd'># sort + uniq — aggregation:</div>
+  <div class='cmd'>awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -10  # top IPs</div>
+</div>
+<p>The Unix pipeline philosophy: each tool does one thing, compose them. grep filters lines, awk processes columns, sed transforms text, sort orders, uniq counts. Mastering these four tools means you can process any log file, config file, or data stream without writing a Python script. The top-IPs pipeline is a classic — learn it and adapt it for any log analysis task.</p>
+<div class='tip'><b>Performance tip:</b> For large files, grep is faster than awk for pure pattern matching. Place the most selective filter first in a pipeline — filter early to reduce data flowing to later stages. For very large log files (&gt;10GB), consider ripgrep (rg) which is significantly faster than GNU grep.</div>`},
+
+  {n:38,tag:'scripting',q:'How do you schedule tasks with cron and systemd timers — what are the differences?',
+  body:`<div class='cmds'>
+  <div class='cmd'># cron:</div>
+  <div class='cmd'>crontab -e                              # edit current user's crontab</div>
+  <div class='cmd'>crontab -l                              # list current user's crontab</div>
+  <div class='cmd'>cat /etc/crontab                        # system crontab</div>
+  <div class='cmd'>ls /etc/cron.d/ /etc/cron.daily/        # drop-in cron directories</div>
+  <div class='cmd'># Format: min hour dom month dow command</div>
+  <div class='cmd'>*/5 * * * * /usr/bin/check_disk.sh      # every 5 minutes</div>
+  <div class='cmd'>0 2 * * 0   /usr/bin/weekly_backup.sh   # Sunday at 2am</div>
+  <div class='cmd'>@reboot     /usr/bin/startup.sh         # on reboot</div>
+  <div class='cmd'># systemd timer:</div>
+  <div class='cmd'>cat /etc/systemd/system/backup.timer</div>
+  <div class='cmd'>[Timer]</div>
+  <div class='cmd'>OnCalendar=Sun *-*-* 02:00:00</div>
+  <div class='cmd'>Persistent=true                         # run if missed while system was off</div>
+  <div class='cmd'>systemctl enable --now backup.timer</div>
+  <div class='cmd'>systemctl list-timers --all             # list all timers and next run time</div>
+</div>
+<p>cron advantages: simple, universal, familiar. Disadvantages: no dependency management, no logging (output goes to email or /dev/null), no retry on failure, skips if system was off. systemd timer advantages: full journal logging, dependencies (OnActiveSec, After=network.target), Persistent=true to catch missed runs, easy to disable/enable without crontab editing, integrated with systemctl status. For new automation on systemd systems, prefer timers. Keep cron for simple one-liners and scripts deployed to mixed environments.</p>
+<div class='warn'><b>Cron PATH:</b> cron runs with a minimal environment — PATH is typically just /usr/bin:/bin. Scripts that work interactively fail in cron because commands aren't found. Always use absolute paths in cron scripts or set PATH explicitly at the top of the script.</div>`},
+
+  // ── TROUBLESHOOTING ────────────────────────────────────────────────────────
+  {n:39,tag:'troubleshoot',q:'Server is responding slowly — walk through your systematic diagnosis approach.',
+  body:`<div class='cmds'>
+  <div class='cmd'># Step 1: System-wide snapshot (60 seconds of data)</div>
+  <div class='cmd'>uptime                     # load average trend</div>
+  <div class='cmd'>vmstat 1 10                # CPU, memory, swap, I/O, processes</div>
+  <div class='cmd'>iostat -xz 1 5             # disk I/O breakdown</div>
+  <div class='cmd'>free -h                    # memory: available is the key metric</div>
+  <div class='cmd'>ss -s                      # socket summary (connection counts)</div>
+  <div class='cmd'># Step 2: Find the bottleneck</div>
+  <div class='cmd'>top -b -n 1 -o %CPU        # CPU hogs</div>
+  <div class='cmd'>top -b -n 1 -o %MEM        # memory hogs</div>
+  <div class='cmd'>iotop -b -n 1 -o           # I/O hogs</div>
+  <div class='cmd'>iftop                      # network bandwidth hogs</div>
+  <div class='cmd'># Step 3: Check for specific conditions</div>
+  <div class='cmd'>dmesg | tail -20           # kernel errors (OOM, disk errors, etc.)</div>
+  <div class='cmd'>journalctl -p err -n 50    # systemd error messages</div>
+  <div class='cmd'>ps aux | awk '$8=="D"' | wc -l  # D-state process count</div>
+</div>
+<p>The USE method (Utilization, Saturation, Errors) is the framework: for each resource (CPU, memory, disk, network), check utilization (how busy is it?), saturation (is there a queue?), and errors. A slow server is always one of these. vmstat's columns tell the story: r (runnable queue), b (blocked), wa (I/O wait), si/so (swap in/out). Swapping to disk is catastrophic for performance — si/so &gt; 0 means memory is exhausted.</p>
+<div class='tip'><b>USE method in 60 seconds:</b> This is the Brendan Gregg "60-second Linux performance analysis" checklist. In an interview, recite this flow — uptime → dmesg → vmstat → mpstat → pidstat → iostat → free → sar → top. It demonstrates structured thinking, not random command firing.</div>`},
+
+  {n:40,tag:'troubleshoot',q:'How do you investigate a server that was compromised — what do you look for?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Timeline reconstruction:</div>
+  <div class='cmd'>last -F                         # login history with timestamps</div>
+  <div class='cmd'>lastb -F                        # failed logins</div>
+  <div class='cmd'>journalctl --since="2024-01-15" -p warning  # journal from incident time</div>
+  <div class='cmd'>ausearch -ts 01/15/2024 -te 01/16/2024 -m execve  # audit log commands</div>
+  <div class='cmd'># Find recently modified files:</div>
+  <div class='cmd'>find / -mtime -7 -type f 2>/dev/null | grep -v /proc | sort</div>
+  <div class='cmd'>find /tmp /var/tmp /dev/shm -type f  # common malware drop locations</div>
+  <div class='cmd'># Check for persistence mechanisms:</div>
+  <div class='cmd'>crontab -l; cat /etc/cron*</div>
+  <div class='cmd'>systemctl list-units --type=service | grep -v "loaded active"</div>
+  <div class='cmd'>cat /etc/rc.local; ls /etc/init.d/</div>
+  <div class='cmd'># Running processes from unusual locations:</div>
+  <div class='cmd'>ls -la /proc/*/exe 2>/dev/null | grep -v '/usr\|/bin\|/lib\|/sbin'</div>
+  <div class='cmd'># Network connections:</div>
+  <div class='cmd'>ss -tnp                         # all TCP connections with PIDs</div>
+  <div class='cmd'>ss -tnp | grep -v "127.0.0.1\|::1"  # external connections</div>
+</div>
+<p>Incident response order: (1) Isolate (remove from network if actively compromised), (2) Preserve evidence (snapshot disk image, copy logs), (3) Investigate (timeline, modified files, persistence mechanisms, network connections), (4) Remediate, (5) Harden. Look for: SUID binaries in unexpected locations, cron entries you don't recognize, services/processes from /tmp or /dev/shm, outbound connections to unusual IPs, and unauthorized SSH keys in ~/.ssh/authorized_keys.</p>
+<div class='warn'><b>Don't trust the running system:</b> An attacker may have replaced system binaries (ls, ps, netstat) with rootkitted versions that hide their presence. Boot from a live CD or trusted external media for forensic investigation. Use immutable audit logs shipped to an external SIEM — logs on the compromised server may have been tampered with.</div>`},
+
+  {n:41,tag:'troubleshoot',q:'"No space left on device" error — but df shows space available. What are the possibilities?',
+  body:`<div class='cmds'>
+  <div class='cmd'>df -h                          # check disk space</div>
+  <div class='cmd'>df -i                          # check inode usage (THIS is often the culprit)</div>
+  <div class='cmd'>lsof +L1                       # deleted files still held open</div>
+  <div class='cmd'>ls -la /proc/*/fd 2>/dev/null | grep "(deleted)"  # same via /proc</div>
+  <div class='cmd'># Inode exhaustion: find directory with most files</div>
+  <div class='cmd'>find / -xdev -printf '%h\n' 2>/dev/null | sort | uniq -c | sort -rn | head -10</div>
+  <div class='cmd'># tmpfs size limit:</div>
+  <div class='cmd'>df -h | grep tmpfs              # /run, /dev/shm may be full</div>
+  <div class='cmd'># Kernel reserved space (5% by default on ext4):</div>
+  <div class='cmd'>tune2fs -l /dev/sda1 | grep "Reserved block"  # blocks reserved for root</div>
+  <div class='cmd'>tune2fs -m 1 /dev/sda1         # reduce reserved to 1% (on data disks)</div>
+</div>
+<p>Four causes: (1) Inode exhaustion — millions of tiny files consumed all inodes; df -i shows 100% inode usage. (2) Deleted-but-open files — process holds a file open, space not freed; lsof +L1 reveals it. (3) Reserved blocks — ext4 reserves 5% for root by default; a non-root process can't use this space even if df shows it. (4) tmpfs or /run full — these are RAM-backed filesystems with their own limits. This is a common interview question because it tests whether you understand the difference between space and inodes.</p>
+<div class='tip'><b>Fast inode cleanup:</b> Finding and deleting millions of small files is slow with standard rm. Use <code>find . -delete</code> (faster than piping to rm) or <code>rsync --delete empty_dir/ target_dir/</code> to bulk-delete efficiently. For mail/session queues: check application documentation for purge commands that use internal indexes rather than filesystem walks.</div>`},
+
+  {n:42,tag:'troubleshoot',q:'SSH connection hangs or is extremely slow to authenticate — how do you diagnose?',
+  body:`<div class='cmds'>
+  <div class='cmd'>ssh -vvv user@host              # verbose mode (shows every auth step)</div>
+  <div class='cmd'># Common culprits from verbose output:</div>
+  <div class='cmd'>debug1: Trying private key: ~/.ssh/id_rsa  # key being tried</div>
+  <div class='cmd'>debug1: Authentications that can continue  # what server accepts</div>
+  <div class='cmd'># On the server side:</div>
+  <div class='cmd'>journalctl -u sshd -f           # sshd log in real time</div>
+  <div class='cmd'>sshd -T | grep -E "usedns|gssapi|challengeresponse"  # effective sshd config</div>
+  <div class='cmd'># DNS reverse lookup (common culprit):</div>
+  <div class='cmd'>UseDNS no                       # in /etc/ssh/sshd_config — disables PTR lookup</div>
+  <div class='cmd'># GSSAPI timeout:</div>
+  <div class='cmd'>GSSAPIAuthentication no         # disable if not using Kerberos</div>
+  <div class='cmd'># Check /etc/hosts.allow / hosts.deny (TCP wrappers):</div>
+  <div class='cmd'>cat /etc/hosts.deny</div>
+  <div class='cmd'># PAM timeout (LDAP/AD unreachable):</div>
+  <div class='cmd'>time ssh -o PasswordAuthentication=no user@host  # skip password auth</div>
+</div>
+<p>SSH slowness causes: UseDNS=yes causing PTR (reverse DNS) lookup for the client IP (slow or failing DNS = slow login), GSSAPIAuthentication=yes trying Kerberos negotiation, PAM module timing out (LDAP server unreachable), /etc/hosts.allow timeout for TCP wrappers, or many SSH keys in agent forcing the server to try each key (use IdentitiesOnly=yes in ~/.ssh/config). The -vvv flag shows exactly which step is slow — use it first.</p>
+<div class='good'><b>Quick wins:</b> Adding <code>UseDNS no</code> and <code>GSSAPIAuthentication no</code> to sshd_config (plus systemctl reload sshd) instantly fixes the majority of slow SSH login issues. These are safe to disable on most systems not using Kerberos or relying on DNS-based access control.</div>`},
+
+  {n:43,tag:'troubleshoot',q:'How do you handle a runaway process that is consuming all disk space with log writes?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Identify the file being written:</div>
+  <div class='cmd'>lsof | grep -i "REG.*&lt;mountpoint&gt;" | sort -k7 -rn | head -10  # largest open files</div>
+  <div class='cmd'>inotifywait -m /var/log/        # watch directory for writes in real time</div>
+  <div class='cmd'># Immediate relief without killing the process:</div>
+  <div class='cmd'>truncate -s 0 /var/log/runaway.log      # empty the file immediately</div>
+  <div class='cmd'>&gt; /var/log/runaway.log               # bash redirect to empty</div>
+  <div class='cmd'># Rate-limit log output (if using systemd):</div>
+  <div class='cmd'># In unit file [Service] section:</div>
+  <div class='cmd'>StandardOutput=journal</div>
+  <div class='cmd'>LogRateLimitIntervalSec=30</div>
+  <div class='cmd'>LogRateLimitBurst=1000</div>
+  <div class='cmd'># Redirect stdout to /dev/null temporarily:</div>
+  <div class='cmd'>gdb -p &lt;pid&gt; -batch -ex 'call close(1)' -ex 'call open("/dev/null",1)'</div>
+</div>
+<p>A runaway logger can fill disk in minutes. The truncate trick empties the file in-place without restarting the process — the process continues writing from offset 0. This gives immediate disk relief while you investigate the root cause. Common root causes: debug logging left on in production (check log level config), a loop generating errors that each trigger a log line, or a core dump being written repeatedly. Long-term: configure log rotation (logrotate), set max log size in the application config, and set disk usage alerts at 80%.</p>
+<div class='warn'><b>Journal filling disk:</b> systemd-journald can fill disk if not limited. Set SystemMaxUse=2G in /etc/systemd/journald.conf. Check current usage with <code>journalctl --disk-usage</code>. Vacuum old entries with <code>journalctl --vacuum-size=1G</code>.</div>`},
+
+  {n:44,tag:'performance',q:'How do you tune Linux kernel parameters for a Kubernetes node?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Required for Kubernetes networking:</div>
+  <div class='cmd'>net.ipv4.ip_forward = 1</div>
+  <div class='cmd'>net.bridge.bridge-nf-call-iptables = 1</div>
+  <div class='cmd'>net.bridge.bridge-nf-call-ip6tables = 1</div>
+  <div class='cmd'>net.ipv4.conf.all.rp_filter = 0    # for some CNI plugins</div>
+  <div class='cmd'># High connection count (for services with many pods):</div>
+  <div class='cmd'>net.core.somaxconn = 32768</div>
+  <div class='cmd'>net.ipv4.tcp_max_syn_backlog = 32768</div>
+  <div class='cmd'>net.ipv4.ip_local_port_range = 1024 65535</div>
+  <div class='cmd'>net.ipv4.tcp_tw_reuse = 1</div>
+  <div class='cmd'># inotify for Kubernetes controllers:</div>
+  <div class='cmd'>fs.inotify.max_user_watches = 524288</div>
+  <div class='cmd'>fs.inotify.max_user_instances = 512</div>
+  <div class='cmd'># File descriptor limits:</div>
+  <div class='cmd'>fs.file-max = 2097152</div>
+  <div class='cmd'># Disable swap (K8s requires this or kubelet --fail-swap-on=false):</div>
+  <div class='cmd'>swapoff -a; sed -i '/swap/d' /etc/fstab</div>
+  <div class='cmd'>vm.swappiness = 0</div>
+</div>
+<p>Kubernetes nodes require specific kernel settings. The bridge-nf-call-iptables settings ensure iptables sees bridged traffic — required for pod-to-pod networking with most CNI plugins. Without ip_forward, routing between pods is impossible. Kubernetes strongly recommends disabling swap — memory limits on containers become unreliable when swap is available (a container hitting its limit swaps instead of being OOM-killed). Store these in /etc/sysctl.d/99-kubernetes.conf for persistence across reboots.</p>
+<div class='good'><b>Node preparation playbook:</b> Always version-control your node preparation steps (Ansible, Terraform user_data). Any K8s node joining the cluster should have identical kernel parameters. Drift between nodes causes subtle, hard-to-diagnose issues where pods behave differently depending on which node they land on.</div>`},
+
+  {n:45,tag:'security',q:'What is a Linux namespace — how do containers use them for isolation?',
+  body:`<div class='cmds'>
+  <div class='cmd'>ls -la /proc/self/ns/           # namespaces for current process</div>
+  <div class='cmd'>lsns                           # list all namespaces on the system</div>
+  <div class='cmd'>lsns -t net                    # only network namespaces</div>
+  <div class='cmd'># Namespace types:</div>
+  <div class='cmd'>mnt  — filesystem mounts (each container has own mount tree)</div>
+  <div class='cmd'>pid  — process IDs (container PID 1 maps to host PID N)</div>
+  <div class='cmd'>net  — network interfaces, routes, iptables rules</div>
+  <div class='cmd'>ipc  — inter-process communication (shared memory, semaphores)</div>
+  <div class='cmd'>uts  — hostname and domain name</div>
+  <div class='cmd'>user — UID/GID mappings (rootless containers)</div>
+  <div class='cmd'>cgroup — cgroup root view</div>
+  <div class='cmd'># Enter a container's namespace:</div>
+  <div class='cmd'>nsenter -t &lt;container-pid&gt; -n  # enter network namespace</div>
+  <div class='cmd'>nsenter -t &lt;container-pid&gt; --all  # enter all namespaces (like exec)</div>
+</div>
+<p>Linux namespaces are what make containers possible — each container gets isolated views of processes, networking, filesystem, hostname, and IPC. cgroups (control groups) complement namespaces: namespaces provide isolation (what you can see), cgroups provide resource limits (how much you can use). Together they form the foundation of container technology. nsenter is invaluable for debugging — it lets you enter a container's network namespace to run network diagnostic tools that aren't in the container image.</p>
+<div class='tip'><b>Debug without exec:</b> If a container doesn't have debugging tools (distroless images), use <code>nsenter -t $(docker inspect -f '{{.State.Pid}}' &lt;container&gt;) -n -- ss -tlnp</code> to run ss inside the container's network namespace from the host. No exec into container needed — you use the host's tools in the container's namespace.</div>`},
+
+  {n:46,tag:'security',q:'What are cgroups — how do they enforce resource limits for containers and Kubernetes pods?',
+  body:`<div class='cmds'>
+  <div class='cmd'>cat /proc/self/cgroup              # cgroup membership of current process</div>
+  <div class='cmd'>ls /sys/fs/cgroup/                 # cgroup v1 hierarchy</div>
+  <div class='cmd'>ls /sys/fs/cgroup/memory/          # memory controller</div>
+  <div class='cmd'># For a container:</div>
+  <div class='cmd'>cat /sys/fs/cgroup/memory/docker/&lt;id&gt;/memory.limit_in_bytes</div>
+  <div class='cmd'>cat /sys/fs/cgroup/cpu/docker/&lt;id&gt;/cpu.cfs_quota_us  # CPU quota</div>
+  <div class='cmd'># Kubernetes pod cgroup:</div>
+  <div class='cmd'>cat /sys/fs/cgroup/kubepods/pod&lt;uid&gt;/memory.limit_in_bytes</div>
+  <div class='cmd'># Check cgroup version:</div>
+  <div class='cmd'>stat -fc %T /sys/fs/cgroup/        # tmpfs=v1, cgroup2fs=v2</div>
+  <div class='cmd'>mount | grep cgroup                # cgroup mounts</div>
+</div>
+<p>cgroups (control groups) are the kernel mechanism for resource accounting and limiting. For each container, the runtime creates cgroup entries setting: memory.limit_in_bytes (OOM kill threshold), cpu.cfs_quota_us / cpu.cfs_period_us (CPU limit as a fraction — 100ms/100ms = 1 full CPU), blkio.throttle.read/write_bps_device (disk I/O limits). Kubernetes translates pod resource limits directly into cgroup settings. Understanding this explains why a container behaves differently from a VM: cgroup limits are enforced in kernel, not in the application.</p>
+<div class='warn'><b>cgroup v1 vs v2:</b> cgroup v2 (unified hierarchy) is default on modern kernels (5.4+, used by GKE COS nodes). Some older tools only support v1. Kubernetes fully supports v2. The memory accounting differs between v1 and v2 — cached memory counts differently, affecting OOM behavior. Verify your monitoring tools support v2 if your nodes run modern kernels.</div>`},
+
+  {n:47,tag:'boot',q:'How do you use journalctl effectively — what are the most useful query patterns?',
+  body:`<div class='cmds'>
+  <div class='cmd'>journalctl -f                         # follow live (like tail -f syslog)</div>
+  <div class='cmd'>journalctl -u nginx                   # specific service</div>
+  <div class='cmd'>journalctl -u nginx --since "1 hour ago"</div>
+  <div class='cmd'>journalctl -u nginx --since "2024-01-15 10:00" --until "2024-01-15 11:00"</div>
+  <div class='cmd'>journalctl -b                         # current boot</div>
+  <div class='cmd'>journalctl -b -1                      # previous boot (crash investigation)</div>
+  <div class='cmd'>journalctl -p err                     # error priority and above</div>
+  <div class='cmd'>journalctl -p warning -n 50           # last 50 warnings+</div>
+  <div class='cmd'>journalctl -k                         # kernel messages only (dmesg equivalent)</div>
+  <div class='cmd'>journalctl _PID=1234                  # logs from specific PID</div>
+  <div class='cmd'>journalctl _UID=1000                  # logs from specific UID</div>
+  <div class='cmd'>journalctl -o json-pretty -u sshd -n 5  # JSON output for parsing</div>
+  <div class='cmd'>journalctl --disk-usage               # journal size on disk</div>
+  <div class='cmd'>journalctl --vacuum-size=500M         # trim journal to 500MB</div>
+</div>
+<p>journald is the central logging daemon on systemd systems — it collects stdout/stderr from all services, kernel messages, and systemd unit events. Unlike syslog, entries have structured fields (unit, PID, UID, priority) enabling precise filtering. The -b -1 flag is invaluable for crash investigations — logs from the last boot before a crash. Priority levels: 0=emerg, 1=alert, 2=crit, 3=err, 4=warning, 5=notice, 6=info, 7=debug.</p>
+<div class='tip'><b>Persistent journal:</b> By default, journal is stored in /run/log/journal (lost on reboot). To persist across reboots: <code>mkdir /var/log/journal && systemctl restart systemd-journald</code>. Or set Storage=persistent in /etc/systemd/journald.conf. Essential for post-reboot debugging.</div>`},
+
+  {n:48,tag:'scripting',q:'How do you write Ansible-style idempotent automation versus imperative scripts?',
+  body:`<div class='cmds'>
+  <div class='cmd'># Imperative (not idempotent — fails if run twice):</div>
+  <div class='cmd'>useradd deployer        # fails with "user already exists" on second run</div>
+  <div class='cmd'>mkdir /app/data         # fails with "file exists" on second run</div>
+  <div class='cmd'># Idempotent (safe to run multiple times):</div>
+  <div class='cmd'>id deployer || useradd deployer          # only create if not exists</div>
+  <div class='cmd'>mkdir -p /app/data                       # -p = no error if exists</div>
+  <div class='cmd'>install -m 644 -o root config.yaml /etc/app/  # sets perms atomically</div>
+  <div class='cmd'>grep -q "setting=value" /etc/app.conf || echo "setting=value" >> /etc/app.conf</div>
+  <div class='cmd'># Better: use Ansible tasks which are inherently idempotent:</div>
+  <div class='cmd'>- name: Create deployer user</div>
+  <div class='cmd'>  ansible.builtin.user:</div>
+  <div class='cmd'>    name: deployer</div>
+  <div class='cmd'>    state: present            # present = ensure exists (not create)</div>
+  <div class='cmd'>    groups: docker,sudo</div>
+  <div class='cmd'>    append: yes</div>
+</div>
+<p>Idempotency means running an operation multiple times produces the same result as running it once. This is critical for automation: deployment scripts run in CI/CD, Ansible playbooks run for compliance enforcement, and provisioning scripts may be re-run after failures. All Ansible modules are designed to be idempotent — they check current state before making changes and report changed/ok/skipped. In bash, implement idempotency with conditional checks before every modifying operation.</p>
+<div class='good'><b>Platform Engineer standard:</b> All infrastructure automation should be idempotent. Playbooks should be runnable against production at any time to enforce desired state without fear of side effects. This is the foundation of GitOps thinking applied to OS-level configuration.</div>`},
+
+  {n:49,tag:'performance',q:'What is the difference between CPU throttling and CPU stealing — how do you detect each?',
+  body:`<div class='cmds'>
+  <div class='cmd'># CPU throttling (cgroup CPU limits exceeded):</div>
+  <div class='cmd'>cat /sys/fs/cgroup/cpu/&lt;container&gt;/cpu.stat | grep throttled</div>
+  <div class='cmd'># Kubernetes: check via metrics</div>
+  <div class='cmd'>container_cpu_cfs_throttled_seconds_total  # Prometheus metric</div>
+  <div class='cmd'>kubectl top pod &lt;pod&gt; -n &lt;ns&gt;  # current CPU usage vs limit</div>
+  <div class='cmd'># CPU stealing (hypervisor not scheduling our vCPU):</div>
+  <div class='cmd'>top                            # %st column = steal percentage</div>
+  <div class='cmd'>vmstat 1 5                     # st column</div>
+  <div class='cmd'>sar -u 1 5 | grep -i steal     # sar history of steal</div>
+</div>
+<p>CPU throttling: the container's cgroup CPU quota is exhausted — the kernel pauses the container until the next quota period (default 100ms). Even if the physical host has idle CPUs, a throttled container waits. Fix: increase the container's CPU limit or optimize the application. CPU stealing: the hypervisor is not scheduling our VM's vCPU because physical CPUs are overcommitted. The VM is ready to run but waits for a physical CPU. Fix: scale down the physical host, move to a less loaded host, or buy dedicated/reserved instances. Throttling is under your control; stealing is the cloud provider's problem.</p>
+<div class='tip'><b>Prometheus alert for throttling:</b> <code>rate(container_cpu_cfs_throttled_seconds_total[5m]) / rate(container_cpu_cfs_periods_total[5m]) &gt; 0.25</code> — alert when more than 25% of CPU periods are throttled. This is a better SLI than CPU utilization% for container workloads.</div>`},
+
+  {n:50,tag:'troubleshoot',q:'Walk through a complete methodology for diagnosing a production Linux incident from alert to resolution.',
+  body:`<p>This is the Principal-level systems thinking question. Structure, speed, and communication matter as much as technical depth.</p>
+<div class='sec'>Incident response methodology</div>
+<div class='cmds'>
+  <div class='cmd'>Phase 1 — Triage (first 2 minutes):</div>
+  <div class='cmd'>  uptime; free -h; df -h; ss -s  # four commands, system-wide health</div>
+  <div class='cmd'>  dmesg | tail -20               # any kernel errors?</div>
+  <div class='cmd'>  systemctl list-units --failed  # any failed services?</div>
+  <div class='cmd'>Phase 2 — Identify bottleneck (next 5 minutes):</div>
+  <div class='cmd'>  vmstat 1 5           # r/b columns: CPU queue or I/O blocked?</div>
+  <div class='cmd'>  top -b -n 1          # which process is the culprit?</div>
+  <div class='cmd'>  iostat -xz 1 3       # which disk is saturated?</div>
+  <div class='cmd'>  iftop                # which connection is saturating network?</div>
+  <div class='cmd'>Phase 3 — Confirm hypothesis:</div>
+  <div class='cmd'>  strace -c -p &lt;pid&gt; sleep 5  # what syscalls is the process making?</div>
+  <div class='cmd'>  lsof -p &lt;pid&gt;              # what files/sockets are open?</div>
+  <div class='cmd'>  journalctl -u &lt;service&gt; --since "10 min ago"  # service logs</div>
+  <div class='cmd'>Phase 4 — Immediate relief + root cause fix:</div>
+  <div class='cmd'>  # Immediate: kill/restart/scale the problematic component</div>
+  <div class='cmd'>  # Root cause: fix config, add resource, fix code</div>
+  <div class='cmd'>Phase 5 — Validate + document:</div>
+  <div class='cmd'>  # Confirm metrics return to baseline</div>
+  <div class='cmd'>  # Write postmortem: timeline, root cause, fix, prevention</div>
+</div>
+<p>Common patterns by symptom: high load + high I/O wait + D-state processes = storage bottleneck (check iostat await). High load + low I/O wait + high %sy = iptables/networking overhead (many rules, high connection rate). High load + low I/O wait + high %us = CPU-bound application (profile with perf). Memory exhausted + swap in use = OOM risk imminent (free up memory or add swap). Filesystem full + lsof shows deleted files = truncate open files. SSH not working but ping works = service issue, firewall, or PAM problem.</p>
+<div class='tip'><b>Principal-level deliverable:</b> After every incident: write a postmortem (5 whys root cause analysis), add the missing alert that would have caught this earlier, and improve the runbook. Convert reactive incidents into proactive prevention. The best Platform Engineers make their own on-call rotation quieter over time — not because they silence alerts, but because they fix the underlying issues permanently.</div>`}
+
+];
+
+// ── Render & Filter ─────────────────────────────────────────────────────────
+let activeFilter = 'all';
+let openCards    = new Set();
+
+function badge(tag) {
+  const labels = {
+    process:'Processes', filesystem:'Filesystem', networking:'Networking',
+    performance:'Performance', security:'Security', storage:'Storage & disks',
+    boot:'Boot & systemd', users:'Users & permissions',
+    scripting:'Scripting & automation', troubleshoot:'Troubleshooting'
+  };
+  return `<span class="badge ${tag}">${labels[tag] || tag}</span>`;
+}
+
+function render(qs) {
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 50 questions`;
+  document.getElementById('q-list').innerHTML = qs.map(q => `
+    <div class="q-card" id="card-${q.n}">
+      <div class="q-header" onclick="toggle(${q.n})">
+        <span class="q-num">Q${q.n}</span>
+        <span class="q-title">${q.q}</span>
+        <div class="q-right">
+          ${badge(q.tag)}
+          <span class="chevron ${openCards.has(q.n) ? 'open' : ''}" id="chev-${q.n}">▼</span>
+        </div>
+      </div>
+      <div class="q-body ${openCards.has(q.n) ? 'open' : ''}" id="body-${q.n}">${q.body}</div>
+    </div>
+  `).join('');
+}
+
+function toggle(n) {
+  const body = document.getElementById('body-' + n);
+  const chev = document.getElementById('chev-' + n);
+  if (openCards.has(n)) {
+    openCards.delete(n); body.classList.remove('open'); chev.classList.remove('open');
+  } else {
+    openCards.add(n); body.classList.add('open'); chev.classList.add('open');
+  }
+  document.getElementById('viewed-count').textContent = openCards.size;
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  filterQs();
+}
+
+function filterQs() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = QS;
+  if (activeFilter !== 'all') filtered = filtered.filter(x => x.tag === activeFilter);
+  if (q) filtered = filtered.filter(x =>
+    x.q.toLowerCase().includes(q) || x.body.toLowerCase().includes(q)
+  );
+  render(filtered);
+}
+
+render(QS);
+
+
+/* ── DARK MODE ────────────────────── */
+(function(){
+  var saved = localStorage.getItem('ekn-dark');
+  if (saved === '1') document.body.classList.add('dark');
+})();
+function toggleDark() {
+  var on = document.body.classList.toggle('dark');
+  localStorage.setItem('ekn-dark', on ? '1' : '0');
+  var btn = document.getElementById('dm-btn');
+  if (btn) btn.textContent = on ? '☀ Light' : '☾ Dark';
+}
+
+/* ── INTERVIEW MODE ───────────────── */
+var fmAll = [], fmIdx = 0, fmGot = 0, fmTotal = 0;
+
+function fmStart() {
+  // collect currently visible QS
+  fmAll = [];
+  var cards = document.querySelectorAll('.q-card');
+  cards.forEach(function(c) {
+    var n = parseInt(c.id.replace('card-',''));
+    var q = QS.find ? QS.find(function(x){ return x.n === n; })
+                    : (function(){ for(var i=0;i<QS.length;i++){ if(QS[i].n===n) return QS[i]; } })();
+    if (q) fmAll.push(q);
+  });
+  // shuffle
+  for (var i = fmAll.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = fmAll[i]; fmAll[i] = fmAll[j]; fmAll[j] = tmp;
+  }
+  fmIdx = 0; fmGot = 0; fmTotal = fmAll.length;
+  var bar = document.getElementById('fm-bar');
+  if (bar) { bar.classList.add('open'); fmShow(); }
+}
+function fmShow() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar || fmIdx >= fmTotal) { fmDone(); return; }
+  var q = fmAll[fmIdx];
+  var pct = fmTotal > 0 ? Math.round((fmIdx/fmTotal)*100) : 0;
+  document.getElementById('fm-prog').style.width = pct + '%';
+  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + fmTotal;
+  document.getElementById('fm-q-text').textContent = q.q;
+  document.getElementById('fm-answer').innerHTML = q.body;
+  document.getElementById('fm-answer').classList.remove('show');
+  document.getElementById('fm-reveal').style.display = '';
+  document.getElementById('fm-got').style.display    = 'none';
+  document.getElementById('fm-miss').style.display   = 'none';
+  document.getElementById('fm-score').textContent    = fmGot + ' / ' + fmIdx + ' correct';
+}
+function fmReveal() {
+  document.getElementById('fm-answer').classList.add('show');
+  document.getElementById('fm-reveal').style.display = 'none';
+  document.getElementById('fm-got').style.display    = '';
+  document.getElementById('fm-miss').style.display   = '';
+}
+function fmNext(ok) {
+  if (ok) fmGot++;
+  fmIdx++;
+  fmShow();
+}
+function fmStop() {
+  var bar = document.getElementById('fm-bar');
+  if (bar) bar.classList.remove('open');
+}
+function fmDone() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar) return;
+  bar.innerHTML = '<div class="fm-done">&#127881; Session complete! You got <strong>' + fmGot + ' / ' + fmTotal + '</strong> correct.</div>'
+    + '<button class="fm-stop" onclick="fmStop()">Close</button>';
+}
+
+</script>
+</body>
+</html>

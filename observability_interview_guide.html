@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observability & Monitoring — EknathaLabs Interview Guide</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;}
+body.dark{--bg:#161616;--text:#e4e4e0;--surface:#1f1f1f;--border:#2e2e2e;--border-h:#484848;--muted:#a0a0a0;--faint:#606060;--code-bg:#252525;}
+body:not(.dark){--bg:#f5f5f0;--text:#1a1a1a;--surface:#fff;--border:#e4e4dc;--border-h:#b0b0a6;--muted:#666;--faint:#999;--code-bg:#f8f7f3;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hback{font-size:12px;font-weight:600;color:#1D9E75;text-decoration:none;padding:5px 10px;border-radius:7px;border:1px solid #E1F5EE;background:#E1F5EE;transition:all .14s;white-space:nowrap;}
+.hback:hover{background:#1D9E75;color:#fff;}
+header h1{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:120px;}
+.hspan{font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;}
+.dm-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;font-size:13px;transition:all .14s;}
+.dm-btn:hover{background:var(--border);}
+.container{max-width:900px;margin:0 auto;padding:1.5rem;}
+.search-bar{position:relative;margin-bottom:1rem;}
+.search-bar input{width:100%;padding:10px 16px 10px 40px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;outline:none;transition:border-color .15s;}
+.search-bar input:focus{border-color:#1D9E75;}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;opacity:.4;stroke:var(--text);fill:none;stroke-width:1.8;stroke-linecap:round;}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1rem;}
+.chip{padding:5px 13px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;user-select:none;}
+.chip:hover{border-color:#1D9E75;color:#0F6E56;}
+.chip.active{background:#1D9E75;color:#fff;border-color:#1D9E75;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.1rem;}
+.stat{background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);}
+.stat-n{font-size:22px;font-weight:700;color:#1D9E75;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+.stat-n.red{color:#A32D2D;}
+.count-bar{font-size:12px;color:var(--faint);margin-bottom:8px;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.fm-start-btn{padding:5px 13px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #E1F5EE;background:#E1F5EE;color:#0F6E56;transition:all .14s;}
+.fm-start-btn:hover{background:#1D9E75;color:#fff;border-color:#1D9E75;}
+.fm-bar{background:var(--surface);border:1.5px solid #1D9E75;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:none;}
+.fm-bar.on{display:block;}
+.fm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;flex-wrap:wrap;gap:6px;}
+.fm-title{font-size:13px;font-weight:700;color:var(--text);}
+.fm-score{font-size:12px;color:var(--muted);}
+.fm-card{background:var(--code-bg);border-radius:10px;padding:1.1rem;margin-bottom:.7rem;min-height:70px;display:flex;align-items:center;justify-content:center;text-align:center;}
+.fm-q{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;}
+.fm-ans{display:none;font-size:13px;color:var(--muted);line-height:1.65;max-height:300px;overflow-y:auto;padding:4px;}
+.fm-ans.on{display:block;}
+.fm-ans .cmd{background:var(--surface);border-radius:5px;padding:5px 9px;font-family:monospace;font-size:11px;color:var(--text);border-left:2px solid #1D9E75;margin:3px 0;white-space:pre-wrap;word-break:break-all;display:block;}
+.fm-btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:.6rem;}
+.fm-btn{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .14s;}
+.fm-btn:hover{border-color:#1D9E75;color:#1D9E75;}
+.fm-btn.reveal{background:#1D9E75;color:#fff;border-color:#1D9E75;}
+.fm-btn.got{background:#EAF3DE;color:#27500A;border-color:#639922;}
+.fm-btn.miss{background:#FCEBEB;color:#791F1F;border-color:#E24B4A;}
+.fm-prog{height:4px;background:var(--border);border-radius:2px;margin-top:.7rem;overflow:hidden;}
+.fm-fill{height:100%;background:#1D9E75;border-radius:2px;transition:width .3s;}
+.q-list{display:flex;flex-direction:column;gap:8px;}
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .14s;}
+.q-card:hover{border-color:var(--border-h);}
+.q-header{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+.q-num{font-size:11px;font-weight:600;color:var(--faint);min-width:28px;padding-top:2px;flex-shrink:0;}
+.q-title{font-size:14px;font-weight:600;color:var(--text);flex:1;line-height:1.5;}
+.q-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap;}
+  .badge.metrics{background:#E6F1FB;color:#0C447C;}
+  .badge.logging{background:#E1F5EE;color:#085041;}
+  .badge.tracing{background:#EEEDFE;color:#3C3489;}
+  .badge.alerting{background:#FAEEDA;color:#633806;}
+  .badge.slo{background:#EAF3DE;color:#27500A;}
+  .badge.dashboards{background:#FCEBEB;color:#791F1F;}
+  .badge.tools{background:#F1EFE8;color:#444441;}
+  .badge.k8s{background:#FBEAF0;color:#72243E;}
+  .badge.cloud{background:#FAC775;color:#412402;}
+  .badge.incident{background:#FAECE7;color:#712B13;}
+
+.chevron{font-size:11px;color:var(--faint);transition:transform .2s;flex-shrink:0;}
+.chevron.open{transform:rotate(180deg);}
+.q-body{display:none;padding:0 16px 16px 56px;border-top:1px solid var(--border);}
+.q-body.open{display:block;}
+.q-body p{font-size:13px;line-height:1.75;color:var(--muted);margin-bottom:8px;margin-top:10px;}
+.q-body p:last-child{margin-bottom:0;}
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin:12px 0 5px;}
+.cmds{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.cmd{background:var(--code-bg);border-radius:6px;padding:6px 10px;font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;color:var(--text);border-left:2.5px solid #1D9E75;line-height:1.5;white-space:pre-wrap;word-break:break-all;}
+.tip{background:#FAEEDA;border-radius:7px;padding:9px 13px;font-size:12px;color:#412402;border-left:2.5px solid #BA7517;margin-top:8px;line-height:1.6;}
+.warn{background:#FCEBEB;border-radius:7px;padding:9px 13px;font-size:12px;color:#501313;border-left:2.5px solid #E24B4A;margin-top:8px;line-height:1.6;}
+.good{background:#EAF3DE;border-radius:7px;padding:9px 13px;font-size:12px;color:#173404;border-left:2.5px solid #639922;margin-top:8px;line-height:1.6;}
+.info{background:#EEEDFE;border-radius:7px;padding:9px 13px;font-size:12px;color:#26215C;border-left:2.5px solid #7F77DD;margin-top:8px;line-height:1.6;}
+.tip b,.warn b,.good b,.info b{font-weight:700;}
+body.dark .tip{background:#261a05;color:#FAC775;}
+body.dark .warn{background:#220a0a;color:#F09595;}
+body.dark .good{background:#081408;color:#C0DD97;}
+body.dark .info{background:#0e0b1f;color:#AFA9EC;}
+body.dark .fm-ans .cmd{background:#1a1a1a;}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr);}.q-body{padding-left:16px;}header{padding:.9rem 1rem;}header h1{font-size:13px;}.container{padding:1rem;}}
+
+/* ── DARK MODE VARIABLES ─────────────────────────────── */
+body {
+  --dm-bg:         #111314;
+  --dm-surface:    #1a1d1f;
+  --dm-surface2:   #222629;
+  --dm-border:     #2e3235;
+  --dm-text:       #e8eaec;
+  --dm-muted:      #8a9099;
+  --dm-cmd-bg:     #1e2123;
+  --dm-cmd-border: #1D9E75;
+}
+body.dark {
+  background:  var(--dm-bg)      !important;
+  color:       var(--dm-text)    !important;
+}
+body.dark header,
+body.dark .wrap > *:not(.q-list):not(#q-list) { color: var(--dm-text); }
+
+/* cards */
+body.dark .q-card  { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .q-header .q-title { color: var(--dm-text); }
+body.dark .q-body  { border-color: var(--dm-border); }
+body.dark .q-body p { color: var(--dm-muted); }
+
+/* commands */
+body.dark .cmd     { background: var(--dm-cmd-bg); color: #c9d1d9; border-left-color: var(--dm-cmd-border); }
+body.dark .cmds    { background: transparent; }
+
+/* filter chips */
+body.dark .chip    { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-muted); }
+body.dark .chip.active,
+body.dark .chip.on { background: #0F6E56; color: #fff; border-color: #1D9E75; }
+
+/* search */
+body.dark .search-bar input,
+body.dark #search  { background: var(--dm-surface); border-color: var(--dm-border); color: var(--dm-text); }
+body.dark .search-bar input::placeholder,
+body.dark #search::placeholder { color: var(--dm-muted); }
+
+/* stats */
+body.dark .stat    { background: var(--dm-surface); border-color: var(--dm-border); }
+body.dark .stat-l  { color: var(--dm-muted); }
+
+/* tips/warns */
+body.dark .tip     { background: #231c09; color: #d4a847; }
+body.dark .warn    { background: #1f0f0f; color: #e07070; }
+body.dark .good    { background: #0d1f0d; color: #7aba5e; }
+body.dark .info    { background: #0d1226; color: #7aa8e0; }
+
+/* interview mode bar */
+body.dark .fm-bar  { background: var(--dm-surface); border-color: #1D9E75; }
+body.dark .fm-q    { color: var(--dm-text); }
+body.dark .fm-score { color: var(--dm-muted); }
+body.dark .fm-reveal { background: var(--dm-surface2); border-color: var(--dm-border); color: var(--dm-text); }
+
+/* header / portal link */
+body.dark .portal-link { color: #1D9E75; }
+body.dark .q-num   { color: var(--dm-muted); }
+body.dark .chevron { color: var(--dm-muted); }
+body.dark .count-bar { color: var(--dm-muted); }
+body.dark .sec     { color: var(--dm-muted); }
+
+/* dark toggle button */
+.dm-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
+  transition: all .14s; flex-shrink: 0;
+}
+.dm-btn:hover { border-color: #1D9E75; }
+body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); color: var(--dm-text); }
+
+/* interview mode toggle */
+.fm-btn {
+  background: #1D9E75; color: #fff; border: none; border-radius: 8px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .14s; flex-shrink: 0;
+}
+.fm-btn:hover { background: #0F6E56; }
+
+/* interview mode bar */
+.fm-bar {
+  display: none;
+  background: #fff;
+  border: 2px solid #1D9E75;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.fm-bar.open { display: block; }
+.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+.fm-prog      { height: 4px; background: #1D9E75; border-radius: 99px; transition: width .3s; }
+.fm-meta      { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fm-q         { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
+.fm-answer    { display: none; margin-bottom: 14px; }
+.fm-answer.show { display: block; }
+.fm-actions   { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fm-reveal    { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-reveal:hover { background: #eee; }
+.fm-got       { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-got:hover { background: #d5ecb8; }
+.fm-miss      { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fm-miss:hover { background: #f9d5d5; }
+.fm-stop      { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
+.fm-stop:hover { border-color: #999; color: #555; }
+.fm-score     { font-size: 12px; color: #888; font-weight: 600; }
+.fm-done      { font-size: 14px; font-weight: 700; color: #1D9E75; margin-bottom: 8px; }
+
+/* toolbar row (count + IM button) */
+.toolbar      { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+
+</style>
+</head>
+<body>
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#1D9E75;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Observability & Monitoring — EknathaLabs Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">30 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<div class="container">
+  <div class="search-bar">
+    <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+    <input type="text" id="search" placeholder="Search questions and answers…" oninput="filterQs()">
+  </div>
+  <div class="filters">
+    <div class="chip active" onclick="setFilter('all',this)">All (30)</div>
+    <div class="chip" onclick="setFilter('metrics',this)">Metrics</div>
+    <div class="chip" onclick="setFilter('logging',this)">Logging</div>
+    <div class="chip" onclick="setFilter('tracing',this)">Tracing</div>
+    <div class="chip" onclick="setFilter('alerting',this)">Alerting</div>
+    <div class="chip" onclick="setFilter('slo',this)">SLOs</div>
+    <div class="chip" onclick="setFilter('dashboards',this)">Dashboards</div>
+    <div class="chip" onclick="setFilter('tools',this)">Tools</div>
+    <div class="chip" onclick="setFilter('k8s',this)">K8s obs</div>
+    <div class="chip" onclick="setFilter('cloud',this)">Cloud obs</div>
+    <div class="chip" onclick="setFilter('incident',this)">Incident</div>
+  </div>
+
+  <div class="fm-bar" id="fmBar">
+    <div class="fm-header">
+      <span class="fm-title">&#127183; Interview Mode</span>
+      <span class="fm-score" id="fmScore">0 correct / 0 seen</span>
+    </div>
+    <div class="fm-card"><div class="fm-q" id="fmQ">Press Start to begin…</div></div>
+    <div class="fm-ans" id="fmAns"></div>
+    <div class="fm-btns">
+      <button class="fm-btn reveal" id="fmRev" onclick="fmReveal()">Reveal answer</button>
+      <button class="fm-btn got" id="fmGot" onclick="fmNext(true)" style="display:none">&#10003; Got it</button>
+      <button class="fm-btn miss" id="fmMiss" onclick="fmNext(false)" style="display:none">&#10005; Missed</button>
+      <button class="fm-btn" onclick="fmStop()">&#215; Exit</button>
+    </div>
+    <div class="fm-prog"><div class="fm-fill" id="fmFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n">30</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n" id="visN">30</div><div class="stat-l">Showing</div></div>
+    <div class="stat"><div class="stat-n" id="viewN">0</div><div class="stat-l">Viewed</div></div>
+    <div class="stat"><div class="stat-n red" id="correctN">0</div><div class="stat-l">Correct in FM</div></div>
+  </div>
+  <div class="toolbar">
+    <span class="count-bar" id="countBar">Showing 30 questions</span>
+    <button class="fm-start-btn" onclick="fmStart()">&#127183; Interview Mode</button>
+  </div>
+  <div class="q-list" id="qList"></div>
+</div>
+<script>
+var QS = [
+{n:1,tag:'metrics',q:'What is the difference between metrics, logs, and traces — the three pillars of observability?',body:'<p>Each pillar answers a different question about system health.</p><div class="cmds"><div class="cmd">Metrics  — What is happening? (quantitative time-series, cheap, fast to query)</div><div class="cmd">Logs     — Why is it happening? (discrete events, full context per event)</div><div class="cmd">Traces   — Where is it happening? (request path across services, latency per hop)</div></div><p>Metrics alert you, logs explain the event, traces show blast radius. Use all three: a latency spike in metrics leads you to filter logs by trace_id, then view the trace waterfall to pinpoint the slow service.</p><div class="tip"><b>Cardinality:</b> Keep metric label values low-cardinality (status_code, region, pod_name — not user_id). High-cardinality labels create millions of series and crash Prometheus. Use logs for high-cardinality data.</div>'},
+{n:2,tag:'metrics',q:'What are the four golden signals — how do you use them to monitor a production service?',body:'<div class="cmds"><div class="cmd">Latency     — time to serve a request (use P99, never average)</div><div class="cmd">Traffic     — requests/second, messages/second</div><div class="cmd">Errors      — rate of failed requests (5xx, timeouts)</div><div class="cmd">Saturation  — how full? (CPU %, queue depth, connection pool %)</div><div class="cmd"># PromQL:</div><div class="cmd">rate(http_requests_total{code=~"5.."}[5m]) / rate(http_requests_total[5m])  # error rate</div><div class="cmd">histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))     # P99</div></div><p>Always use percentiles for latency — averages hide tail latency. If you can only have one dashboard per service, make it the golden signals dashboard.</p><div class="good"><b>Start here:</b> Instrument every service with golden signals before any custom metrics. If P99 latency is fine, error rate is zero, and saturation is low — the service is healthy regardless of internal details.</div>'},
+{n:3,tag:'metrics',q:'What is Prometheus — how does pull-based metrics collection work?',body:'<div class="cmds"><div class="cmd">prometheus --config.file=prometheus.yml</div><div class="cmd">curl http://myapp:8080/metrics              # app exposes /metrics endpoint</div><div class="cmd">scrape_configs:</div><div class="cmd">  - job_name: myapp</div><div class="cmd">    kubernetes_sd_configs: [{role: pod}]   # auto-discover K8s pods</div><div class="cmd">    relabel_configs: [...]                 # filter by annotation</div><div class="cmd">promtool check config prometheus.yml       # validate config</div></div><p>Pull model: Prometheus controls scrape rate, discovers targets via service discovery, detects targets that disappear (up metric = 0). In Kubernetes use ServiceMonitor / PodMonitor CRDs (Prometheus Operator) for GitOps-based scrape config — no central prometheus.yml editing per service.</p><div class="tip"><b>Long-term storage:</b> Default retention 15 days. Use remote_write to Thanos, Cortex, or GCP Managed Prometheus for unlimited retention and multi-cluster global query.</div>'},
+{n:4,tag:'metrics',q:'How do you write effective PromQL queries — what are the key functions?',body:'<div class="cmds"><div class="cmd">rate(metric[5m])                                  # per-second rate (use for counters)</div><div class="cmd">histogram_quantile(0.99, rate(duration_bucket[5m])) # P99 from histogram</div><div class="cmd">sum by (pod) (rate(metric[5m]))                   # aggregate by label</div><div class="cmd">topk(5, metric)                                   # top 5 values</div><div class="cmd">absent(up{job="myapp"})                           # alert when target disappears</div><div class="cmd">predict_linear(disk_used[1h], 3600*24)            # predict disk full in 24h</div><div class="cmd"># Error rate ratio:</div><div class="cmd">sum(rate(requests_total{code=~"5.."}[5m])) / sum(rate(requests_total[5m]))</div></div><div class="warn"><b>rate() vs irate():</b> Use rate() for alerts and dashboards (smoothed). Use irate() only for detecting very brief spikes. irate() uses only the last 2 data points — slow scrape intervals make it unreliable.</div>'},
+{n:5,tag:'metrics',q:'What is a histogram vs summary in Prometheus — when do you use each?',body:'<div class="cmds"><div class="cmd"># Histogram: buckets defined upfront, percentile computed at query time</div><div class="cmd">histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))</div><div class="cmd"># Summary: percentile computed in client, not aggregatable across instances</div><div class="cmd">http_request_duration_seconds{quantile="0.99"} 0.42</div></div><p>Histograms: flexible (any percentile at query time), aggregatable across replicas (add buckets from N pods). Summaries: accurate client-side, but cannot be aggregated — useless for multi-replica services. Always use histograms for services with multiple replicas. Choose bucket boundaries around your SLO (if SLO is P99 under 500ms, add buckets at 0.1, 0.25, 0.5, 0.75, 1.0).</p>'},
+{n:6,tag:'logging',q:'How does structured logging work — why is it better than plain text logs?',body:'<div class="cmds"><div class="cmd"># Unstructured (bad): 2024-01-15 ERROR payment failed for user 12345</div><div class="cmd"># Structured JSON (queryable):</div><div class="cmd">{"ts":"2024-01-15T10:23:01Z","level":"error","event":"payment_failed","user_id":12345,"amount":99.99,"trace_id":"abc123"}</div><div class="cmd"># Query in Cloud Logging:</div><div class="cmd">jsonPayload.event="payment_failed" AND jsonPayload.amount > 100</div><div class="cmd"># Query in Loki:</div><div class="cmd">{app="payments"} | json | event="payment_failed" | amount > 100</div></div><p>Structured logging enables filtering by any field, aggregation (count failures by error type), and correlation (join on trace_id). Always include: timestamp (ISO 8601), level, service name, trace_id/span_id (links to distributed trace), request_id. Never log passwords, tokens, or PII at any level.</p>'},
+{n:7,tag:'logging',q:'How do you build a log aggregation pipeline — ELK vs Loki vs Cloud Logging?',body:'<div class="cmds"><div class="cmd"># ELK: Fluent Bit → Elasticsearch → Kibana (full-text, expensive)</div><div class="cmd"># Loki: Promtail → Loki → Grafana (label-indexed, cheap, PromQL-like)</div><div class="cmd"># GCP: container stdout → Cloud Logging (zero-config for GKE)</div><div class="cmd">[FILTER]</div><div class="cmd">    Name   kubernetes</div><div class="cmd">    Merge_Log On       # parse JSON logs into structured fields</div></div><p>Loki indexes only labels (not content) — typically 10-20x cheaper storage than Elasticsearch. For teams using Grafana+Prometheus, Loki is a natural fit. GCP Cloud Logging is zero-ops for GKE but vendor-locked. ELK is better for complex full-text search and compliance requirements. Cost at scale is the key driver.</p>'},
+{n:8,tag:'logging',q:'Log volume is exploding and costs are too high — how do you reduce it without losing signal?',body:'<div class="cmds"><div class="cmd"># Fluent Bit: drop below WARNING for noisy services</div><div class="cmd">[FILTER]</div><div class="cmd">    Name   grep</div><div class="cmd">    Exclude log level debug|info</div><div class="cmd"># Cloud Logging exclusion filter:</div><div class="cmd">resource.type="k8s_container" severity < WARNING</div><div class="cmd"># Loki per-tenant rate limiting:</div><div class="cmd">ingestion_rate_mb: 10</div></div><p>Strategies: (1) Level filtering — keep WARN+ always, sample INFO, drop DEBUG. (2) Head sampling — drop N% of healthy-looking lines at the agent. (3) Aggregation — replace N log lines with a single metric. (4) Retention tiering — hot (7 days), cold (90 days), archive (1 year). Reducing volume 80% while keeping 100% of error signal is achievable with level filtering alone.</p><div class="warn"><b>Never drop ERROR logs.</b> Only reduce INFO and DEBUG. Error logs are the signal you need most during incidents.</div>'},
+{n:9,tag:'tracing',q:'How does distributed tracing work — what is a trace, span, and context propagation?',body:'<div class="cmds"><div class="cmd">Trace  — the entire journey of one request across all services</div><div class="cmd">Span   — one unit of work (HTTP handler, DB query, RPC call)</div><div class="cmd">Parent — span knows its parent (forms a tree)</div><div class="cmd"># W3C traceparent header propagated between services:</div><div class="cmd">traceparent: 00-{traceId}-{spanId}-{flags}</div><div class="cmd"># Each service reads header, creates child span, passes downstream</div></div><p>Context propagation is critical: when service A calls B, A injects trace context into HTTP headers. B extracts it and creates a child span with the same trace ID — forming a connected tree. OpenTelemetry handles propagation automatically. Without it, traces are disconnected single-service islands.</p><div class="info"><b>Sampling:</b> Head-based (decide at root, simple), tail-based (buffer + keep errors, smarter but expensive). GCP Cloud Trace uses tail-based sampling automatically.</div>'},
+{n:10,tag:'tracing',q:'How do you implement OpenTelemetry in a production Kubernetes environment?',body:'<div class="cmds"><div class="cmd">helm install otel-collector open-telemetry/opentelemetry-collector -f values.yaml</div><div class="cmd"># Configure via env vars in pod spec:</div><div class="cmd">OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector.monitoring:4317</div><div class="cmd">OTEL_SERVICE_NAME=payments-service</div><div class="cmd">OTEL_TRACES_SAMPLER=parentbased_traceidratio</div><div class="cmd">OTEL_TRACES_SAMPLER_ARG=0.1    # sample 10%</div><div class="cmd"># Auto-instrumentation via OTel Operator annotation:</div><div class="cmd">kubectl annotate pod mypod instrumentation.opentelemetry.io/inject-python=true</div></div><p>The OTel Collector acts as a local proxy — apps send spans to it, it forwards to Jaeger/Tempo/Cloud Trace. Decouples application from backend. The OTel Operator auto-instruments pods via annotation (Java, Python, Node.js, .NET, Go) with zero code changes and no Dockerfile modification.</p>'},
+{n:11,tag:'alerting',q:'What makes a good alert — what is alert fatigue and how do you fight it?',body:'<div class="cmds"><div class="cmd">Good alert: actionable + urgent + accurate + contextual</div><div class="cmd">Bad alert: "CPU > 80%" fires constantly with no action needed</div><div class="cmd"># Every alert must have:</div><div class="cmd">summary: "Payment service error rate above SLO"</div><div class="cmd">description: "Error rate 2.3%, SLO threshold 0.1%, ~1200 users/min affected"</div><div class="cmd">runbook_url: "https://wiki/runbooks/payment-errors"</div><div class="cmd">dashboard_url: "https://grafana/d/payments?from=now-1h"</div></div><p>Alert fatigue: engineers silence alerts without investigating, become desensitised, miss real incidents. Fix: delete alerts that never need action, raise noisy thresholds, convert informational alerts to dashboard panels, require every alert to have a runbook. If you cannot describe in one sentence what action to take, the alert should not exist.</p><div class="good"><b>Symptom-based alerting:</b> Alert on user-visible symptoms (error rate, latency) not internal causes (CPU%). High CPU that does not affect users is a dashboard item, not an alert.</div>'},
+{n:12,tag:'alerting',q:'How does Alertmanager work — routing, grouping, inhibition, and silences?',body:'<div class="cmds"><div class="cmd">route:</div><div class="cmd">  group_by: [alertname, cluster, service]</div><div class="cmd">  group_wait: 30s</div><div class="cmd">  routes:</div><div class="cmd">  - match: {severity: critical} → receiver: pagerduty</div><div class="cmd">  - match: {team: platform}    → receiver: slack-platform</div><div class="cmd">inhibit_rules:                  # suppress child when parent fires</div><div class="cmd">  - source_match: {alertname: ClusterDown}</div><div class="cmd">    target_match: {severity: warning}</div><div class="cmd">    equal: [cluster]</div><div class="cmd">amtool --alertmanager.url=http://localhost:9093 config routes test --verify.receivers=pagerduty alertname=HighErrorRate</div></div><p>Grouping batches related alerts into one notification (10 pod failures → 1 notification). Inhibition suppresses lower-severity alerts when a higher one fires — if the cluster is down, no point getting individual pod alerts. Silences mute during maintenance windows. Test routing with amtool in CI before applying config.</p>'},
+{n:13,tag:'slo',q:'What is an SLI, SLO, and SLA — how do you define and measure them?',body:'<div class="cmds"><div class="cmd">SLI — the metric: fraction of successful requests, P99 latency</div><div class="cmd">SLO — the target: success rate > 99.9% over 30 days</div><div class="cmd">SLA — the contract: SLO + consequences for breach</div><div class="cmd"># PromQL availability SLI:</div><div class="cmd">1 - (sum(rate(requests_total{code=~"5.."}[5m])) / sum(rate(requests_total[5m])))</div></div><p>SLIs must be user-facing — not CPU utilisation. Bad SLI: CPU %. Good SLI: request success rate as seen by users. Start with your measured baseline + small improvement target. Rolling 30-day windows are better than calendar windows — always reflect the most recent 30 days of behaviour.</p>'},
+{n:14,tag:'slo',q:'What is an error budget — how does it change how you run on-call?',body:'<div class="cmds"><div class="cmd">SLO: 99.9% over 30 days = 0.1% budget = 43.8 min downtime allowed</div><div class="cmd"># Error budget remaining:</div><div class="cmd">1 - (observed_error_rate / allowed_error_rate)</div><div class="cmd">50% budget left mid-month = healthy, deploy freely</div><div class="cmd">5% budget left on day 10 = freeze deployments, fix reliability</div></div><p>Error budget removes the subjective argument about whether to deploy. When budget is healthy, deploy freely. When nearly exhausted, freeze deployments until it recovers. This creates natural alignment: both product and engineering teams share the same budget. The policy should be written explicitly: "if error budget drops below 10%, all non-reliability deployments stop."</p>'},
+{n:15,tag:'slo',q:'How do you implement SLO-based alerting — burn rate alerts vs threshold alerts?',body:'<div class="cmds"><div class="cmd"># Burn rate: are we consuming budget faster than we can afford?</div><div class="cmd">ALERT ErrorBudgetBurning</div><div class="cmd">  IF (</div><div class="cmd">    rate(errors[1h]) / rate(requests[1h]) > 14.4 * 0.001</div><div class="cmd">    AND</div><div class="cmd">    rate(errors[5m]) / rate(requests[5m]) > 14.4 * 0.001</div><div class="cmd">  )</div><div class="cmd"># 14.4x = burns 30-day budget in 2 days (page immediately)</div><div class="cmd"># 6x    = budget gone in 5 days (ticket)</div></div><p>Multi-window multi-burn-rate alerts: fast (14.4x, 1h+5m windows) for acute incidents, slow (6x, 6h+30m windows) for gradual degradation. Reduces false positives from brief spikes while catching sustained issues. Use google/slo-generator or SLOTH for Kubernetes-native SLO alerting implementation.</p>'},
+{n:16,tag:'dashboards',q:'How do you design Grafana dashboards that are actually useful during incidents?',body:'<div class="cmds"><div class="cmd">Row 1: Golden signals (error rate, P99 latency, traffic, saturation)</div><div class="cmd">Row 2: Dependencies (downstream services, DB connection pool)</div><div class="cmd">Row 3: Infrastructure (CPU, memory, pod restarts)</div><div class="cmd">Row 4: Business (order rate, checkout success)</div><div class="cmd"># Template variables for reuse:</div><div class="cmd">sum(rate(requests_total{cluster="$cluster",service="$service"}[5m]))</div><div class="cmd"># Add deployment annotations to see changes on timeline</div></div><p>Design for the incident responder woken at 3am: top row gives YES/NO health in 3 seconds, drill down by scrolling. Include links to runbooks. Use stat panels for current value, time-series for trends. Dashboard as code (Grafana provisioning ConfigMap or Terraform) keeps them version-controlled and auto-restores deleted dashboards.</p>'},
+{n:17,tag:'tools',q:'What is the kube-prometheus-stack — what does it deploy?',body:'<div class="cmds"><div class="cmd">helm install kube-prom prometheus-community/kube-prometheus-stack -n monitoring -f values.yaml</div><div class="cmd"># Deployed components:</div><div class="cmd">Prometheus Operator  — manages Prometheus via CRDs (ServiceMonitor, PodMonitor, PrometheusRule)</div><div class="cmd">Prometheus           — metrics collection</div><div class="cmd">Alertmanager         — routing</div><div class="cmd">Grafana              — dashboards (25+ pre-built)</div><div class="cmd">kube-state-metrics   — K8s object metrics</div><div class="cmd">node-exporter        — host metrics (DaemonSet)</div><div class="cmd">prometheus-adapter   — custom metrics for HPA</div></div><p>Each team deploys their own ServiceMonitor alongside their Deployment — Prometheus auto-discovers it without central config changes. Pre-built dashboards cover nodes, K8s objects, etcd, coredns, and API server. Size Prometheus by series count: 1M series ≈ 3-4GB RAM. Use recording rules to pre-aggregate expensive queries at scale.</p>'},
+{n:18,tag:'tools',q:'What is Grafana Loki — how does it differ from Elasticsearch?',body:'<div class="cmds"><div class="cmd">helm install loki grafana/loki-stack -n monitoring</div><div class="cmd"># LogQL examples:</div><div class="cmd">{namespace="production",app="payments"} |= "error"</div><div class="cmd">{app="api"} | json | status_code >= 500</div><div class="cmd">rate({app="payments"} |= "payment_failed" [5m])  # metric from logs</div></div><p>Loki indexes only labels, not content — 10-20x cheaper than Elasticsearch. Tradeoff: full-text search is slower (scans lines grep-style). For most operational use cases (errors in a service/namespace/pod), Loki is sufficient. Elasticsearch excels at complex cross-service full-text search and compliance requirements. Managed: Grafana Cloud for zero-ops.</p>'},
+{n:19,tag:'k8s',q:'How do you monitor Kubernetes cluster health — what metrics and alerts matter most?',body:'<div class="cmds"><div class="cmd">kube_node_status_condition{condition="Ready",status="true"} == 0  # node NotReady</div><div class="cmd">increase(kube_pod_container_status_restarts_total[15m]) > 3       # crash loop</div><div class="cmd">apiserver_request_duration_seconds{quantile="0.99"} > 1           # API server slow</div><div class="cmd">etcd_server_has_leader == 0                                        # etcd no leader</div><div class="cmd">kube_horizontalpodautoscaler_status_current_replicas == kube_horizontalpodautoscaler_spec_max_replicas  # HPA at max</div><div class="cmd">absent(up{job="myapp"})  # target disappeared</div></div><p>HPA at maximum replicas is critical — autoscaling is exhausted and the service cannot handle more load. Certificate expiry (alert 30 days before) prevents entirely avoidable outages. absent() catches targets that stop reporting — a crash that takes the metrics endpoint with it would otherwise cause threshold alerts to miss the incident.</p>'},
+{n:20,tag:'k8s',q:'How do you detect CPU throttling in Kubernetes — why is it invisible?',body:'<div class="cmds"><div class="cmd"># Throttling ratio (alert if > 25%):</div><div class="cmd">rate(container_cpu_cfs_throttled_seconds_total[5m]) / rate(container_cpu_cfs_periods_total[5m])</div><div class="cmd"># Why invisible: container does not error or crash</div><div class="cmd"># It simply runs slower — requests take longer, no error logs</div><div class="cmd">kubectl top pod myapp  # shows 0.8/1.0 CPU — looks fine</div><div class="cmd"># But throttling metric shows 40% of periods throttled</div></div><p>The CFS scheduler allows a burst within the 100ms period, then throttles for the remainder. A pod using 0.8 CPU average on a 1.0 limit can still be 40% throttled if it spikes in the first 60ms of each period. Fix: increase CPU limit, reduce spike patterns, or remove CPU limits entirely (use requests only for scheduling). Always monitor throttling explicitly — CPU utilisation alone misses it.</p>'},
+{n:21,tag:'cloud',q:'How does GCP Managed Service for Prometheus differ from self-managed?',body:'<div class="cmds"><div class="cmd"># Enable on GKE cluster:</div><div class="cmd">gcloud container clusters update CLUSTER --enable-managed-prometheus</div><div class="cmd"># Same ServiceMonitor CRDs, same PromQL, same Grafana integration</div><div class="cmd"># Backend: Cloud Monitoring (15 month retention, no infra to manage)</div><div class="cmd">gcloud monitoring metrics list --filter="metric.type=starts_with(prometheus.googleapis.com)"</div></div><p>GMP is Prometheus-compatible (same SDKs, PromQL, ServiceMonitors) but stores in Cloud Monitoring backend — no Prometheus StatefulSets, no storage management, no HA configuration. For GKE-native teams, GMP reduces operational overhead significantly. Self-managed Prometheus: full control, open standards, multi-cloud/on-prem, no per-series ingestion cost. For a GCP-native platform team, GMP is typically the right default.</p>'},
+{n:22,tag:'cloud',q:'How do you use Cloud Logging and Cloud Trace for full-stack observability?',body:'<div class="cmds"><div class="cmd"># Link logs to traces — set trace field in log entries:</div><div class="cmd">{"trace": "projects/PROJECT/traces/TRACE_ID", "spanId": "SPAN_ID"}</div><div class="cmd"># Cloud Logging auto-links to Cloud Trace when trace field is present</div><div class="cmd"># Log-based metric from error pattern:</div><div class="cmd">gcloud logging metrics create payment_errors \\</div><div class="cmd">  --log-filter=\'jsonPayload.event="payment_failed"\'</div><div class="cmd"># Error Reporting groups exceptions automatically</div><div class="cmd">gcloud beta error-reporting events list --project=PROJECT</div></div><p>GCP observability stack: Cloud Logging ← container stdout (auto), Cloud Trace ← OTLP exporter, Cloud Profiler ← sampling profiler (zero overhead). Log entries with trace field show a "View trace" link in Cloud Logging console — one click jumps to the full distributed trace for that request. Log-based metrics extract signal from logs into Cloud Monitoring without application code changes.</p>'},
+{n:23,tag:'incident',q:'A production alert fires — walk through your structured incident response.',body:'<div class="cmds"><div class="cmd">Phase 1 — Detect (< 5 min): acknowledge alert, assess impact, open Slack channel</div><div class="cmd">Phase 2 — Triage (5-15 min):</div><div class="cmd">  Golden signals dashboard: which signal is anomalous?</div><div class="cmd">  Recent changes: kubectl rollout history, recent deploys, config changes</div><div class="cmd">  Form a hypothesis before taking action</div><div class="cmd">Phase 3 — Mitigate:</div><div class="cmd">  Rollback first if recent deploy (fastest recovery)</div><div class="cmd">  Scale up if saturation issue</div><div class="cmd">  Disable feature flag if new feature causing errors</div><div class="cmd">Phase 4 — Resolve: confirm metrics returned to baseline, post status update</div><div class="cmd">Phase 5 — Postmortem: schedule within 48 hours</div></div><p>One incident commander coordinates (does not necessarily fix). Other engineers investigate. Rule: make one change at a time — simultaneous changes make it impossible to know what fixed the issue. Always rollback first if unsure — a known-good state beats an unknown state.</p>'},
+{n:24,tag:'incident',q:'How do you write a blameless postmortem — what structure matters?',body:'<div class="cmds"><div class="cmd">1. Incident summary (severity, duration, user impact)</div><div class="cmd">2. Timeline (who did what, when)</div><div class="cmd">3. Root cause (5 Whys — get to systemic cause)</div><div class="cmd">4. Contributing factors</div><div class="cmd">5. What went well</div><div class="cmd">6. Action items (specific owner + due date)</div><div class="cmd"># 5 Whys example:</div><div class="cmd">Service crashed → OOM at 2x load → Marketing campaign not communicated</div><div class="cmd">→ No cross-team process → Fix: establish the process (not just raise memory limits)</div></div><p>Blameless: goal is systemic improvement, not fault assignment. People make mistakes — well-designed systems prevent mistakes from causing incidents. Every postmortem must produce action items with owners and due dates. Track completion rate — below 80% means the process is broken and incidents will recur. This is a Principal-level responsibility.</p>'},
+{n:25,tag:'tools',q:'What is an SLO dashboard — how do you visualise error budget in Grafana?',body:'<div class="cmds"><div class="cmd"># Error budget remaining panel (PromQL):</div><div class="cmd">1 - (sum(increase(requests_total{code=~"5.."}[30d])) / (sum(increase(requests_total[30d])) * 0.001))</div><div class="cmd"># Error budget burn rate panel:</div><div class="cmd">rate(errors[1h]) / rate(requests[1h]) / 0.001  # ratio to allowed rate</div><div class="cmd"># Colour thresholds: green > 50%, yellow 10-50%, red < 10%</div></div><p>An SLO dashboard has three panels: current SLI value vs target (are we in SLO right now?), error budget remaining % (how much budget is left this month?), and burn rate over time (are we accelerating or decelerating?). Green error budget with stable burn rate = healthy, deploy freely. Red budget with high burn rate = freeze deployments, fix reliability. The dashboard makes the deployment decision data-driven.</p>'},
+{n:26,tag:'k8s',q:'How do you export custom application metrics from a Kubernetes pod to Prometheus?',body:'<div class="cmds"><div class="cmd"># Python instrumentation:</div><div class="cmd">from prometheus_client import Counter, Histogram, start_http_server</div><div class="cmd">requests_total = Counter("myapp_requests_total","Total requests",["status"])</div><div class="cmd">latency = Histogram("myapp_request_duration_seconds","Request latency")</div><div class="cmd"># Expose metrics port in Service:</div><div class="cmd">ports: [{name: metrics, containerPort: 8081}]</div><div class="cmd"># ServiceMonitor CRD (Prometheus Operator picks this up):</div><div class="cmd">spec:</div><div class="cmd">  selector: {matchLabels: {app: myapp}}</div><div class="cmd">  endpoints: [{port: metrics, interval: 30s}]</div><div class="cmd"># Verify: kubectl port-forward svc/prometheus 9090 → check /targets</div></div><p>ServiceMonitor is the GitOps-friendly pattern: each team deploys their own ServiceMonitor alongside their Deployment. Prometheus auto-discovers it without central config changes. Metric naming conventions: myapp_http_requests_total (counter), myapp_request_duration_seconds (histogram), myapp_active_connections (gauge). Unit in name, snake_case, _total suffix for counters.</p>'},
+{n:27,tag:'alerting',q:'How do you set up PagerDuty routing from Alertmanager?',body:'<div class="cmds"><div class="cmd">receivers:</div><div class="cmd">- name: pagerduty</div><div class="cmd">  pagerduty_configs:</div><div class="cmd">  - routing_key: &lt;INTEGRATION_KEY&gt;   # from PagerDuty service integration</div><div class="cmd">    description: "{{ .CommonAnnotations.description }}"</div><div class="cmd">    severity: "{{ .CommonLabels.severity }}"</div><div class="cmd">    details:</div><div class="cmd">      runbook: "{{ .CommonAnnotations.runbook_url }}"</div><div class="cmd">      dashboard: "{{ .CommonAnnotations.dashboard_url }}"</div></div><p>Store the integration key in a Kubernetes Secret referenced by Alertmanager. Route: critical severity → PagerDuty (wakes people up), warning → Slack (async review). Runbook and dashboard URLs in every alert — they appear in the PagerDuty incident, giving on-call engineers immediate context. This alone reduces MTTA by 50%.</p>'},
+{n:28,tag:'dashboards',q:'What are Grafana template variables — how do you use them for multi-cluster dashboards?',body:'<div class="cmds"><div class="cmd"># Variable: cluster (auto-populated from metric labels)</div><div class="cmd">Name: cluster</div><div class="cmd">Type: Query</div><div class="cmd">Query: label_values(kube_node_info, cluster)</div><div class="cmd"># Use in panel:</div><div class="cmd">sum by (namespace) (rate(requests_total{cluster="$cluster"}[5m]))</div><div class="cmd"># $__rate_interval: auto-adjusts to time range and scrape interval</div><div class="cmd">rate(requests_total[$__rate_interval])  # better than hardcoded [5m]</div></div><p>Template variables make one dashboard serve all clusters. Chained variables: selecting a cluster narrows the namespace dropdown. Data links add drill-down: click a pod in the overview to jump to the pod-detail dashboard with that pod pre-selected. Use $__rate_interval instead of hardcoded time windows — it adjusts automatically to the dashboard time range and scrape interval.</p>'},
+{n:29,tag:'tracing',q:'Distributed traces show high latency but you cannot find the cause — how do you debug?',body:'<div class="cmds"><div class="cmd"># Step 1: Find slow trace — filter by duration in Jaeger/Tempo</div><div class="cmd"># Step 2: Inspect trace waterfall — wide span = slow, gap = wait</div><div class="cmd">db.statement, http.url, db.row_count, error.message  # span attributes</div><div class="cmd"># Step 3: Cross-reference logs with trace_id</div><div class="cmd">{service="payments"} | json | trace_id="abc123"</div><div class="cmd"># Step 4: Check resource metrics at time of slow trace</div><div class="cmd">container_cpu_cfs_throttled_seconds_total  # was the pod throttled?</div></div><p>Trace waterfall: width = duration, indentation = parent-child. Gap between parent starting and first child = time in parent before the downstream call (serialisation, connection pool wait). Wide span with no children = bottleneck is in that service. Span attributes (db.statement, http.url) give the exact SQL or API call. Cross-correlate with logs using trace_id to see application-level context at that exact moment.</p>'},
+{n:30,tag:'incident',q:'What is a runbook — how do you write one that actually helps at 3am?',body:'<div class="cmds"><div class="cmd"># Runbook structure:</div><div class="cmd">## Alert: PaymentServiceHighErrorRate</div><div class="cmd">### What this means: error rate above 0.1% SLO threshold</div><div class="cmd">### Severity: P1 if > 1%, P2 if 0.1-1%</div><div class="cmd">### Triage steps:</div><div class="cmd">1. Open dashboard: [link]</div><div class="cmd">2. kubectl get pods -n payments | grep -v Running</div><div class="cmd">3. kubectl logs -l app=payments --tail=50 | grep ERROR</div><div class="cmd">4. Check recent deployments: kubectl rollout history deployment/payments</div><div class="cmd">### Mitigation: kubectl rollout undo deployment/payments</div><div class="cmd">### Escalation: payments-oncall → payments-lead → CTO</div></div><p>A good runbook assumes the reader has been woken up at 3am and has never seen this alert before. Numbered steps, exact commands to copy-paste, expected outputs, decision branches ("if step 3 shows no errors, skip to step 7"). Link to dashboards with time pre-set. Include escalation path and communication templates. Update the runbook after every incident — add the debugging steps that actually worked.</p>'}
+];
+var activeFilter='all', openCards=new Set(), viewedCount=0;
+var fmQ=[], fmIdx=0, fmCorrect=0, fmSeen=0;
+
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  document.getElementById('dmb').textContent=document.body.classList.contains('dark')?'\u2600':'\u263e';
+  try{localStorage.setItem('eklabs_dark',document.body.classList.contains('dark')?'1':'0');}catch(e){}
+}
+(function(){try{if(localStorage.getItem('eklabs_dark')==='1'){document.body.classList.add('dark');document.getElementById('dmb').textContent='\u2600';}}catch(e){}}());
+
+function badge(tag){
+  var L={'metrics':'Metrics','logging':'Logging','tracing':'Tracing','alerting':'Alerting','slo':'SLOs','dashboards':'Dashboards','tools':'Tools','k8s':'K8s obs','cloud':'Cloud obs','incident':'Incident'};
+  return '<span class="badge '+tag+'">'+(L[tag]||tag)+'</span>';
+}
+function render(qs){
+  document.getElementById('countBar').textContent='Showing '+qs.length+' of 30 questions';
+  document.getElementById('visN').textContent=qs.length;
+  document.getElementById('qList').innerHTML=qs.map(function(q){
+    var open=openCards.has(q.n);
+    return '<div class="q-card" id="card-'+q.n+'">'
+      +'<div class="q-header" onclick="toggle('+q.n+')">'
+      +'<span class="q-num">Q'+q.n+'</span>'
+      +'<span class="q-title">'+q.q+'</span>'
+      +'<div class="q-right">'+badge(q.tag)
+      +'<span class="chevron'+(open?' open':'')+'" id="chev-'+q.n+'">&#9660;</span>'
+      +'</div></div>'
+      +'<div class="q-body'+(open?' open':'')+'" id="body-'+q.n+'">'+q.body+'</div>'
+      +'</div>';
+  }).join('');
+}
+function toggle(n){
+  var b=document.getElementById('body-'+n), c=document.getElementById('chev-'+n);
+  if(openCards.has(n)){openCards.delete(n);b.classList.remove('open');c.classList.remove('open');}
+  else{openCards.add(n);b.classList.add('open');c.classList.add('open');viewedCount++;document.getElementById('viewN').textContent=viewedCount;}
+}
+function setFilter(f,el){
+  activeFilter=f;
+  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');filterQs();
+}
+function filterQs(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var filtered=QS;
+  if(activeFilter!=='all') filtered=filtered.filter(function(x){return x.tag===activeFilter;});
+  if(q) filtered=filtered.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  render(filtered);
+}
+function fmStart(){
+  var q=document.getElementById('search').value.toLowerCase();
+  var pool=QS.slice();
+  if(activeFilter!=='all') pool=pool.filter(function(x){return x.tag===activeFilter;});
+  if(q) pool=pool.filter(function(x){return x.q.toLowerCase().indexOf(q)!==-1||x.body.toLowerCase().indexOf(q)!==-1;});
+  if(!pool.length){alert('No questions match the current filter.');return;}
+  fmQ=pool.sort(function(){return Math.random()-.5;});
+  fmIdx=0;fmCorrect=0;fmSeen=0;
+  document.getElementById('fmBar').classList.add('on');
+  fmShow();
+}
+function fmShow(){
+  if(fmIdx>=fmQ.length){
+    document.getElementById('fmQ').textContent='Done! '+fmCorrect+'/'+fmQ.length+' correct';
+    document.getElementById('fmAns').classList.remove('on');
+    document.getElementById('fmRev').style.display='none';
+    document.getElementById('fmGot').style.display='none';
+    document.getElementById('fmMiss').style.display='none';
+    document.getElementById('fmFill').style.width='100%';
+    return;
+  }
+  var item=fmQ[fmIdx];
+  document.getElementById('fmQ').textContent='Q'+item.n+' — '+item.q;
+  document.getElementById('fmAns').innerHTML=item.body;
+  document.getElementById('fmAns').classList.remove('on');
+  document.getElementById('fmRev').style.display='';
+  document.getElementById('fmGot').style.display='none';
+  document.getElementById('fmMiss').style.display='none';
+  document.getElementById('fmFill').style.width=Math.round(fmIdx/fmQ.length*100)+'%';
+  document.getElementById('fmScore').textContent=fmCorrect+' correct / '+fmSeen+' seen';
+}
+function fmReveal(){
+  document.getElementById('fmAns').classList.add('on');
+  document.getElementById('fmRev').style.display='none';
+  document.getElementById('fmGot').style.display='';
+  document.getElementById('fmMiss').style.display='';
+  fmSeen++;
+}
+function fmNext(ok){
+  if(ok){fmCorrect++;document.getElementById('correctN').textContent=fmCorrect;}
+  fmIdx++;fmShow();
+}
+function fmStop(){document.getElementById('fmBar').classList.remove('on');}
+render(QS);
+
+
+/* ── DARK MODE ────────────────────── */
+(function(){
+  var saved = localStorage.getItem('ekn-dark');
+  if (saved === '1') document.body.classList.add('dark');
+})();
+function toggleDark() {
+  var on = document.body.classList.toggle('dark');
+  localStorage.setItem('ekn-dark', on ? '1' : '0');
+  var btn = document.getElementById('dm-btn');
+  if (btn) btn.textContent = on ? '☀ Light' : '☾ Dark';
+}
+
+/* ── INTERVIEW MODE ───────────────── */
+var fmAll = [], fmIdx = 0, fmGot = 0, fmTotal = 0;
+
+function fmStart() {
+  // collect currently visible QS
+  fmAll = [];
+  var cards = document.querySelectorAll('.q-card');
+  cards.forEach(function(c) {
+    var n = parseInt(c.id.replace('card-',''));
+    var q = QS.find ? QS.find(function(x){ return x.n === n; })
+                    : (function(){ for(var i=0;i<QS.length;i++){ if(QS[i].n===n) return QS[i]; } })();
+    if (q) fmAll.push(q);
+  });
+  // shuffle
+  for (var i = fmAll.length-1; i > 0; i--) {
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp = fmAll[i]; fmAll[i] = fmAll[j]; fmAll[j] = tmp;
+  }
+  fmIdx = 0; fmGot = 0; fmTotal = fmAll.length;
+  var bar = document.getElementById('fm-bar');
+  if (bar) { bar.classList.add('open'); fmShow(); }
+}
+function fmShow() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar || fmIdx >= fmTotal) { fmDone(); return; }
+  var q = fmAll[fmIdx];
+  var pct = fmTotal > 0 ? Math.round((fmIdx/fmTotal)*100) : 0;
+  document.getElementById('fm-prog').style.width = pct + '%';
+  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + fmTotal;
+  document.getElementById('fm-q-text').textContent = q.q;
+  document.getElementById('fm-answer').innerHTML = q.body;
+  document.getElementById('fm-answer').classList.remove('show');
+  document.getElementById('fm-reveal').style.display = '';
+  document.getElementById('fm-got').style.display    = 'none';
+  document.getElementById('fm-miss').style.display   = 'none';
+  document.getElementById('fm-score').textContent    = fmGot + ' / ' + fmIdx + ' correct';
+}
+function fmReveal() {
+  document.getElementById('fm-answer').classList.add('show');
+  document.getElementById('fm-reveal').style.display = 'none';
+  document.getElementById('fm-got').style.display    = '';
+  document.getElementById('fm-miss').style.display   = '';
+}
+function fmNext(ok) {
+  if (ok) fmGot++;
+  fmIdx++;
+  fmShow();
+}
+function fmStop() {
+  var bar = document.getElementById('fm-bar');
+  if (bar) bar.classList.remove('open');
+}
+function fmDone() {
+  var bar = document.getElementById('fm-bar');
+  if (!bar) return;
+  bar.innerHTML = '<div class="fm-done">&#127881; Session complete! You got <strong>' + fmGot + ' / ' + fmTotal + '</strong> correct.</div>'
+    + '<button class="fm-stop" onclick="fmStop()">Close</button>';
+}
+
+</script>
+</body>
+</html>
