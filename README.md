@@ -1,4 +1,4 @@
-# EknathaLabs — Platform Engineering Interview Portal
+# EknathaLabs — Platform & DevOps Engineering Interview Portal
 
 > 345+ production-grade Q&A across Terraform, Kubernetes, GCP, Networking,  
 > Linux, Databases, Containers, and Git. Free · Offline-ready · No login needed.
