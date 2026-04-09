@@ -165,25 +165,28 @@ footer a:hover { text-decoration: underline; }
   nav .hs { display: none; }
 }
 
-/* dark mode inherits via CSS vars - no extra rules needed */
-
-/* ── HEADER VISITOR BADGE ──────────── */
-.hvisitor {
+/* ── VISITOR COUNTER ─────────────────────── */
+.vcounter-wrap {
+  max-width: 1100px;
+  margin: 1.5rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: center;
+}
+.vcounter-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  white-space: nowrap;
+  gap: 10px;
   background: var(--surface);
-  transition: all .14s;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 8px 20px 8px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  transition: background .2s, border-color .2s;
 }
-.hvisitor .hvdot {
-  width: 6px; height: 6px;
+.vcounter-pill .vdot {
+  width: 8px; height: 8px;
   background: var(--accent);
   border-radius: 50%;
   flex-shrink: 0;
@@ -193,10 +196,50 @@ footer a:hover { text-decoration: underline; }
   0%,100% { opacity:1; transform:scale(1); }
   50%      { opacity:.4; transform:scale(.7); }
 }
-.hvisitor img.hvbadge {
-  height: 16px;
+.vcounter-pill .vlabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.vcount-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.vcount-total {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -.5px;
+  min-width: 28px;
+  text-align: right;
+}
+.vcount-today {
+  font-size: 11px;
+  color: var(--faint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.vcount-loading {
+  font-size: 12px;
+  color: var(--faint);
+  font-weight: 400;
+}
+/* dark mode inherits via CSS vars - no extra rules needed */
+
+/* ── VISITOR COUNTER ─────────────────────── */
+.hvisitor {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: border-color .14s;
+  flex-shrink: 0;
+}
+.hvisitor img {
+  height: 22px;
   display: block;
-  border-radius: 2px;
 }
 
 </style>
@@ -215,13 +258,7 @@ footer a:hover { text-decoration: underline; }
       <a href="https://github.com/eknatha" target="_blank" class="hs">GitHub</a>
       <a href="https://eknatha.github.io" target="_blank" class="hs">Portfolio</a>
       <a href="https://linkedin.com/in/eknathareddyp" target="_blank" class="cta hs">LinkedIn</a>
-      <span class="hvisitor hs">
-        <span class="hvdot"></span>
-        <img class="hvbadge"
-             src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&count_bg=%231D9E75&title_bg=%23444444&icon=&title=Visitors&edge_flat=true"
-             alt="visitor count"
-             referrerpolicy="no-referrer-when-downgrade">
-      </span>
+      <span class="hvisitor hs"><img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&label=Visitors&icon=person-fill&color=%231D9E75" alt="visitor count" referrerpolicy="no-referrer-when-downgrade"></span>
       <button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button>
     </nav>
   </div>
@@ -238,6 +275,7 @@ footer a:hover { text-decoration: underline; }
     <div class="ctr"><div class="ctr-n">0</div><div class="ctr-l">Login required</div></div>
   </div>
 </div>
+
 
 <div class="controls">
   <div class="search-wrap">
