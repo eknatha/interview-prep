@@ -4,31 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EknathaLabs — Platform & DevOps Engineering Interview Portal</title>
-<meta name="description" content="500+ production-grade interview Q&A across Terraform, Kubernetes, GCP, Networking, Linux, Databases, Containers, Git, Observability, CI/CD, and AWS. Free, offline-ready.">
+<meta name="description" content="500+ production-grade interview Q&A across Terraform, Kubernetes, GCP, AWS, Azure, Networking, Linux, Databases, Containers, Git, Observability, CI/CD. Free, offline-ready.">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:         #f5f5f0;
-  --surface:    #ffffff;
-  --border:     #e4e4dc;
-  --border-h:   #b0b0a6;
-  --text:       #1a1a1a;
-  --muted:      #666;
-  --faint:      #999;
-  --accent:     #1D9E75;
-  --accent-bg:  #E1F5EE;
-  --accent-dk:  #0F6E56;
+  --bg: #f5f5f0; --surface: #ffffff; --border: #e4e4dc; --border-h: #b0b0a6;
+  --text: #1a1a1a; --muted: #666; --faint: #999;
+  --accent: #1D9E75; --accent-bg: #E1F5EE; --accent-dk: #0F6E56;
 }
 body.dark {
-  --bg:         #111314;
-  --surface:    #1a1d1f;
-  --border:     #2e3235;
-  --border-h:   #4a5055;
-  --text:       #e8eaec;
-  --muted:      #8a9099;
-  --faint:      #555;
-  --accent-bg:  #0d2a20;
-  --accent-dk:  #4dd4a8;
+  --bg: #111314; --surface: #1a1d1f; --border: #2e3235; --border-h: #4a5055;
+  --text: #e8eaec; --muted: #8a9099; --faint: #555;
+  --accent-bg: #0d2a20; --accent-dk: #4dd4a8;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .2s, color .2s; -webkit-font-smoothing: antialiased; }
 
@@ -98,35 +85,27 @@ body.dark .lv-adv { background: #1f0f0f; color: #e07070; }
 body.dark .lv-exp { background: #0d1226; color: #7aa8e0; }
 
 /* colour themes */
-.t-teal  .card-icon { background: #E1F5EE; }
-.t-blue  .card-icon { background: #E6F1FB; }
-.t-purp  .card-icon { background: #EEEDFE; }
-.t-coral .card-icon { background: #FAECE7; }
-.t-ambr  .card-icon { background: #FAEEDA; }
-.t-grn   .card-icon { background: #EAF3DE; }
-.t-red   .card-icon { background: #FCEBEB; }
-.t-gray  .card-icon { background: #F1EFE8; }
-.t-teal  .cbadge { background: #E1F5EE; color: #085041; }
-.t-blue  .cbadge { background: #E6F1FB; color: #0C447C; }
-.t-purp  .cbadge { background: #EEEDFE; color: #3C3489; }
-.t-coral .cbadge { background: #FAECE7; color: #712B13; }
-.t-ambr  .cbadge { background: #FAEEDA; color: #633806; }
-.t-grn   .cbadge { background: #EAF3DE; color: #27500A; }
-.t-red   .cbadge { background: #FCEBEB; color: #791F1F; }
-.t-gray  .cbadge { background: #F1EFE8; color: #444441; }
-body.dark .t-teal  .card-icon { background: #0d2a20; }
-body.dark .t-blue  .card-icon { background: #0d1a2e; }
-body.dark .t-purp  .card-icon { background: #18163a; }
-body.dark .t-coral .card-icon { background: #2a1208; }
-body.dark .t-ambr  .card-icon { background: #261a06; }
-body.dark .t-grn   .card-icon { background: #0d1f0d; }
-body.dark .t-red   .card-icon { background: #1f0f0f; }
-body.dark .t-gray  .card-icon { background: #1f2124; }
+.t-teal .card-icon { background: #E1F5EE; } .t-blue .card-icon { background: #E6F1FB; }
+.t-purp .card-icon { background: #EEEDFE; } .t-coral .card-icon { background: #FAECE7; }
+.t-ambr .card-icon { background: #FAEEDA; } .t-grn  .card-icon { background: #EAF3DE; }
+.t-red  .card-icon { background: #FCEBEB; } .t-gray .card-icon { background: #F1EFE8; }
+.t-sky  .card-icon { background: #E0F4FF; }
 
-/* NEW badge */
+.t-teal .cbadge { background: #E1F5EE; color: #085041; } .t-blue .cbadge { background: #E6F1FB; color: #0C447C; }
+.t-purp .cbadge { background: #EEEDFE; color: #3C3489; } .t-coral .cbadge { background: #FAECE7; color: #712B13; }
+.t-ambr .cbadge { background: #FAEEDA; color: #633806; } .t-grn  .cbadge { background: #EAF3DE; color: #27500A; }
+.t-red  .cbadge { background: #FCEBEB; color: #791F1F; } .t-gray .cbadge { background: #F1EFE8; color: #444441; }
+.t-sky  .cbadge { background: #E0F4FF; color: #0C5A8C; }
+
+body.dark .t-teal .card-icon { background: #0d2a20; } body.dark .t-blue .card-icon { background: #0d1a2e; }
+body.dark .t-purp .card-icon { background: #18163a; } body.dark .t-coral .card-icon { background: #2a1208; }
+body.dark .t-ambr .card-icon { background: #261a06; } body.dark .t-grn  .card-icon { background: #0d1f0d; }
+body.dark .t-red  .card-icon { background: #1f0f0f; } body.dark .t-gray .card-icon { background: #1f2124; }
+body.dark .t-sky  .card-icon { background: #051a2e; }
+
 .new-badge { font-size: 9px; background: var(--accent-bg); color: var(--accent); padding: 2px 6px; border-radius: 99px; margin-left: 5px; vertical-align: middle; font-weight: 700; }
 
-/* FEATURES STRIP */
+/* FEATURES */
 .features { max-width: 1100px; margin: 2rem auto 0; padding: 0 2rem; }
 .feat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .feat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; transition: background .2s, border-color .2s; }
@@ -156,6 +135,9 @@ footer { border-top: 1px solid var(--border); background: var(--surface); text-a
 footer a { color: var(--accent); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
+.hvisitor { display: inline-flex; align-items: center; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); transition: border-color .14s; flex-shrink: 0; }
+.hvisitor img { height: 22px; display: block; }
+
 @media (max-width: 640px) {
   header { padding: 0 1rem; }
   .hero { padding: 2rem 1rem 1.5rem; }
@@ -164,84 +146,6 @@ footer a:hover { text-decoration: underline; }
   .counters { gap: 1.5rem; }
   nav .hs { display: none; }
 }
-
-/* ── VISITOR COUNTER ─────────────────────── */
-.vcounter-wrap {
-  max-width: 1100px;
-  margin: 1.5rem auto 0;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: center;
-}
-.vcounter-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 99px;
-  padding: 8px 20px 8px 14px;
-  font-size: 12px;
-  color: var(--muted);
-  transition: background .2s, border-color .2s;
-}
-.vcounter-pill .vdot {
-  width: 8px; height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  flex-shrink: 0;
-  animation: vpulse 2.2s ease-in-out infinite;
-}
-@keyframes vpulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.4; transform:scale(.7); }
-}
-.vcounter-pill .vlabel {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
-}
-.vcount-group {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.vcount-total {
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: -.5px;
-  min-width: 28px;
-  text-align: right;
-}
-.vcount-today {
-  font-size: 11px;
-  color: var(--faint);
-  font-weight: 500;
-  white-space: nowrap;
-}
-.vcount-loading {
-  font-size: 12px;
-  color: var(--faint);
-  font-weight: 400;
-}
-/* dark mode inherits via CSS vars - no extra rules needed */
-
-/* ── VISITOR COUNTER ─────────────────────── */
-.hvisitor {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  transition: border-color .14s;
-  flex-shrink: 0;
-}
-.hvisitor img {
-  height: 22px;
-  display: block;
-}
-
 </style>
 </head>
 <body>
@@ -258,7 +162,9 @@ footer a:hover { text-decoration: underline; }
       <a href="https://github.com/eknatha" target="_blank" class="hs">GitHub</a>
       <a href="https://eknatha.github.io" target="_blank" class="hs">Portfolio</a>
       <a href="https://linkedin.com/in/eknathareddyp" target="_blank" class="cta hs">LinkedIn</a>
-      <span class="hvisitor hs"><img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&label=Visitors&icon=person-fill&color=%231D9E75" alt="visitor count" referrerpolicy="no-referrer-when-downgrade"></span>
+      <span class="hvisitor hs">
+        <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Feknatha.github.io%2Finterview-prep%2F&label=Visitors&icon=person-fill&color=%231D9E75" alt="visitor count" referrerpolicy="no-referrer-when-downgrade">
+      </span>
       <button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button>
     </nav>
   </div>
@@ -270,12 +176,11 @@ footer a:hover { text-decoration: underline; }
   <p class="sub">500+ production-grade questions with real commands, architecture patterns, and Principal-level answers.</p>
   <div class="counters">
     <div class="ctr"><div class="ctr-n">500+</div><div class="ctr-l">Total questions</div></div>
-    <div class="ctr"><div class="ctr-n">11</div><div class="ctr-l">Topic guides</div></div>
+    <div class="ctr"><div class="ctr-n">12</div><div class="ctr-l">Topic guides</div></div>
     <div class="ctr"><div class="ctr-n">100%</div><div class="ctr-l">Free &amp; offline</div></div>
     <div class="ctr"><div class="ctr-n">0</div><div class="ctr-l">Login required</div></div>
   </div>
 </div>
-
 
 <div class="controls">
   <div class="search-wrap">
@@ -283,7 +188,7 @@ footer a:hover { text-decoration: underline; }
     <input type="text" id="search" placeholder="Search guides…" oninput="filterCards()">
   </div>
   <div class="filter-row">
-    <div class="chip on"  onclick="setTag('all',this)">All (11)</div>
+    <div class="chip on" onclick="setTag('all',this)">All (12)</div>
     <div class="chip" onclick="setTag('infra',this)">Infrastructure</div>
     <div class="chip" onclick="setTag('containers',this)">Containers</div>
     <div class="chip" onclick="setTag('cloud',this)">Cloud</div>
@@ -293,9 +198,10 @@ footer a:hover { text-decoration: underline; }
 </div>
 
 <div class="section">
-  <div class="section-meta" id="meta">Showing 11 guides · 500+ questions</div>
+  <div class="section-meta" id="meta">Showing 12 guides · 500+ questions</div>
   <div class="grid" id="grid">
 
+    <!-- Terraform -->
     <a class="card t-coral" href="terraform_interview_guide.html" data-tags="infra dev">
       <div class="card-header">
         <div class="card-icon">&#127759;</div>
@@ -310,6 +216,7 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Kubernetes -->
     <a class="card t-blue" href="kubernetes_interview_guide.html" data-tags="containers infra">
       <div class="card-header">
         <div class="card-icon">&#9783;</div>
@@ -324,7 +231,8 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
-    <a class="card t-teal" href="gcp_interview_guide__1_.html" data-tags="cloud infra">
+    <!-- GCP — clean filename, no double underscore -->
+    <a class="card t-teal" href="gcp_interview_guide.html" data-tags="cloud infra">
       <div class="card-header">
         <div class="card-icon">&#9729;</div>
         <span class="cbadge">40 questions</span>
@@ -338,6 +246,37 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- AWS -->
+    <a class="card t-ambr" href="aws_interview_guide.html" data-tags="cloud infra">
+      <div class="card-header">
+        <div class="card-icon">&#9728;</div>
+        <span class="cbadge">30 questions</span>
+      </div>
+      <div class="card-title">AWS Production</div>
+      <div class="card-desc">IAM, VPC, EKS, RDS, Lambda, S3, CloudWatch, Cost Explorer, and multi-region high-availability architecture patterns.</div>
+      <div class="card-tags"><span class="ctag">IAM</span><span class="ctag">EKS</span><span class="ctag">VPC</span><span class="ctag">Cost</span></div>
+      <div class="card-foot">
+        <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+        <span class="clevel lv-adv">Advanced</span>
+      </div>
+    </a>
+
+    <!-- Azure — NEW card that was missing from the portal -->
+    <a class="card t-sky" href="azure_interview_guide.html" data-tags="cloud infra">
+      <div class="card-header">
+        <div class="card-icon">&#9636;</div>
+        <span class="cbadge">30 questions</span>
+      </div>
+      <div class="card-title">Azure Production</div>
+      <div class="card-desc">Entra ID, AKS, VNet peering, Azure Storage, Cost Management, Defender for Cloud, Policy, and enterprise landing zone patterns.</div>
+      <div class="card-tags"><span class="ctag">Entra ID</span><span class="ctag">AKS</span><span class="ctag">VNet</span><span class="ctag">Cost Mgmt</span></div>
+      <div class="card-foot">
+        <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+        <span class="clevel lv-adv">Advanced</span>
+      </div>
+    </a>
+
+    <!-- Networking -->
     <a class="card t-purp" href="networking_interview_guide.html" data-tags="infra ops">
       <div class="card-header">
         <div class="card-icon">&#128246;</div>
@@ -352,6 +291,7 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Linux -->
     <a class="card t-ambr" href="linux_interview_guide.html" data-tags="ops infra">
       <div class="card-header">
         <div class="card-icon">&#128039;</div>
@@ -366,6 +306,7 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Database -->
     <a class="card t-grn" href="database_performance_interview_guide.html" data-tags="ops infra">
       <div class="card-header">
         <div class="card-icon">&#128202;</div>
@@ -380,6 +321,7 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Containers -->
     <a class="card t-red" href="container_lifecycle_interview_guide.html" data-tags="containers infra">
       <div class="card-header">
         <div class="card-icon">&#128230;</div>
@@ -394,6 +336,7 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Git -->
     <a class="card t-gray" href="git_production_interview_guide.html" data-tags="dev ops">
       <div class="card-header">
         <div class="card-icon">&#127959;</div>
@@ -408,12 +351,13 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- Observability -->
     <a class="card t-teal" href="observability_interview_guide.html" data-tags="ops infra">
       <div class="card-header">
         <div class="card-icon">&#128270;</div>
         <span class="cbadge">30 questions</span>
       </div>
-      <div class="card-title">Observability &amp; Monitoring <span class="new-badge">NEW</span></div>
+      <div class="card-title">Observability &amp; Monitoring</div>
       <div class="card-desc">Metrics / logs / traces pillars, Prometheus, PromQL, Grafana, Loki, OpenTelemetry, SLOs, error budgets, burn-rate alerting, and incident response.</div>
       <div class="card-tags"><span class="ctag">Prometheus</span><span class="ctag">Grafana</span><span class="ctag">SLOs</span><span class="ctag">OTel</span><span class="ctag">Alerting</span></div>
       <div class="card-foot">
@@ -422,28 +366,15 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- CI/CD -->
     <a class="card t-blue" href="cicd_interview_guide.html" data-tags="dev infra">
       <div class="card-header">
         <div class="card-icon">&#9881;</div>
         <span class="cbadge">30 questions</span>
       </div>
-      <div class="card-title">CI/CD Pipelines <span class="new-badge">NEW</span></div>
+      <div class="card-title">CI/CD Pipelines</div>
       <div class="card-desc">GitHub Actions, Cloud Build, ArgoCD, Tekton, pipeline design patterns, test strategies, security scanning, and GitOps promotion flows.</div>
       <div class="card-tags"><span class="ctag">GitHub Actions</span><span class="ctag">ArgoCD</span><span class="ctag">Security</span><span class="ctag">Rollback</span></div>
-      <div class="card-foot">
-        <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
-        <span class="clevel lv-adv">Advanced</span>
-      </div>
-    </a>
-
-    <a class="card t-coral" href="aws_interview_guide.html" data-tags="cloud infra">
-      <div class="card-header">
-        <div class="card-icon">&#9728;</div>
-        <span class="cbadge">30 questions</span>
-      </div>
-      <div class="card-title">AWS Production</div>
-      <div class="card-desc">IAM, VPC, EKS, RDS, Lambda, S3, CloudWatch, Cost Explorer, and multi-region high-availability architecture patterns.</div>
-      <div class="card-tags"><span class="ctag">IAM</span><span class="ctag">EKS</span><span class="ctag">VPC</span><span class="ctag">Cost</span></div>
       <div class="card-foot">
         <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
         <span class="clevel lv-adv">Advanced</span>
@@ -470,7 +401,7 @@ footer a:hover { text-decoration: underline; }
     <div class="av">ER</div>
     <div class="about-info">
       <strong>Eknatha Reddy Puli &mdash; Platform Engineer</strong>
-      <p>13+ years in IT &nbsp;&middot;&nbsp; 7+ years cloud ops &nbsp;&middot;&nbsp; Linux &middot; Kubernetes &middot; Terraform &middot; GCP &middot; AWS &middot; Azure &nbsp;&middot;&nbsp;</p>
+      <p>13+ years in IT &nbsp;&middot;&nbsp; 7+ years cloud ops &nbsp;&middot;&nbsp; Linux &middot; Kubernetes &middot; Terraform &middot; GCP &middot; AWS &middot; Azure</p>
     </div>
     <div class="about-links">
       <a class="alink" href="https://github.com/eknatha" target="_blank">GitHub</a>
@@ -495,13 +426,16 @@ footer a:hover { text-decoration: underline; }
     if (b) b.textContent = '\u2600 Light';
   }
 })();
+
 function toggleDark() {
   var on = document.body.classList.toggle('dark');
   localStorage.setItem('ekn-dark', on ? '1' : '0');
   var b = document.getElementById('dm-btn');
   if (b) b.textContent = on ? '\u2600 Light' : '\u263E Dark';
 }
+
 var activeTag = 'all';
+
 function filterCards() {
   var q = document.getElementById('search').value.toLowerCase().trim();
   var cards = document.querySelectorAll('.card');
@@ -515,16 +449,17 @@ function filterCards() {
     c.style.display = ok ? '' : 'none';
     if (ok) shown++;
   });
-  document.getElementById('meta').textContent = 'Showing ' + shown + ' guide' + (shown !== 1 ? 's' : '');
+  document.getElementById('meta').textContent =
+    'Showing ' + shown + ' guide' + (shown !== 1 ? 's' : '');
   document.getElementById('empty').style.display = shown === 0 ? 'block' : 'none';
 }
+
 function setTag(tag, el) {
   activeTag = tag;
   document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
   el.classList.add('on');
   filterCards();
 }
-
 </script>
 </body>
 </html>
