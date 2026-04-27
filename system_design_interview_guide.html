@@ -4,213 +4,137 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>System Design — EknathaLabs Interview Guide</title>
-<meta name="description" content="30 production-grade system design interview questions for Platform and DevOps Engineers. URL shorteners, rate limiters, log pipelines, multi-region Kubernetes, and more.">
+<meta name="description" content="30 production-grade system design interview questions for Platform and DevOps Engineers. URL shorteners, rate limiters, distributed caches, multi-region Kubernetes, IDP, and more.">
 <style>
-:root {
-  --accent:#1D9E75; --accent-light:#E1F5EE; --accent-dark:#0F6E56;
-  --warn:#BA7517; --warn-light:#FAEEDA;
-  --danger:#A32D2D; --danger-light:#FCEBEB;
-  --info:#185FA5; --info-light:#E6F1FB;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f5f5f0; color: #1a1a1a;
-  -webkit-font-smoothing: antialiased;
-}
+:root{--accent:#1D9E75;--accent-light:#E1F5EE;--accent-dark:#0F6E56;--warn:#BA7517;--warn-light:#FAEEDA;--danger:#A32D2D;--danger-light:#FCEBEB;--info:#185FA5;--info-light:#E6F1FB;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f0;color:#1a1a1a;-webkit-font-smoothing:antialiased;}
 
-/* ── HEADER ──────────────────────────────── */
-header {
-  background: #fff; border-bottom: 1px solid #e4e4dc;
-  padding: .9rem 1.5rem; display: flex; align-items: center; gap: 10px;
-  position: sticky; top: 0; z-index: 100; flex-wrap: wrap;
-  transition: background .2s, border-color .2s;
-}
-.portal-link {
-  font-size: 12px; font-weight: 600; color: #D85A30;
-  text-decoration: none; border: 1px solid #ddd; border-radius: 7px;
-  padding: 4px 10px; white-space: nowrap;
-}
-.guide-title { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; }
-.q-pill {
-  font-size: 11px; background: #E1F5EE; color: #085041;
-  padding: 3px 10px; border-radius: 99px; font-weight: 600; white-space: nowrap;
-}
-.dm-btn {
-  background: none; border: 1px solid #ddd; border-radius: 8px;
-  padding: 4px 10px; font-size: 13px; cursor: pointer; color: inherit;
-  transition: all .14s; flex-shrink: 0;
-}
-.dm-btn:hover { border-color: var(--accent); }
+/* HEADER */
+header{background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;transition:background .2s,border-color .2s;}
+.portal-link{font-size:12px;font-weight:600;color:#D85A30;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;}
+.guide-title{font-size:16px;font-weight:700;flex:1;min-width:0;}
+.q-pill{font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;}
+.dm-btn{background:none;border:1px solid #ddd;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;color:inherit;transition:all .14s;flex-shrink:0;}
+.dm-btn:hover{border-color:var(--accent);}
 
-/* ── WRAP ────────────────────────────────── */
-.wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
+/* WRAP */
+.wrap{max-width:860px;margin:0 auto;padding:1.25rem 1.5rem 3rem;}
 
-/* ── SEARCH ──────────────────────────────── */
-.search-bar { position: relative; margin-bottom: 1.25rem; }
-.search-bar input {
-  width: 100%; padding: 10px 16px 10px 38px;
-  border: 1.5px solid #e4e4dc; border-radius: 10px;
-  background: #fff; color: #1a1a1a; font-size: 14px; outline: none;
-  transition: border-color .15s, box-shadow .15s;
-}
-.search-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,158,117,.1); }
-.search-bar input::placeholder { color: #bbb; }
-.search-bar svg {
-  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-  opacity: .4; width: 14px; height: 14px; stroke: currentColor; fill: none;
-  stroke-width: 1.8; stroke-linecap: round;
-}
+/* SEARCH */
+.search-bar{position:relative;margin-bottom:1.25rem;}
+.search-bar input{width:100%;padding:10px 16px 10px 38px;border:1.5px solid #e4e4dc;border-radius:10px;background:#fff;color:#1a1a1a;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;}
+.search-bar input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,158,117,.1);}
+.search-bar input::placeholder{color:#bbb;}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.4;width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;}
 
-/* ── FILTERS ─────────────────────────────── */
-.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
-.chip {
-  padding: 5px 14px; border-radius: 99px; font-size: 12px; cursor: pointer;
-  border: 1px solid #e4e4dc; background: #fff; color: #666;
-  transition: all .15s; user-select: none;
-}
-.chip.active { background: var(--accent-light); color: var(--accent-dark); border-color: var(--accent); font-weight: 500; }
-.chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+/* FILTERS */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.chip{padding:5px 14px;border-radius:99px;font-size:12px;cursor:pointer;border:1px solid #e4e4dc;background:#fff;color:#666;transition:all .15s;user-select:none;}
+.chip.active{background:var(--accent-light);color:var(--accent-dark);border-color:var(--accent);font-weight:500;}
+.chip:hover:not(.active){border-color:var(--accent);color:var(--accent);}
 
-/* ── STATS ───────────────────────────────── */
-.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 1.5rem; }
-.stat { background: #fff; border: 1px solid #e4e4dc; border-radius: 10px; padding: 12px 16px; }
-.stat-n { font-size: 22px; font-weight: 700; }
-.stat-l { font-size: 12px; color: #888; margin-top: 2px; }
-.stat-n.green { color: var(--accent); }
-.stat-n.amber { color: var(--warn); }
-.stat-n.red   { color: var(--danger); }
-.stat-n.blue  { color: var(--info); }
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+.stat{background:#fff;border:1px solid #e4e4dc;border-radius:10px;padding:12px 16px;}
+.stat-n{font-size:22px;font-weight:700;}
+.stat-l{font-size:12px;color:#888;margin-top:2px;}
+.stat-n.green{color:var(--accent);}
+.stat-n.amber{color:var(--warn);}
+.stat-n.red{color:var(--danger);}
+.stat-n.blue{color:var(--info);}
 
-/* ── TOOLBAR ─────────────────────────────── */
-.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.count-bar { font-size: 12px; color: #888; }
-.fm-btn {
-  background: var(--accent); color: #fff; border: none; border-radius: 8px;
-  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: background .14s;
-}
-.fm-btn:hover { background: var(--accent-dark); }
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.count-bar{font-size:12px;color:#888;}
+.fm-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:background .14s;}
+.fm-btn:hover{background:var(--accent-dark);}
 
-/* ── INTERVIEW MODE ──────────────────────── */
-.fm-bar {
-  display: none; background: #fff; border: 2px solid var(--accent);
-  border-radius: 12px; padding: 16px 18px; margin-bottom: 14px;
-}
-.fm-bar.open { display: block; }
-.fm-prog-wrap { height: 4px; background: #e0e0d8; border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
-.fm-prog { height: 4px; background: var(--accent); border-radius: 99px; transition: width .3s; }
-.fm-meta { font-size: 11px; color: #888; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-.fm-q { font-size: 15px; font-weight: 700; line-height: 1.5; margin-bottom: 14px; color: #1a1a1a; }
-.fm-answer { display: none; margin-bottom: 14px; }
-.fm-answer.show { display: block; }
-.fm-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.fm-reveal { padding: 7px 16px; border: 1px solid #ddd; border-radius: 8px; background: #f5f5f0; font-size: 13px; font-weight: 600; cursor: pointer; }
-.fm-got  { padding: 7px 16px; background: #EAF3DE; color: #27500A; border: 1px solid #b5d88a; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.fm-miss { padding: 7px 16px; background: #FCEBEB; color: #791F1F; border: 1px solid #f0b0b0; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.fm-stop { margin-left: auto; padding: 7px 14px; background: none; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; cursor: pointer; color: #999; }
-.fm-score { font-size: 12px; color: #888; font-weight: 600; }
+/* INTERVIEW MODE */
+.fm-bar{display:none;background:#fff;border:2px solid var(--accent);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.fm-bar.open{display:block;}
+.fm-prog-wrap{height:4px;background:#e0e0d8;border-radius:99px;margin-bottom:12px;overflow:hidden;}
+.fm-prog{height:4px;background:var(--accent);border-radius:99px;transition:width .3s;}
+.fm-meta{font-size:11px;color:#888;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.fm-q{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:14px;color:#1a1a1a;}
+.fm-answer{display:none;margin-bottom:14px;}
+.fm-answer.show{display:block;}
+.fm-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.fm-reveal{padding:7px 16px;border:1px solid #ddd;border-radius:8px;background:#f5f5f0;font-size:13px;font-weight:600;cursor:pointer;}
+.fm-got{padding:7px 16px;background:#EAF3DE;color:#27500A;border:1px solid #b5d88a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.fm-miss{padding:7px 16px;background:#FCEBEB;color:#791F1F;border:1px solid #f0b0b0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.fm-stop{margin-left:auto;padding:7px 14px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#999;}
+.fm-score{font-size:12px;color:#888;font-weight:600;}
 
-/* ── Q CARDS ─────────────────────────────── */
-.q-list { display: flex; flex-direction: column; gap: 8px; }
-.q-card { border: 1px solid #e4e4dc; border-radius: 12px; background: #fff; overflow: hidden; transition: box-shadow .14s; }
-.q-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-.q-header { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
-.q-num { font-size: 11px; font-weight: 500; color: #aaa; min-width: 28px; padding-top: 2px; flex-shrink: 0; }
-.q-title { font-size: 14px; font-weight: 600; color: #1a1a1a; flex: 1; line-height: 1.5; }
-.q-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.badge { font-size: 11px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
-.badge.fundamentals  { background: #E1F5EE; color: #0F6E56; }
-.badge.scalability   { background: #E6F1FB; color: #185FA5; }
-.badge.reliability   { background: #FAEEDA; color: #BA7517; }
-.badge.data          { background: #EEEDFE; color: #3C3489; }
-.badge.platform      { background: #EAF3DE; color: #3B6D11; }
-.badge.networking    { background: #FCEBEB; color: #A32D2D; }
-.badge.security      { background: #F4C0D1; color: #72243E; }
-.badge.tradeoffs     { background: #F1EFE8; color: #444441; }
-.chevron { font-size: 12px; color: #bbb; transition: transform .2s; }
-.chevron.open { transform: rotate(180deg); }
+/* Q CARDS */
+.q-list{display:flex;flex-direction:column;gap:8px;}
+.q-card{border:1px solid #e4e4dc;border-radius:12px;background:#fff;overflow:hidden;transition:box-shadow .14s;}
+.q-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07);}
+.q-header{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
+.q-num{font-size:11px;font-weight:500;color:#aaa;min-width:28px;padding-top:2px;flex-shrink:0;}
+.q-title{font-size:14px;font-weight:600;color:#1a1a1a;flex:1;line-height:1.5;}
+.q-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:500;}
+.badge.fundamentals{background:#E1F5EE;color:#0F6E56;}
+.badge.scalability{background:#E6F1FB;color:#185FA5;}
+.badge.reliability{background:#FAEEDA;color:#BA7517;}
+.badge.data{background:#EEEDFE;color:#3C3489;}
+.badge.platform{background:#EAF3DE;color:#3B6D11;}
+.badge.networking{background:#FCEBEB;color:#A32D2D;}
+.badge.tradeoffs{background:#F1EFE8;color:#444441;}
+.chevron{font-size:12px;color:#bbb;transition:transform .2s;}
+.chevron.open{transform:rotate(180deg);}
 
-/* ── Q BODY ──────────────────────────────── */
-.q-body { display: none; padding: 0 16px 18px 56px; }
-.q-body.open { display: block; }
-.q-body p { font-size: 13px; line-height: 1.75; color: #444; margin-bottom: 10px; }
-.q-body p:last-child { margin-bottom: 0; }
-.section-title {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .1em; color: #aaa; margin: 14px 0 7px;
-}
-.cmd-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-.cmd {
-  background: #f5f5f0; border-radius: 6px; padding: 6px 10px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 12px; color: #1a1a1a; border-left: 2px solid var(--accent);
-  white-space: pre-wrap; word-break: break-all;
-}
-.tip {
-  background: var(--warn-light); border-radius: 6px; padding: 8px 12px;
-  font-size: 12px; color: #1a1a1a; border-left: 2px solid var(--warn); margin-top: 6px;
-}
-.tip b { color: var(--warn); }
-.info-tip {
-  background: var(--info-light); border-radius: 6px; padding: 8px 12px;
-  font-size: 12px; color: #1a1a1a; border-left: 2px solid var(--info); margin-top: 6px;
-}
-.info-tip b { color: var(--info); }
-.danger-tip {
-  background: var(--danger-light); border-radius: 6px; padding: 8px 12px;
-  font-size: 12px; color: #1a1a1a; border-left: 2px solid var(--danger); margin-top: 6px;
-}
-.arch-box {
-  background: #f9f9f7; border: 1px solid #e4e4dc; border-radius: 8px;
-  padding: 10px 14px; font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 11.5px; line-height: 1.7; color: #333; margin: 8px 0 12px;
-  white-space: pre;
-}
+/* Q BODY */
+.q-body{display:none;padding:0 16px 18px 56px;}
+.q-body.open{display:block;}
+.q-body p{font-size:13px;line-height:1.75;color:#444;margin-bottom:10px;}
+.q-body p:last-child{margin-bottom:0;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin:14px 0 7px;}
+.cmd-list{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.cmd{background:#f5f5f0;border-radius:6px;padding:7px 11px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:12px;color:#1a1a1a;border-left:2px solid var(--accent);white-space:pre-wrap;word-break:break-word;line-height:1.6;}
+.tip{background:var(--warn-light);border-radius:6px;padding:8px 12px;font-size:12px;color:#1a1a1a;border-left:2px solid var(--warn);margin-top:6px;}
+.tip b{color:var(--warn);}
+.info-tip{background:var(--info-light);border-radius:6px;padding:8px 12px;font-size:12px;color:#1a1a1a;border-left:2px solid var(--info);margin-top:6px;}
+.info-tip b{color:var(--info);}
+.danger-tip{background:var(--danger-light);border-radius:6px;padding:8px 12px;font-size:12px;color:#1a1a1a;border-left:2px solid var(--danger);margin-top:6px;}
+.arch-box{background:#f9f9f7;border:1px solid #e4e4dc;border-radius:8px;padding:10px 14px;font-family:'SFMono-Regular',Consolas,monospace;font-size:11.5px;line-height:1.7;color:#333;margin:8px 0 12px;white-space:pre-wrap;word-break:break-word;}
 
-/* ── FOOTER ──────────────────────────────── */
-.page-footer {
-  border-top: 1px solid #e4e4dc; text-align: center;
-  padding: 1.25rem; font-size: 12px; color: #bbb; margin-top: 2rem;
-}
-.page-footer a { color: var(--accent); text-decoration: none; }
+/* FOOTER */
+.page-footer{border-top:1px solid #e4e4dc;text-align:center;padding:1.25rem;font-size:12px;color:#bbb;margin-top:2rem;}
+.page-footer a{color:var(--accent);text-decoration:none;}
 
-/* ── DARK MODE ───────────────────────────── */
-body.dark { background: #111314; color: #e8eaec; }
-body.dark header { background: #1a1d1f; border-color: #2e3235; }
-body.dark .portal-link { color: var(--accent); border-color: #2e3235; }
-body.dark .dm-btn { border-color: #2e3235; background: #222629; color: #e8eaec; }
-body.dark .search-bar input { background: #1a1d1f; border-color: #2e3235; color: #e8eaec; }
-body.dark .chip { background: #222629; border-color: #2e3235; color: #8a9099; }
-body.dark .chip.active { background: var(--accent-dark); color: #fff; border-color: var(--accent); }
-body.dark .stat { background: #1a1d1f; border-color: #2e3235; }
-body.dark .stat-l { color: #8a9099; }
-body.dark .q-card { background: #1a1d1f; border-color: #2e3235; }
-body.dark .q-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.3); }
-body.dark .q-title { color: #e8eaec; }
-body.dark .q-body p { color: #8a9099; }
-body.dark .cmd { background: #1e2123; color: #c9d1d9; }
-body.dark .arch-box { background: #161819; border-color: #2e3235; color: #c9d1d9; }
-body.dark .tip { background: #231c09; color: #d4a847; }
-body.dark .info-tip { background: #0d1226; color: #7aa8e0; }
-body.dark .danger-tip { background: #1f0f0f; color: #e07070; }
-body.dark .fm-bar { background: #1a1d1f; border-color: var(--accent); }
-body.dark .fm-q { color: #e8eaec; }
-body.dark .fm-reveal { background: #222629; border-color: #2e3235; color: #e8eaec; }
-body.dark .fm-meta { color: #8a9099; }
-body.dark .fm-score { color: #8a9099; }
-body.dark .count-bar { color: #8a9099; }
-body.dark .q-num { color: #555; }
-body.dark .chevron { color: #555; }
-body.dark .section-title { color: #555; }
-body.dark .page-footer { border-color: #2e3235; color: #555; }
+/* DARK MODE */
+body.dark{background:#111314;color:#e8eaec;}
+body.dark header{background:#1a1d1f;border-color:#2e3235;}
+body.dark .portal-link{color:var(--accent);border-color:#2e3235;}
+body.dark .dm-btn{border-color:#2e3235;background:#222629;color:#e8eaec;}
+body.dark .search-bar input{background:#1a1d1f;border-color:#2e3235;color:#e8eaec;}
+body.dark .chip{background:#222629;border-color:#2e3235;color:#8a9099;}
+body.dark .chip.active{background:var(--accent-dark);color:#fff;border-color:var(--accent);}
+body.dark .stat{background:#1a1d1f;border-color:#2e3235;}
+body.dark .stat-l{color:#8a9099;}
+body.dark .q-card{background:#1a1d1f;border-color:#2e3235;}
+body.dark .q-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.3);}
+body.dark .q-title{color:#e8eaec;}
+body.dark .q-body p{color:#8a9099;}
+body.dark .cmd{background:#1e2123;color:#c9d1d9;}
+body.dark .arch-box{background:#161819;border-color:#2e3235;color:#c9d1d9;}
+body.dark .tip{background:#231c09;color:#d4a847;}
+body.dark .info-tip{background:#0d1226;color:#7aa8e0;}
+body.dark .danger-tip{background:#1f0f0f;color:#e07070;}
+body.dark .fm-bar{background:#1a1d1f;border-color:var(--accent);}
+body.dark .fm-q{color:#e8eaec;}
+body.dark .fm-reveal{background:#222629;border-color:#2e3235;color:#e8eaec;}
+body.dark .fm-meta{color:#8a9099;}
+body.dark .fm-score{color:#8a9099;}
+body.dark .count-bar{color:#8a9099;}
+body.dark .q-num{color:#555;}
+body.dark .chevron{color:#555;}
+body.dark .section-title{color:#555;}
+body.dark .page-footer{border-color:#2e3235;color:#555;}
 
-/* ── RESPONSIVE ──────────────────────────── */
-@media (max-width: 600px) {
-  .wrap { padding: 1rem 1rem 3rem; }
-  .stats { grid-template-columns: repeat(2,1fr); }
-  header { padding: .75rem 1rem; }
-}
+@media(max-width:600px){.wrap{padding:1rem 1rem 3rem;}.stats{grid-template-columns:repeat(2,1fr);}header{padding:.75rem 1rem;}}
 </style>
 </head>
 <body>
@@ -223,10 +147,9 @@ body.dark .page-footer { border-color: #2e3235; color: #555; }
 </header>
 
 <div class="wrap">
-
   <div class="search-bar">
     <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
-    <input type="text" id="search" placeholder="Search questions or answers…" oninput="filterQs()">
+    <input type="text" id="search" placeholder="Search questions or answers&#8230;" oninput="filterQs()">
   </div>
 
   <div class="filters">
@@ -274,8 +197,194 @@ body.dark .page-footer { border-color: #2e3235; color: #555; }
   &nbsp;&middot;&nbsp; <a href="index.html">&#8592; Back to portal</a>
 </div>
 
+<!-- Question data — safe JSON, no JS template literal escaping issues -->
+<script type="application/json" id="qs-data">
+[
+  {
+    "n": 1,
+    "tag": "fundamentals",
+    "q": "Walk me through your framework for approaching any system design question.",
+    "body": "<p>A consistent framework prevents you from going blank and shows structured thinking. Use <strong>RADIO</strong>: Requirements → Architecture → Data model → Interface (APIs) → Optimisations.</p>\n<div class=\"section-title\">Step-by-step</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1. Requirements (5 min)\n   — Functional: what does the system do?\n   — Non-functional: scale, latency, durability, consistency\n   — Out of scope: what are we NOT building?</div>\n<div class=\"cmd\">2. Capacity estimation (3 min)\n   — DAU, RPS, storage per year, bandwidth\n   — Back-of-envelope: 1M DAU × 10 req/day = ~115 RPS</div>\n<div class=\"cmd\">3. High-level architecture (10 min)\n   — Draw boxes: clients, LB, services, DB, cache, queue\n   — Identify read vs write paths separately</div>\n<div class=\"cmd\">4. Deep dives (15 min)\n   — Pick 2–3 hard problems, go deep\n   — Show trade-offs at each decision</div>\n<div class=\"cmd\">5. Bottlenecks & failure modes (5 min)\n   — SPOF identification\n   — Scaling levers: horizontal, caching, sharding</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Drive the conversation. Don't wait for prompts. Say \"I'll now focus on the write path since that's the harder problem — is that OK?\" Shows Principal-level ownership.</div>"
+  },
+  {
+    "n": 2,
+    "tag": "fundamentals",
+    "q": "How do you estimate scale requirements? Walk through a back-of-envelope calculation.",
+    "body": "<p>Interviewers want to see whether you can reason about numbers, not whether you memorise them. Use round numbers and narrate your logic.</p>\n<div class=\"section-title\">Key constants to memorise</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1 million requests/day  ≈  12 RPS\n1 billion requests/day  ≈  11,600 RPS  ≈  ~12K RPS\n1 KB  × 1M events/day   ≈  1 GB/day  ≈  365 GB/year\nSSD sequential read:    ~500 MB/s\nNetwork (1GbE):         ~125 MB/s\nRAM access:             ~100 ns   |   SSD: ~100 µs   |   HDD: ~10 ms</div>\n</div>\n<div class=\"section-title\">Example: Twitter-scale timeline service</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">DAU: 300M users, 20% active daily = 60M active\nAvg tweets/day: 60M users × 5 tweets = 300M tweets/day\nWrite RPS:  300M / 86400 ≈ 3,500 writes/sec\nRead RPS:   10× write ratio ≈ 35,000 reads/sec\nStorage:    300M tweets × 300 bytes = 90 GB/day → ~33 TB/year (text only)</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> After estimation, say \"Given 35K read RPS, a single DB won't cut it — so we'll need read replicas and a cache layer.\" Estimation should drive architectural decisions, not be an isolated exercise.</div>"
+  },
+  {
+    "n": 3,
+    "tag": "tradeoffs",
+    "q": "Explain CAP theorem and how it affects real-world database choices.",
+    "body": "<p>CAP: a distributed system can guarantee at most two of Consistency, Availability, Partition Tolerance. Since network partitions always occur in practice, the real choice is <strong>CP vs AP</strong>.</p>\n<div class=\"arch-box\">CP systems (consistent when partitioned — may reject writes):\n  PostgreSQL (single primary), HBase, Zookeeper, etcd\n  → Use when: financial data, inventory counts, leader election\n\nAP systems (available when partitioned — may serve stale data):\n  Cassandra, DynamoDB, CouchDB, DNS\n  → Use when: social feeds, metrics, user preferences, caches\n\nCA systems (no partition tolerance — theoretical only):\n  Single-node RDBMS — not distributed</div>\n<div class=\"tip\"><b>Principal answer:</b> CAP is binary and too coarse for real decisions. Use <strong>PACELC</strong> (Partition: Availability vs Consistency; Else: Latency vs Consistency) — it captures the latency trade-off that matters even during normal operation. Cassandra is PA/EL; PostgreSQL is PC/EC.</div>"
+  },
+  {
+    "n": 4,
+    "tag": "tradeoffs",
+    "q": "When do you choose SQL vs NoSQL? Give concrete decision criteria.",
+    "body": "<p>Neither is universally better. Choose based on data model, access patterns, and operational requirements.</p>\n<div class=\"arch-box\">Choose SQL (PostgreSQL, MySQL, Aurora) when:\n  ✓ Complex joins between entities\n  ✓ ACID transactions required (payments, bookings)\n  ✓ Schema is stable and well-defined\n  ✓ Reporting / ad-hoc analytics\n  ✓ Team has strong SQL expertise\n\nChoose NoSQL when:\n  ✓ Document model (MongoDB): nested JSON, flexible schema\n  ✓ Key-value (Redis, DynamoDB): simple lookups at high RPS\n  ✓ Wide-column (Cassandra): time-series, write-heavy, multi-region\n  ✓ Graph (Neo4j): social graphs, recommendation engines\n  ✓ Search (Elasticsearch): full-text, faceted search</div>\n<div class=\"tip\"><b>Interview tip:</b> Say \"I'd choose PostgreSQL as the source of truth for user accounts and payments — it gives us transactions and referential integrity. For the activity feed (high write RPS, time-ordered, no joins needed), I'd use Cassandra.\" Showing you use both is better than picking a side.</div>"
+  },
+  {
+    "n": 5,
+    "tag": "fundamentals",
+    "q": "What is consistent hashing and why do distributed systems use it?",
+    "body": "<p>Consistent hashing maps keys and nodes to a ring. When a node is added/removed, only <code>K/N</code> keys need remapping (vs all keys in naive modulo hashing). Critical for cache clusters, distributed DBs, and load balancers.</p>\n<div class=\"arch-box\">Ring: 0 ──── 90 ──── 180 ──── 270 ──── 360\n         Node A    Node B     Node C      Node D\n\nKey \"user:123\" hashes to position 95 → assigned to Node B (next node clockwise)\nRemove Node B → keys 90–180 shift to Node C only. All others unaffected.</div>\n<div class=\"section-title\">Virtual nodes (vnodes)</div>\n<p>Each physical node is mapped to multiple positions on the ring. Improves load distribution. Used by Cassandra (256 vnodes per node), DynamoDB, Riak.</p>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Without vnodes: 3 nodes, each owns 1/3 of ring\n# With vnodes:    3 nodes × 256 = 768 positions → much more even spread</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Mention that consistent hashing is used in Redis Cluster, Cassandra, Memcached, and CDN edge routing. Examiners love when you connect theory to real systems.</div>"
+  },
+  {
+    "n": 6,
+    "tag": "scalability",
+    "q": "Design a URL shortener (like bit.ly). Handle 100M URLs, 10B redirects/day.",
+    "body": "<p>Classic design problem. Key challenges: unique ID generation, low-latency redirects, analytics.</p>\n<div class=\"arch-box\">Client → CDN / Edge Cache\n            ↓ (cache miss)\n          LB → Redirect Service (stateless, horizontal scale)\n            ↓\n          Cache (Redis)  ← hot URLs served here (95% hit rate)\n            ↓ (cache miss)\n          DB (PostgreSQL) — short_code → long_url, created_at, user_id\n            ↓\n          Analytics Queue (Kafka) → Click Aggregator → Analytics DB</div>\n<div class=\"section-title\">ID generation — Base62 encoding</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># 7 chars × 62 possibilities = 62^7 = 3.5 trillion unique URLs\n# Generate unique int ID (Snowflake / DB sequence), encode to Base62\ndef encode_base62(n):\n    chars = \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"\n    result = []\n    while n:\n        result.append(chars[n % 62])\n        n //= 62\n    return ''.join(reversed(result))</div>\n</div>\n<div class=\"section-title\">Scale: 10B redirects/day = ~115K RPS</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">Redis cache: 99% hit rate → 115K RPS handled in memory (~1µs/lookup)\nCache miss (1%): 1,150 RPS to PostgreSQL — easily handled by single read replica\nWrite rate: 100M URLs / (365 days × 86400 sec) ≈ 3 writes/sec — trivial</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> The redirect path must be P99 &lt; 10ms. Serve from CDN edge where possible — cache <code>301 Permanent</code> vs <code>302 Temporary</code> based on whether the URL can change. Use 302 for analytics (forces redirect through your service every time). Use 301 for permanent links (browser caches, fewer requests).</div>"
+  },
+  {
+    "n": 7,
+    "tag": "scalability",
+    "q": "Design a rate limiter. Support per-user, per-IP, and per-API-key limits.",
+    "body": "<p>Rate limiting prevents abuse, enforces SLAs, and protects downstream services. Key question: where to enforce (edge, API gateway, service)?</p>\n<div class=\"section-title\">Algorithm choices</div>\n<div class=\"arch-box\">Token Bucket:    allow bursting, refill at constant rate\n                 → Best for: API gateways, per-user limits\nFixed Window:    simple, cheap — but allows 2× burst at window boundary\nSliding Window Log: precise, high memory (store every request timestamp)\nSliding Window Counter: interpolate between two fixed windows — good balance</div>\n<div class=\"section-title\">Implementation: Redis sliding window</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Redis Lua script (atomic — no race condition)\nlocal key = KEYS[1]       -- \"rl:user:123:endpoint:/api/search\"\nlocal limit = tonumber(ARGV[1])   -- 100\nlocal window = tonumber(ARGV[2])  -- 60 (seconds)\nlocal now = tonumber(ARGV[3])\n\nredis.call('ZREMRANGEBYSCORE', key, 0, now - window * 1000)\nlocal count = redis.call('ZCARD', key)\nif count &lt; limit then\n  redis.call('ZADD', key, now, now)\n  redis.call('EXPIRE', key, window)\n  return 1  -- allowed\nend\nreturn 0    -- rejected → HTTP 429</div>\n</div>\n<div class=\"arch-box\">Multi-tier rate limiting:\n  Layer 1: CDN/Edge (IP-based, coarse — blocks DDoS)\n  Layer 2: API Gateway (per-API-key — SLA enforcement)\n  Layer 3: Service level (per-user, per-resource — business logic)</div>\n<div class=\"tip\"><b>Interview tip:</b> Mention distributed rate limiting across multiple API gateway pods — Redis is the central store. Add response headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>Retry-After</code>. These are required for good API UX.</div>"
+  },
+  {
+    "n": 8,
+    "tag": "scalability",
+    "q": "Design a notification system (push, email, SMS) for 500M users.",
+    "body": "<p>Notification systems are deceptively hard: delivery guarantees, user preferences, throttling, channel failover, and deduplication.</p>\n<div class=\"arch-box\">Producers (events) → Kafka Topics (by channel type)\n                         ↓\n              Notification Service\n              ├── Preference filter  (user opted out? → discard)\n              ├── Dedup check        (Redis TTL key on notification_id)\n              ├── Priority queue     (critical > normal > marketing)\n              └── Channel router\n                  ├── Push  → APNs (iOS) / FCM (Android)\n                  ├── Email → SendGrid / SES → SMTP\n                  └── SMS   → Twilio / SNS</div>\n<div class=\"section-title\">Key design decisions</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1. At-least-once delivery via Kafka (consumer group, manual offset commit)\n2. Idempotency: notification_id deduplicated in Redis (TTL = 24h)\n3. Retry with exponential backoff: 1s → 2s → 4s → 16s → DLQ\n4. User preference DB: per-channel opt-out, quiet hours, frequency caps\n5. Rate limiting: max 5 marketing emails/user/day regardless of events</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Separate the <em>event bus</em> (Kafka) from the <em>sending workers</em>. This lets you: replay failed notifications, add new channels without touching producers, and independently scale push vs email workers (push is CPU-light, email involves template rendering). Store every notification in a NoSQL log (DynamoDB) for inbox features.</div>"
+  },
+  {
+    "n": 9,
+    "tag": "scalability",
+    "q": "Design a distributed job queue / task scheduler. Handle millions of jobs/day.",
+    "body": "<p>Core requirements: reliable delivery, at-least-once execution, delayed jobs, priority, retries, observability.</p>\n<div class=\"arch-box\">Producers → Job Queue (Redis / Kafka / SQS)\n                    ↓\n             Dispatcher / Broker\n                    ↓\n             Worker Pool (horizontal scale)\n                    ↓\n          ┌─ Success → mark complete in Job Store\n          └─ Failure → retry with backoff → DLQ after N attempts</div>\n<div class=\"section-title\">Delayed jobs (scheduled tasks)</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Redis sorted set — score = execution timestamp\nZADD delayed_jobs 1735689600 \"job:abc123\"   # execute at Unix time\n\n# Poller (every second):\njobs = ZRANGEBYSCORE delayed_jobs 0 NOW LIMIT 0 100\nfor job in jobs:\n    push to ready_queue\n    ZREM delayed_jobs job</div>\n</div>\n<div class=\"section-title\">At-least-once vs exactly-once</div>\n<div class=\"arch-box\">At-least-once:  Ack only after successful processing\n                Idempotency key on the job consumer side\nExactly-once:   Impossible in distributed systems without 2PC overhead\n                → Design jobs to be idempotent instead</div>\n<div class=\"tip\"><b>Interview tip:</b> Celery + Redis/RabbitMQ is fine for most workloads. For 10M+ jobs/day with complex dependencies: Temporal (workflow orchestration). Mention visibility timeout — job becomes visible again if worker crashes without acking. Must be &gt; expected max job duration.</div>"
+  },
+  {
+    "n": 10,
+    "tag": "scalability",
+    "q": "Design a web crawler at Google scale. Crawl 1 billion pages per day.",
+    "body": "<p>Hard problems: politeness (don't hammer a single domain), deduplication, dynamic content, distributed coordination.</p>\n<div class=\"arch-box\">Seed URLs → URL Frontier (priority queue)\n                 ↓\n        Dispatcher → Fetcher Workers (1000s, distributed)\n                 ↓                ↓\n        DNS Resolver Cache    HTML Parser\n                 ↓\n        Content Seen? ──→ Yes: discard\n              ↓ No\n        Content Store (GCS / S3)\n              ↓\n        URL Extractor → URL Normaliser → URL Seen Filter → URL Frontier</div>\n<div class=\"section-title\">Deduplication</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># URL dedup: Bloom filter (fast, probabilistic, no false negatives)\nbloom.add(url)\nif bloom.check(url): skip  # 1% false positive rate acceptable\n\n# Content dedup: SimHash / MinHash to detect near-duplicate pages\n# Exact dedup: SHA-256 of content stored in distributed cache</div>\n</div>\n<div class=\"section-title\">Politeness</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Per-domain queue + delay\n# Respect robots.txt — cache it per domain (1h TTL)\n# Back-pressure: rate limit to 1 req/sec per domain by default\n# Crawl-Delay directive in robots.txt: honour it</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> URL Frontier is a priority queue — prioritise high-PageRank domains. Use a multi-level queue: fresh (recrawl changed pages quickly) vs stale. DNS is the #1 bottleneck at scale — maintain a local DNS cache with thousands of entries. 1 DNS lookup per URL at 1B pages/day = ~11K DNS queries/sec.</div>"
+  },
+  {
+    "n": 11,
+    "tag": "reliability",
+    "q": "Design a system that achieves 99.99% availability. What does that mean operationally?",
+    "body": "<p>99.99% = 52 minutes downtime/year. 99.999% = 5 minutes/year. Every architectural decision must be justified against this budget.</p>\n<div class=\"arch-box\">Availability budget breakdown (99.99% = 52 min/year):\n  Planned maintenance:  &lt;10 min  (rolling deploys, zero-downtime)\n  Incident response:    &lt;42 min  (~4 incidents × 10 min MTTR each)\n\nMTTR must be &lt; 10 minutes → requires:\n  • Automated alerting (PagerDuty, &lt; 2 min to page)\n  • Runbooks for top 10 failure modes\n  • Feature flags for instant rollback\n  • Health checks + auto-restart (Kubernetes liveness probe)</div>\n<div class=\"section-title\">Architectural requirements for 99.99%</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1. No single points of failure\n   — Multi-AZ deployment (lose 1 AZ, still serving)\n   — N+2 redundancy for stateless services\n\n2. Graceful degradation\n   — Circuit breakers (fail fast, don't cascade)\n   — Fallback: serve stale cache instead of error\n\n3. Load shedding\n   — Reject low-priority requests under overload\n   — Rate limiting protects against thundering herd\n\n4. Chaos engineering\n   — Intentionally kill instances to verify recovery\n   — GameDay exercises quarterly</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Availability = MTBF / (MTBF + MTTR). To improve: increase MTBF (fewer failures) OR decrease MTTR (faster recovery). Recovery automation gives 10× more leverage than trying to make systems never fail.</div>"
+  },
+  {
+    "n": 12,
+    "tag": "reliability",
+    "q": "Design a distributed cache system. Handle 1M RPS with sub-millisecond latency.",
+    "body": "<p>Caching is the single highest-leverage performance optimisation. Get the design right or you'll fight cache stampedes and inconsistency bugs forever.</p>\n<div class=\"arch-box\">Client → Cache Cluster (Redis / Memcached, consistent hashing)\n                   ↓ miss\n              Primary DB → write result to cache → return to client</div>\n<div class=\"section-title\">Cache patterns</div>\n<div class=\"arch-box\">Cache-aside (lazy loading):\n  App checks cache → miss → fetch DB → write cache → return\n  Pros: only cache what's used. Cons: cold start latency.\n\nWrite-through:\n  App writes DB and cache atomically\n  Pros: cache always fresh. Cons: write penalty, caches unused data.\n\nWrite-behind (write-back):\n  App writes cache only → async flush to DB\n  Pros: very fast writes. Cons: data loss if cache crashes before flush.\n\nRead-through:\n  Cache fetches from DB on miss (cache library handles it)\n  Pros: simpler app logic.</div>\n<div class=\"section-title\">Cache stampede prevention</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Problem: key expires, 10K requests hit DB simultaneously\n\n# Solution 1: probabilistic early expiration\nif time_to_expire &lt; threshold and random() &lt; probability:\n    refresh_in_background()\n\n# Solution 2: Redis lock on cache miss\nif not redis.set(lock_key, 1, nx=True, ex=5):\n    sleep(0.05); return get_from_cache()  # wait for first request to populate</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Redis Cluster for 1M RPS: 6 nodes (3 primary + 3 replica), consistent hashing across slots. Each node handles ~167K RPS — well within Redis's 500K+ RPS single-node ceiling. Use pipelining for batch gets. Watch out for hot keys — a viral post accessed by millions needs key sharding or a local L1 in-process cache.</div>"
+  },
+  {
+    "n": 13,
+    "tag": "reliability",
+    "q": "Design a circuit breaker. When and how does a service fail fast?",
+    "body": "<p>Circuit breakers prevent cascade failures — when a downstream service is slow or down, fail fast instead of queuing up requests that time out.</p>\n<div class=\"arch-box\">State machine:\n\nCLOSED (normal) ──[failure threshold exceeded]──→ OPEN (fail fast)\n    ↑                                                  ↓\n    └──[success threshold met]── HALF-OPEN ←──[timeout elapsed]</div>\n<div class=\"section-title\">Implementation</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">class CircuitBreaker:\n    CLOSED, OPEN, HALF_OPEN = 0, 1, 2\n\n    def __init__(self, failure_threshold=5, timeout=30, success_threshold=2):\n        self.state = self.CLOSED\n        self.failure_count = 0\n        self.last_failure_time = None\n\n    def call(self, fn, *args):\n        if self.state == self.OPEN:\n            if time.time() - self.last_failure_time &gt; self.timeout:\n                self.state = self.HALF_OPEN\n            else:\n                raise CircuitOpenError(\"Circuit open — failing fast\")\n\n        try:\n            result = fn(*args)\n            self._on_success()\n            return result\n        except Exception as e:\n            self._on_failure()\n            raise\n\n    def _on_failure(self):\n        self.failure_count += 1\n        self.last_failure_time = time.time()\n        if self.failure_count &gt;= self.failure_threshold:\n            self.state = self.OPEN\n\n    def _on_success(self):\n        if self.state == self.HALF_OPEN:\n            self.state = self.CLOSED\n        self.failure_count = 0</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Libraries: Resilience4j (Java), Polly (.NET), Hystrix (deprecated). In cloud-native: use Envoy/Istio service mesh — circuit breaker at the proxy layer, no code changes. Set fallback: return cached data, default response, or degrade gracefully (\"show general recommendations instead of personalised\").</div>"
+  },
+  {
+    "n": 14,
+    "tag": "reliability",
+    "q": "Design a distributed transaction system. Handle payments across microservices.",
+    "body": "<p>Distributed transactions are notoriously hard. 2PC is slow and blocking. The practical answer for most systems is Saga pattern.</p>\n<div class=\"section-title\">2PC (Two-Phase Commit) — avoid in microservices</div>\n<div class=\"arch-box\">Phase 1 (Prepare): Coordinator asks all participants \"can you commit?\"\nPhase 2 (Commit):  If all say yes → commit. If any says no → rollback.\n\nProblems:\n  • Coordinator is SPOF\n  • Blocking: participants hold locks during Phase 1\n  • Slow: 2 round trips of network calls minimum</div>\n<div class=\"section-title\">Saga pattern — the practical answer</div>\n<div class=\"arch-box\">Choreography-based Saga (event-driven):\n  OrderService → emit OrderCreated\n  PaymentService → listen, charge card → emit PaymentCompleted\n  InventoryService → listen, reserve stock → emit StockReserved\n  ShippingService → listen, schedule delivery\n\nFailure: each service publishes compensating event\n  PaymentFailed → OrderService listens → cancel order\n  StockInsufficient → PaymentService listens → refund payment</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Outbox pattern — prevents dual-write problem\n# In same DB transaction:\nBEGIN;\n  INSERT INTO orders (id, status) VALUES (123, 'pending');\n  INSERT INTO outbox (event_type, payload) VALUES ('OrderCreated', '{...}');\nCOMMIT;\n# Background process reads outbox → publishes to Kafka → marks as sent</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Choreography works well for simple flows. Orchestration (Temporal, AWS Step Functions) is better when: you need visibility into flow state, workflows are complex, or you need timeouts and compensation logic in one place. Always implement idempotency — payment services must handle duplicate events without double-charging.</div>"
+  },
+  {
+    "n": 15,
+    "tag": "data",
+    "q": "Design a time-series metrics storage system (like Prometheus at scale).",
+    "body": "<p>Time-series data has unique characteristics: always append-only, high cardinality, queries are usually recent data, compression is very effective.</p>\n<div class=\"arch-box\">Agents (Node Exporter, cAdvisor)\n  → Prometheus scrape / push gateway\n  → Ingest Service\n  → Write path:  WAL → In-memory chunk → Flush to TSDB (disk blocks)\n  → Long-term:   Thanos / Cortex → Object storage (S3/GCS)\n  → Query path:  PromQL → Query Planner → Block reader → Result</div>\n<div class=\"section-title\">Storage design</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Time-series: (metric_name, labels_map) → [(timestamp, value)]\n# High cardinality problem: {user_id=\"...\"} label → millions of series\n\n# Delta encoding: store differences, not absolute values\n# e.g., [100, 101, 103, 106] → [100, +1, +2, +3]\n\n# XOR compression (Gorilla by Facebook):\n# Consecutive float values differ in only a few bits → 1.37 bytes/sample\n# vs 16 bytes uncompressed → 12× compression ratio</div>\n</div>\n<div class=\"section-title\">Thanos for global scale</div>\n<div class=\"arch-box\">Per-cluster Prometheus (local retention: 2h)\n  → Thanos Sidecar → Object store (S3, GCS)\n  → Thanos Query   → fan-out queries across all Prometheus + store\n  → Thanos Compactor → downsampling (5m, 1h resolution for old data)</div>\n<div class=\"tip\"><b>Interview tip:</b> High cardinality is the #1 killer of Prometheus performance. Each unique label combination = a separate time series. Never use user IDs or request IDs as labels. Use histograms for latency (not gauges per request). Retention policy: 15 days local, compress to 5m resolution after 7 days, 1h resolution after 30 days.</div>"
+  },
+  {
+    "n": 16,
+    "tag": "data",
+    "q": "Design a real-time log aggregation pipeline. Handle 1TB/day of logs.",
+    "body": "<p>Log pipelines must be: reliable (no log loss), scalable, queryable, and cost-controlled.</p>\n<div class=\"arch-box\">App instances → Fluent Bit (agent, lightweight)\n                        ↓\n              Kafka (buffer + replay capability)\n              ├── Topic: logs.app      (structured JSON)\n              ├── Topic: logs.infra    (system metrics)\n              └── Topic: logs.audit    (compliance, long retention)\n                        ↓\n              Stream Processor (Flink / Spark Streaming)\n              ├── Parse & enrich (add k8s metadata, geo-IP)\n              ├── Detect anomalies (error spike alerting)\n              └── Route by log level\n                        ↓\n              ┌── Hot storage:  Elasticsearch / OpenSearch (30 days, queryable)\n              └── Cold storage: S3 + Parquet (1 year, Athena queryable)</div>\n<div class=\"section-title\">Cost control — 1TB/day</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Sampling: DEBUG logs sampled at 1%, INFO at 10%, WARN/ERROR at 100%\n# Compression: gzip on Kafka messages → ~5× reduction → 200 GB/day effective\n# Tiering: Elasticsearch for 30 days, then archive to S3 Glacier\n# Estimated monthly cost: ~$500 ES + ~$150 S3 for 1TB/day</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Kafka is the critical buffer — it absorbs spikes (deploy wave, incident) and allows consumer lag without data loss. Set retention to 72h on Kafka topics. If Elasticsearch is down, consumers lag but Kafka retains. Never write directly from agent to Elasticsearch — you'll lose logs on ES restarts.</div>"
+  },
+  {
+    "n": 17,
+    "tag": "data",
+    "q": "Design a search autocomplete / typeahead system. Return results in &lt;100ms.",
+    "body": "<p>Typeahead requires extremely low latency (every keystroke). The system must handle billions of queries and millions of distinct prefixes.</p>\n<div class=\"arch-box\">User types \"plat\" →\n  Client (debounce 100ms) → CDN edge cache (popular prefixes)\n                              ↓ miss\n                          Trie service → Redis prefix cache\n                              ↓ miss\n                          Precomputed prefix table (top-10 per prefix)\n                              ↓\n                          Return ranked suggestions</div>\n<div class=\"section-title\">Data structure: Trie with top-K per node</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Each trie node stores top-10 completions sorted by frequency\n# \"pl\" → [\"platform engineer\", \"platform team\", \"playbook\", ...]\n# \"pla\" → [\"platform engineer\", \"platform team\", \"plan\", ...]\n\n# Precomputed and stored in Redis:\nredis.setex(\"prefix:pla\", 3600, json.dumps(top_10_results))\n\n# Update frequency (offline, batch):\n# Kafka → Spark aggregation (hourly) → recompute top-10 → Redis update</div>\n</div>\n<div class=\"section-title\">Latency budget for 100ms</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">Network (client to edge CDN):   ~5ms\nCDN cache hit:                  ~1ms   (serve cached top prefixes)\nCache miss → Redis lookup:      ~2ms\nRedis miss → DB lookup:        ~10ms\nTotal (cache hit):             ~6ms ✓\nTotal (cache miss):            ~17ms ✓</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Cache hit ratio for typeahead is very high — top 1000 prefixes cover ~80% of queries. Pre-warm the cache on deploy. Handle personalisation separately: blend global top-10 with user's recent searches client-side to avoid per-user cache fragmentation.</div>"
+  },
+  {
+    "n": 18,
+    "tag": "data",
+    "q": "Design a distributed ID generation system (like Twitter Snowflake).",
+    "body": "<p>IDs must be: globally unique, sortable by time (for pagination), high throughput (100K+/sec), no central bottleneck.</p>\n<div class=\"section-title\">Snowflake ID structure (64-bit integer)</div>\n<div class=\"arch-box\">Bit layout:\n  [0]      — sign bit (always 0)\n  [1–41]   — timestamp (ms since epoch) → ~69 years of unique IDs\n  [42–51]  — machine/datacenter ID (10 bits → 1024 machines)\n  [52–63]  — sequence number (12 bits → 4096 IDs/ms/machine)\n\nMax throughput: 1024 machines × 4096 IDs/ms = 4.2 billion IDs/second</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">class SnowflakeGenerator:\n    EPOCH = 1288834974657  # Twitter epoch (Nov 4, 2010)\n\n    def __init__(self, machine_id):\n        self.machine_id = machine_id  # 0–1023\n        self.sequence = 0\n        self.last_ms = -1\n\n    def generate(self):\n        ms = int(time.time() * 1000) - self.EPOCH\n        if ms == self.last_ms:\n            self.sequence = (self.sequence + 1) &amp; 0xFFF\n            if self.sequence == 0:\n                while ms &lt;= self.last_ms:  # busy wait for next ms\n                    ms = int(time.time() * 1000) - self.EPOCH\n        else:\n            self.sequence = 0\n        self.last_ms = ms\n        return (ms &lt;&lt; 22) | (self.machine_id &lt;&lt; 12) | self.sequence</div>\n</div>\n<div class=\"tip\"><b>Alternatives:</b> UUID v4 (random, not sortable, 128-bit), ULID (sortable UUID), database sequences (single SPOF). For most services, a database auto-increment sequence is fine up to ~50K inserts/sec. Use Snowflake when you need sortable IDs across shards without a central DB sequence.</div>"
+  },
+  {
+    "n": 19,
+    "tag": "platform",
+    "q": "Design a multi-region Kubernetes platform. Handle active-active across 3 regions.",
+    "body": "<p>Multi-region Kubernetes is the hardest class of PE design question. Focus on: traffic routing, data consistency, failure isolation, and operational complexity.</p>\n<div class=\"arch-box\">Global Traffic Layer:\n  Anycast IP (Global Accelerator / Cloud Armor LB)\n  → Route to nearest healthy region (health check + latency-based routing)\n\nPer-region stack:\n  GKE / EKS cluster\n  ├── App workloads (stateless — active in all regions)\n  ├── Local PostgreSQL primary + cross-region read replica\n  └── Redis cluster (eventually consistent cross-region via CRDTs)\n\nControl plane:\n  ArgoCD (one per region, sync from same Git repo)\n  Fleet management via GKE Hub / EKS anywhere</div>\n<div class=\"section-title\">Data strategies per tier</div>\n<div class=\"arch-box\">Stateless services:   Deploy identical in all regions. No data concerns.\nUser sessions:        Redis CRDT (Riak) or route user to same region (sticky DNS)\nTransactional data:   Primary in one region, failover via Aurora Global / Spanner\nAnalytics/events:     Multi-region Kafka MirrorMaker 2 → eventual consistency\nUser-generated content: S3/GCS with CRR (cross-region replication)</div>\n<div class=\"tip\"><b>Principal answer:</b> Don't default to active-active. It's 3–5× harder than active-passive. Ask: what's the actual RTO/RPO requirement? For most companies, active-passive (RPO &lt; 1min, RTO &lt; 15min) via Aurora Global DB + standby cluster is correct. Active-active only when regulatory requirements demand data residency in each region simultaneously, or when single-region latency is unacceptable for global users.</div>"
+  },
+  {
+    "n": 20,
+    "tag": "platform",
+    "q": "Design a CI/CD platform for 500 microservices and 200 engineers.",
+    "body": "<p>At this scale, the pipeline itself becomes a product. Engineers are your customers. Standardisation, speed, and self-service are the design goals.</p>\n<div class=\"arch-box\">Developer push → GitHub\n  → GitHub Actions (or Tekton on-cluster)\n  ├── Lint + Test (parallel, cached dependencies)\n  ├── Container build (Buildkit, layer caching)\n  ├── Security scan (Trivy, Grype — fail on CRITICAL)\n  ├── Push to Artifact Registry (tagged by git SHA)\n  └── Update GitOps repo (PR to k8s-config repo)\n                  ↓\n           ArgoCD (per-environment)\n  ├── Staging: auto-sync on PR merge\n  ├── Prod:    sync on manual approval + canary analysis\n  └── Rollback: git revert → ArgoCD auto-applies</div>\n<div class=\"section-title\">Standardisation via golden path</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Backstage software template:\n# Engineer runs: `npx @backstage/create-app`\n# Generates: Dockerfile, GitHub Actions workflow, Helm chart,\n#            ArgoCD Application, PagerDuty integration, Datadog monitors\n# 80% of services use the golden path. 20% get custom support.</div>\n</div>\n<div class=\"section-title\">Metrics that matter</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">DORA metrics:\n  Deployment frequency:    target daily or on-demand per service\n  Lead time for change:    commit → production &lt; 30 minutes\n  Change failure rate:     &lt; 5% of deployments cause incidents\n  MTTR:                    &lt; 1 hour for P1 incidents</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> At 500 services, the biggest problem isn't tooling — it's standardisation. Platform team builds golden paths (opinionated templates) and scores services on adoption. Enforce via Scorecard in Backstage: security scan ✓, SLO defined ✓, runbook linked ✓. Teams that score &lt;70% get Platform team office hours, not mandates.</div>"
+  },
+  {
+    "n": 21,
+    "tag": "platform",
+    "q": "Design a feature flag system for safe production rollouts.",
+    "body": "<p>Feature flags decouple deployment from release. Critical for: canary rollouts, A/B testing, kill switches, and dark launches.</p>\n<div class=\"arch-box\">Flag Config Store (PostgreSQL + Redis cache)\n  ├── flag_key, enabled, rollout_percentage, targeting_rules, variants\n  └── Admin UI → flag management\n\nSDK (embedded in each service):\n  → Fetch flags on startup → local cache (in-memory)\n  → Refresh every 30s via polling or SSE (Server-Sent Events)\n  → Evaluate: is user X in rollout bucket for flag Y?\n\nEvaluation logic:\n  1. Is flag globally off? → return default\n  2. Is user in targeting rule? (beta_users group, specific user IDs) → return variant\n  3. Hash(user_id + flag_key) mod 100 &lt; rollout_pct? → return variant\n  4. Return default</div>\n<div class=\"section-title\">Consistent bucketing</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">def get_bucket(user_id: str, flag_key: str) -&gt; int:\n    # Same user always gets same bucket for same flag\n    hash_input = f\"{user_id}:{flag_key}\"\n    return int(hashlib.sha256(hash_input.encode()).hexdigest(), 16) % 100\n\n# user_id=\"abc123\", flag=\"new_checkout\" → bucket 47\n# Always 47 → consistent experience across sessions and services</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Use flag SDK with &lt;1ms evaluation latency — never make a network call per flag evaluation in the request path. Cache flags locally, stream updates via SSE. Log every flag evaluation to a data warehouse for analytics (who saw which variant, what was their conversion rate). This is the foundation of experimentation infrastructure.</div>"
+  },
+  {
+    "n": 22,
+    "tag": "platform",
+    "q": "Design an Internal Developer Platform (IDP). What components does it need?",
+    "body": "<p>An IDP reduces cognitive load for developers — they shouldn't need to understand Kubernetes, Terraform, or CI/CD to ship software safely.</p>\n<div class=\"arch-box\">Developer-facing:\n  ┌── Service Catalogue (Backstage)\n  │   ├── Software templates (golden paths)\n  │   ├── Tech docs (docs-as-code, MkDocs)\n  │   └── Scorecards (compliance, security posture)\n  ├── Self-service portal\n  │   ├── Provision environment (namespace + resources)\n  │   ├── Manage secrets (Vault UI)\n  │   └── View logs, traces, metrics (linked from service page)\n  └── CLI tool\n      └── `platform new service` / `platform env create` / `platform deploy`\n\nPlatform-facing (hidden from devs):\n  Kubernetes + ArgoCD + Terraform + Vault + Crossplane</div>\n<div class=\"section-title\">The golden path contract</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">Developer provides:\n  ├── service name\n  ├── tech stack (Node/Python/Go/Java)\n  ├── resource requirements (CPU, memory, replicas)\n  └── environment variables (plain) + secrets (references to Vault paths)\n\nPlatform provides automatically:\n  ├── Kubernetes namespace + RBAC\n  ├── CI/CD pipeline (GitHub Actions workflow)\n  ├── Ingress + TLS certificate\n  ├── Observability (metrics, logs, traces pre-wired)\n  ├── PagerDuty integration\n  └── Cost attribution labels</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Measure IDP success by: time-to-first-deployment for a new service (target &lt;1 day from zero), % services on golden path (target &gt;80%), and developer satisfaction score (quarterly survey). Don't build what you can buy — Backstage for catalogue, Vault for secrets, Crossplane for cloud resources. Build the integration layer, not the primitives.</div>"
+  },
+  {
+    "n": 23,
+    "tag": "networking",
+    "q": "Design a global CDN architecture. How does edge caching work at scale?",
+    "body": "<p>CDNs reduce origin load and user latency by serving content from edge nodes close to users. Design involves: cache hierarchy, cache invalidation, origin protection, and routing.</p>\n<div class=\"arch-box\">User (Mumbai) → Anycast DNS → Nearest PoP (Mumbai edge)\n                              ↓ cache miss\n                        Regional hub (Singapore)\n                              ↓ cache miss\n                        Origin shield (single region close to origin)\n                              ↓ cache miss\n                        Origin servers</div>\n<div class=\"section-title\">Cache key design</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Default cache key: URL only\n# Vary by: Accept-Encoding (gzip vs br), Accept-Language, device type\n\n# Cache-Control headers (origin controls caching):\nCache-Control: public, max-age=31536000, immutable    # versioned assets\nCache-Control: public, max-age=300, stale-while-revalidate=60  # API responses\nCache-Control: private, no-store                       # user-specific data</div>\n</div>\n<div class=\"section-title\">Cache invalidation strategies</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1. URL versioning (best): /app.v1.2.3.js → never expires, change URL to invalidate\n2. Cache purge API:        cdn.purge(\"/api/products/123\") → instant but expensive at scale\n3. Surrogate keys:         tag responses with logical keys → purge by tag\n4. Short TTL:              max-age=60 → accept 60s staleness, no active invalidation</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Origin Shield is critical for large CDNs — it collapses all cache misses from all edge PoPs into a single PoP before hitting origin. Without it, a cache invalidation for a popular asset triggers N simultaneous origin requests (N = number of edge PoPs). With Origin Shield: exactly 1 origin request per object per cache refresh.</div>"
+  },
+  {
+    "n": 24,
+    "tag": "networking",
+    "q": "Design a load balancer. Explain L4 vs L7 and when to use each.",
+    "body": "<p>Load balancers distribute traffic across backend instances. L4 operates at transport layer (TCP/UDP); L7 operates at application layer (HTTP/gRPC/WebSocket).</p>\n<div class=\"arch-box\">L4 Load Balancer (TCP):\n  ├── Sees: IP, port, TCP flags — not HTTP content\n  ├── Very fast: ~100ns decision (hardware), ~10µs (software)\n  ├── Algorithms: IP hash, round-robin, least connections\n  └── Use: any TCP traffic, non-HTTP, highest throughput needs\n\nL7 Load Balancer (HTTP):\n  ├── Sees: URL, headers, cookies, body, TLS cert\n  ├── Slower: ~1ms per request (TLS + HTTP parsing overhead)\n  ├── Features: content routing, auth, rate limiting, WAF, health checks\n  └── Use: HTTP APIs, A/B testing, canary routing, session affinity</div>\n<div class=\"section-title\">Health checking</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># L4: TCP connect probe (is the port open?)\n# L7: HTTP GET /health → expect 200 + healthy body\n# Passive: monitor real request error rates → remove if error rate &gt; threshold\n\n# Remove from pool: 3 consecutive failures in 10s\n# Add back to pool: 2 consecutive successes (conservative)</div>\n</div>\n<div class=\"section-title\">Consistent hashing for session affinity</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Sticky sessions: route user to same backend\n# Option 1: Cookie (LB sets __lb_session=backend_id)\n# Option 2: IP hash (fragile — changes with proxies/CG-NAT)\n# Option 3: Consistent hashing on session token (best for scale)</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Use both in sequence. L4 (NLB/IPVS) at the front for TLS termination and connection distribution. L7 (NGINX/Envoy) behind it for routing, auth, and observability. This two-tier approach scales better than a single L7 handling all TLS connections (TLS handshakes are CPU-intensive).</div>"
+  },
+  {
+    "n": 25,
+    "tag": "networking",
+    "q": "Design a WebSocket / real-time messaging system. Handle 1M concurrent connections.",
+    "body": "<p>Long-lived connections at scale require stateful servers — which breaks horizontal scaling assumptions.</p>\n<div class=\"arch-box\">Client ──WebSocket──→ WS Gateway (stateful, sticky LB)\n                              ↓ (Pub/Sub)\n                          Redis Pub/Sub\n                              ↑\n                    Message Producer Services\n                    (Chat, Notifications, etc.)\n\nWS Gateway publishes received messages → Redis → all gateways\n→ Each gateway fans out to its local connected clients</div>\n<div class=\"section-title\">Connection capacity planning</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># 1M concurrent connections:\n# Each idle WebSocket: ~40KB memory (kernel TCP state + buffer)\n# 1M × 40KB = ~40GB RAM just for connections\n# Distribute: 50 servers × 20K connections each → 800MB RAM/server ✓\n\n# Message fan-out: if 1M users in 10K channels (100 users/channel avg)\n# Send to channel: 1 Redis publish → 50 WS servers receive → each fans to local subs\n# Cost: O(channels × servers) not O(users) — scalable</div>\n</div>\n<div class=\"section-title\">Scaling challenges</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">1. Sticky sessions: WS connections are long-lived → LB must route to same server\n2. Reconnection: client disconnects → reconnect with exponential backoff (1s, 2s, 4s...)\n3. State recovery: on reconnect, send all missed messages since last_seen_id\n4. Heartbeat: ping every 30s, close if no pong in 10s (detect zombie connections)</div>\n</div>\n<div class=\"tip\"><b>Interview tip:</b> Redis Pub/Sub is eventually consistent — some messages may be lost on Redis restart. For guaranteed delivery use Redis Streams or Kafka. Distinguish: fire-and-forget (notifications) vs guaranteed delivery (chat history). For chat, store every message in Cassandra; WebSocket is just the delivery mechanism, not the source of truth.</div>"
+  },
+  {
+    "n": 26,
+    "tag": "tradeoffs",
+    "q": "When do you use a message queue vs direct API call vs event streaming?",
+    "body": "<p>This decision defines service coupling, reliability, and operational complexity. Get it wrong and you'll fight it for years.</p>\n<div class=\"arch-box\">Direct API call (synchronous, point-to-point):\n  ✓ Simple, request-response, immediate feedback\n  ✓ Use when: caller needs the result, operation is &lt;100ms, failure = retry immediately\n  ✗ Tight coupling: if downstream is down, upstream fails\n  ✗ No buffering: traffic spike propagates directly to consumer\n  → Examples: user login validation, inventory check before checkout\n\nMessage queue (async, point-to-point):\n  ✓ Decouples producer from consumer availability\n  ✓ Natural load levelling (workers drain at their own pace)\n  ✓ Use when: task can be deferred, producer shouldn't wait, work is heavy\n  ✗ Not real-time; adds latency (ms to seconds)\n  → Examples: send email, resize image, process payment confirmation\n  → Tools: SQS, RabbitMQ, Celery\n\nEvent streaming (pub/sub, many consumers):\n  ✓ Multiple independent consumers process same event\n  ✓ Replay: process historical events for new consumers\n  ✓ Use when: audit log, fan-out, event sourcing, real-time analytics\n  ✗ Higher operational complexity (Kafka cluster management)\n  → Examples: order events consumed by inventory + analytics + notifications\n  → Tools: Kafka, Kinesis, Pub/Sub</div>\n<div class=\"tip\"><b>Principal decision rule:</b> Start with synchronous API calls. When you see: retry queues appearing in code, caller blocking for long operations, fan-out to multiple consumers, or cross-team dependencies — introduce async. Don't over-engineer with Kafka before you need it.</div>"
+  },
+  {
+    "n": 27,
+    "tag": "tradeoffs",
+    "q": "Explain database sharding strategies and their trade-offs.",
+    "body": "<p>Sharding partitions data across multiple database instances. The sharding key choice is the most consequential schema decision you'll ever make.</p>\n<div class=\"section-title\">Sharding strategies</div>\n<div class=\"arch-box\">Range sharding:   Users A–M → Shard 1, N–Z → Shard 2\n  Pros: range queries efficient, easy to add shards at end\n  Cons: hot spots (all new users go to last shard), uneven distribution\n\nHash sharding:    Shard = hash(user_id) % N\n  Pros: even distribution, no hot spots\n  Cons: range queries hit all shards, resharding requires moving half the data\n\nDirectory sharding: lookup table maps user_id → shard_id\n  Pros: flexible redistribution, no resharding math\n  Cons: lookup table is SPOF, extra network round-trip per query\n\nGeography sharding: EU users → EU shard, US users → US shard\n  Pros: data residency compliance, lower latency for regional users\n  Cons: cross-region queries complex, uneven growth if one region grows faster</div>\n<div class=\"section-title\">Resharding — the hard problem</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># Online resharding without downtime:\n1. Add new shard (start empty)\n2. Dual-write: new writes go to old + new shard\n3. Backfill: migrate existing data from old to new shard\n4. Verify: compare checksums\n5. Cut over: reads switch to new shard\n6. Remove dual-write, decommission old shard</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Shard only when you must. Most systems never need sharding — a well-tuned PostgreSQL on high-memory hardware handles 100K+ RPS with proper indexing and read replicas. Sharding adds enormous operational complexity: cross-shard joins become application logic, distributed transactions across shards require Sagas, and resharding can take months. Consider Vitess (MySQL) or Citus (PostgreSQL) before rolling your own sharding.</div>"
+  },
+  {
+    "n": 28,
+    "tag": "tradeoffs",
+    "q": "Design a leader election system for distributed coordination.",
+    "body": "<p>Leader election ensures exactly one node acts as coordinator. Required for: primary DB selection, distributed cron (run job once), cluster membership.</p>\n<div class=\"section-title\">Option 1: etcd / Zookeeper (purpose-built)</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># etcd lease-based leader election\nimport etcd3\n\nclient = etcd3.client()\n# Try to acquire lease (TTL = 10s — leader must renew every 5s)\nlease = client.lease(ttl=10)\n\n# Atomic write: only succeeds if key doesn't exist\nsuccess, _ = client.transaction(\n    compare=[client.transactions.version('/election/leader') == 0],\n    success=[client.transactions.put('/election/leader', node_id, lease=lease)],\n    failure=[]\n)\nif success:\n    print(\"I am the leader\")\n    # Keep renewing lease — stop renewing = abdicate leadership\n    while True:\n        lease.refresh()\n        time.sleep(5)</div>\n</div>\n<div class=\"section-title\">Option 2: Redis (simpler, less reliable)</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\"># SET NX (set if not exists) + TTL\nacquired = redis.set('leader', node_id, nx=True, ex=30)\nif acquired:\n    # Renew: must reset TTL before it expires\n    redis.expire('leader', 30)</div>\n</div>\n<div class=\"arch-box\">Split-brain problem: two nodes think they're leader simultaneously\n  Cause: network partition — leader A can't see quorum but still holds lease\n  Solution: Raft consensus (etcd uses it)\n            — Leader needs majority vote to remain leader\n            — If A is isolated from majority, it steps down</div>\n<div class=\"tip\"><b>Interview tip:</b> For Kubernetes: use Lease objects (leader-election library built into controller-runtime). For general use: etcd is the gold standard. Redis leader election is fine for advisory locks (best-effort) but not safe for cases where dual-leadership causes data corruption.</div>"
+  },
+  {
+    "n": 29,
+    "tag": "tradeoffs",
+    "q": "Design a multi-tenant SaaS platform. How do you isolate tenants?",
+    "body": "<p>Tenancy model choice affects: cost, isolation strength, compliance, and operational complexity. There's no universally right answer — it depends on customer tier and requirements.</p>\n<div class=\"arch-box\">Model 1: Shared everything (silo = false)\n  One DB, one app cluster, tenant_id column on every table\n  ✓ Cheapest, easiest to operate\n  ✗ Noisy neighbour, blast radius = all tenants, compliance risk (HIPAA?)\n  → Use for: SMB SaaS, free tier, &lt;10K tenants\n\nModel 2: Shared app, separate DB per tenant\n  One app cluster, DB per tenant (separate schemas or instances)\n  ✓ Data isolation, easier compliance\n  ✗ DB sprawl (1000 tenants = 1000 DBs), connection pool explosion\n  → Use for: mid-market, regulated industries\n\nModel 3: Dedicated cluster per tenant\n  Separate Kubernetes namespace or cluster per tenant\n  ✓ Full isolation, custom configuration per tenant\n  ✗ Very expensive, high operational overhead\n  → Use for: enterprise, government, customers who require it contractually</div>\n<div class=\"section-title\">Hybrid tiered model (recommended)</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">Free / Starter tier:    shared pool (Model 1), noisy neighbour acceptable\nProfessional tier:      shared app + separate DB schema (Model 2)\nEnterprise tier:        dedicated namespace or cluster (Model 3)\n# Migrate tenant between tiers: move data, update routing config, no app code change</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> Implement tenant routing at the gateway layer — every request carries tenant_id (from JWT or subdomain). Gateway resolves tenant_id → connection string → routes to correct DB. App code never deals with routing. This makes tier migration transparent to the application.</div>"
+  },
+  {
+    "n": 30,
+    "tag": "tradeoffs",
+    "q": "You inherit a monolith. How do you migrate it to microservices safely?",
+    "body": "<p>The strangler fig pattern: gradually extract services from the monolith without a big-bang rewrite. The monolith keeps running and shrinks over time.</p>\n<div class=\"arch-box\">Phase 1: Observe (month 1–2)\n  Map the monolith: bounded contexts, DB tables, traffic patterns\n  Identify extraction candidates: high-change rate, clear boundaries, team ownership\n  Add instrumentation: trace every module call (basis for SLO baseline)\n\nPhase 2: Strangle at the edges (month 3–9)\n  Extract peripheral services first (auth, notifications, image resizing)\n  Use API gateway to route: /auth → new service, everything else → monolith\n  Share the DB initially — acceptable short-term compromise\n\nPhase 3: Extract core services (month 9–18)\n  Separate DB per service (Database Decomposition pattern)\n  Dual-write during transition → cut over → remove monolith path\n  Beware: distributed joins now need API calls or data denormalisation\n\nPhase 4: Retire monolith (month 18–24)\n  Shell is empty — decommission</div>\n<div class=\"section-title\">What makes migrations fail</div>\n<div class=\"cmd-list\">\n<div class=\"cmd\">✗ Big bang rewrite (6 months, then nobody uses the new system)\n✗ Extracting too many services simultaneously (coordination overhead explodes)\n✗ Shared DB for too long (services can't evolve schemas independently)\n✗ No SLO baseline before extraction (can't tell if new service is worse)\n✗ Wrong first extraction (core transactional service → high risk)</div>\n</div>\n<div class=\"tip\"><b>Principal answer:</b> The decision to migrate should be driven by pain, not hype. If the monolith deploys weekly with a 5-person team and has 99.9% uptime — don't migrate. Migrate when: deploy takes 2+ hours blocking all teams, a bug in billing affects the feed algorithm, or you need to scale one component 10× without scaling all. Team topology (Conway's Law) should drive service boundaries, not technical architecture.</div>"
+  }
+]
+</script>
+
 <script>
-/* ── dark mode init ─────────────────────── */
+/* ── dark mode ───────────────────────────── */
 (function(){
   if(localStorage.getItem('ekn-dark')==='1'){
     document.body.classList.add('dark');
@@ -290,975 +399,10 @@ function toggleDark(){
   if(b) b.textContent=on?'\u2600 Light':'\u263E Dark';
 }
 
-/* ── question data ──────────────────────── */
-const QS = [
+/* ── load data ───────────────────────────── */
+var QS = JSON.parse(document.getElementById('qs-data').textContent);
 
-/* ═══════════════════════════════════════════════
-   FUNDAMENTALS
-═══════════════════════════════════════════════ */
-{
-  n:1, tag:'fundamentals',
-  q:'Walk me through your framework for approaching any system design question.',
-  body:`<p>A consistent framework prevents you from going blank and shows structured thinking. Use <strong>RADIO</strong>: Requirements → Architecture → Data model → Interface (APIs) → Optimisations.</p>
-<div class="section-title">Step-by-step</div>
-<div class="cmd-list">
-<div class="cmd">1. Requirements (5 min)
-   — Functional: what does the system do?
-   — Non-functional: scale, latency, durability, consistency
-   — Out of scope: what are we NOT building?</div>
-<div class="cmd">2. Capacity estimation (3 min)
-   — DAU, RPS, storage per year, bandwidth
-   — Back-of-envelope: 1M DAU × 10 req/day = ~115 RPS</div>
-<div class="cmd">3. High-level architecture (10 min)
-   — Draw boxes: clients, LB, services, DB, cache, queue
-   — Identify read vs write paths separately</div>
-<div class="cmd">4. Deep dives (15 min)
-   — Pick 2–3 hard problems, go deep
-   — Show trade-offs at each decision</div>
-<div class="cmd">5. Bottlenecks & failure modes (5 min)
-   — SPOF identification
-   — Scaling levers: horizontal, caching, sharding</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Drive the conversation. Don't wait for prompts. Say "I'll now focus on the write path since that's the harder problem — is that OK?" Shows Principal-level ownership.</div>`
-},
-
-{
-  n:2, tag:'fundamentals',
-  q:'How do you estimate scale requirements? Walk through a back-of-envelope calculation.',
-  body:`<p>Interviewers want to see whether you can reason about numbers, not whether you memorise them. Use round numbers and narrate your logic.</p>
-<div class="section-title">Key constants to memorise</div>
-<div class="cmd-list">
-<div class="cmd">1 million requests/day  ≈  12 RPS
-1 billion requests/day  ≈  11,600 RPS  ≈  ~12K RPS
-1 KB  × 1M events/day   ≈  1 GB/day  ≈  365 GB/year
-SSD sequential read:    ~500 MB/s
-Network (1GbE):         ~125 MB/s
-RAM access:             ~100 ns   |   SSD: ~100 µs   |   HDD: ~10 ms</div>
-</div>
-<div class="section-title">Example: Twitter-scale timeline service</div>
-<div class="cmd-list">
-<div class="cmd">DAU: 300M users, 20% active daily = 60M active
-Avg tweets/day: 60M users × 5 tweets = 300M tweets/day
-Write RPS:  300M / 86400 ≈ 3,500 writes/sec
-Read RPS:   10× write ratio ≈ 35,000 reads/sec
-Storage:    300M tweets × 300 bytes = 90 GB/day → ~33 TB/year (text only)</div>
-</div>
-<div class="tip"><b>Interview tip:</b> After estimation, say "Given 35K read RPS, a single DB won't cut it — so we'll need read replicas and a cache layer." Estimation should drive architectural decisions, not be an isolated exercise.</div>`
-},
-
-{
-  n:3, tag:'tradeoffs',
-  q:'Explain CAP theorem and how it affects real-world database choices.',
-  body:`<p>CAP: a distributed system can guarantee at most two of Consistency, Availability, Partition Tolerance. Since network partitions always occur in practice, the real choice is <strong>CP vs AP</strong>.</p>
-<div class="arch-box">CP systems (consistent when partitioned — may reject writes):
-  PostgreSQL (single primary), HBase, Zookeeper, etcd
-  → Use when: financial data, inventory counts, leader election
-
-AP systems (available when partitioned — may serve stale data):
-  Cassandra, DynamoDB, CouchDB, DNS
-  → Use when: social feeds, metrics, user preferences, caches
-
-CA systems (no partition tolerance — theoretical only):
-  Single-node RDBMS — not distributed</div>
-<div class="tip"><b>Principal answer:</b> CAP is binary and too coarse for real decisions. Use <strong>PACELC</strong> (Partition: Availability vs Consistency; Else: Latency vs Consistency) — it captures the latency trade-off that matters even during normal operation. Cassandra is PA/EL; PostgreSQL is PC/EC.</div>`
-},
-
-{
-  n:4, tag:'tradeoffs',
-  q:'When do you choose SQL vs NoSQL? Give concrete decision criteria.',
-  body:`<p>Neither is universally better. Choose based on data model, access patterns, and operational requirements.</p>
-<div class="arch-box">Choose SQL (PostgreSQL, MySQL, Aurora) when:
-  ✓ Complex joins between entities
-  ✓ ACID transactions required (payments, bookings)
-  ✓ Schema is stable and well-defined
-  ✓ Reporting / ad-hoc analytics
-  ✓ Team has strong SQL expertise
-
-Choose NoSQL when:
-  ✓ Document model (MongoDB): nested JSON, flexible schema
-  ✓ Key-value (Redis, DynamoDB): simple lookups at high RPS
-  ✓ Wide-column (Cassandra): time-series, write-heavy, multi-region
-  ✓ Graph (Neo4j): social graphs, recommendation engines
-  ✓ Search (Elasticsearch): full-text, faceted search</div>
-<div class="tip"><b>Interview tip:</b> Say "I'd choose PostgreSQL as the source of truth for user accounts and payments — it gives us transactions and referential integrity. For the activity feed (high write RPS, time-ordered, no joins needed), I'd use Cassandra." Showing you use both is better than picking a side.</div>`
-},
-
-{
-  n:5, tag:'fundamentals',
-  q:'What is consistent hashing and why do distributed systems use it?',
-  body:`<p>Consistent hashing maps keys and nodes to a ring. When a node is added/removed, only <code>K/N</code> keys need remapping (vs all keys in naive modulo hashing). Critical for cache clusters, distributed DBs, and load balancers.</p>
-<div class="arch-box">Ring: 0 ──── 90 ──── 180 ──── 270 ──── 360
-         Node A    Node B     Node C      Node D
-
-Key "user:123" hashes to position 95 → assigned to Node B (next node clockwise)
-Remove Node B → keys 90–180 shift to Node C only. All others unaffected.</div>
-<div class="section-title">Virtual nodes (vnodes)</div>
-<p>Each physical node is mapped to multiple positions on the ring. Improves load distribution. Used by Cassandra (256 vnodes per node), DynamoDB, Riak.</p>
-<div class="cmd-list">
-<div class="cmd"># Without vnodes: 3 nodes, each owns 1/3 of ring
-# With vnodes:    3 nodes × 256 = 768 positions → much more even spread</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Mention that consistent hashing is used in Redis Cluster, Cassandra, Memcached, and CDN edge routing. Examiners love when you connect theory to real systems.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   SCALABILITY
-═══════════════════════════════════════════════ */
-{
-  n:6, tag:'scalability',
-  q:'Design a URL shortener (like bit.ly). Handle 100M URLs, 10B redirects/day.',
-  body:`<p>Classic design problem. Key challenges: unique ID generation, low-latency redirects, analytics.</p>
-<div class="arch-box">Client → CDN / Edge Cache
-            ↓ (cache miss)
-          LB → Redirect Service (stateless, horizontal scale)
-            ↓
-          Cache (Redis)  ← hot URLs served here (95% hit rate)
-            ↓ (cache miss)
-          DB (PostgreSQL) — short_code → long_url, created_at, user_id
-            ↓
-          Analytics Queue (Kafka) → Click Aggregator → Analytics DB</div>
-<div class="section-title">ID generation — Base62 encoding</div>
-<div class="cmd-list">
-<div class="cmd"># 7 chars × 62 possibilities = 62^7 = 3.5 trillion unique URLs
-# Generate unique int ID (Snowflake / DB sequence), encode to Base62
-def encode_base62(n):
-    chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    result = []
-    while n:
-        result.append(chars[n % 62])
-        n //= 62
-    return ''.join(reversed(result))</div>
-</div>
-<div class="section-title">Scale: 10B redirects/day = ~115K RPS</div>
-<div class="cmd-list">
-<div class="cmd">Redis cache: 99% hit rate → 115K RPS handled in memory (~1µs/lookup)
-Cache miss (1%): 1,150 RPS to PostgreSQL — easily handled by single read replica
-Write rate: 100M URLs / (365 days × 86400 sec) ≈ 3 writes/sec — trivial</div>
-</div>
-<div class="tip"><b>Principal answer:</b> The redirect path must be P99 &lt; 10ms. Serve from CDN edge where possible — cache <code>301 Permanent</code> vs <code>302 Temporary</code> based on whether the URL can change. Use 302 for analytics (forces redirect through your service every time). Use 301 for permanent links (browser caches, fewer requests).</div>`
-},
-
-{
-  n:7, tag:'scalability',
-  q:'Design a rate limiter. Support per-user, per-IP, and per-API-key limits.',
-  body:`<p>Rate limiting prevents abuse, enforces SLAs, and protects downstream services. Key question: where to enforce (edge, API gateway, service)?</p>
-<div class="section-title">Algorithm choices</div>
-<div class="arch-box">Token Bucket:    allow bursting, refill at constant rate
-                 → Best for: API gateways, per-user limits
-Fixed Window:    simple, cheap — but allows 2× burst at window boundary
-Sliding Window Log: precise, high memory (store every request timestamp)
-Sliding Window Counter: interpolate between two fixed windows — good balance</div>
-<div class="section-title">Implementation: Redis sliding window</div>
-<div class="cmd-list">
-<div class="cmd"># Redis Lua script (atomic — no race condition)
-local key = KEYS[1]       -- "rl:user:123:endpoint:/api/search"
-local limit = tonumber(ARGV[1])   -- 100
-local window = tonumber(ARGV[2])  -- 60 (seconds)
-local now = tonumber(ARGV[3])
-
-redis.call('ZREMRANGEBYSCORE', key, 0, now - window * 1000)
-local count = redis.call('ZCARD', key)
-if count &lt; limit then
-  redis.call('ZADD', key, now, now)
-  redis.call('EXPIRE', key, window)
-  return 1  -- allowed
-end
-return 0    -- rejected → HTTP 429</div>
-</div>
-<div class="arch-box">Multi-tier rate limiting:
-  Layer 1: CDN/Edge (IP-based, coarse — blocks DDoS)
-  Layer 2: API Gateway (per-API-key — SLA enforcement)
-  Layer 3: Service level (per-user, per-resource — business logic)</div>
-<div class="tip"><b>Interview tip:</b> Mention distributed rate limiting across multiple API gateway pods — Redis is the central store. Add response headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>Retry-After</code>. These are required for good API UX.</div>`
-},
-
-{
-  n:8, tag:'scalability',
-  q:'Design a notification system (push, email, SMS) for 500M users.',
-  body:`<p>Notification systems are deceptively hard: delivery guarantees, user preferences, throttling, channel failover, and deduplication.</p>
-<div class="arch-box">Producers (events) → Kafka Topics (by channel type)
-                         ↓
-              Notification Service
-              ├── Preference filter  (user opted out? → discard)
-              ├── Dedup check        (Redis TTL key on notification_id)
-              ├── Priority queue     (critical > normal > marketing)
-              └── Channel router
-                  ├── Push  → APNs (iOS) / FCM (Android)
-                  ├── Email → SendGrid / SES → SMTP
-                  └── SMS   → Twilio / SNS</div>
-<div class="section-title">Key design decisions</div>
-<div class="cmd-list">
-<div class="cmd">1. At-least-once delivery via Kafka (consumer group, manual offset commit)
-2. Idempotency: notification_id deduplicated in Redis (TTL = 24h)
-3. Retry with exponential backoff: 1s → 2s → 4s → 16s → DLQ
-4. User preference DB: per-channel opt-out, quiet hours, frequency caps
-5. Rate limiting: max 5 marketing emails/user/day regardless of events</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Separate the <em>event bus</em> (Kafka) from the <em>sending workers</em>. This lets you: replay failed notifications, add new channels without touching producers, and independently scale push vs email workers (push is CPU-light, email involves template rendering). Store every notification in a NoSQL log (DynamoDB) for inbox features.</div>`
-},
-
-{
-  n:9, tag:'scalability',
-  q:'Design a distributed job queue / task scheduler. Handle millions of jobs/day.',
-  body:`<p>Core requirements: reliable delivery, at-least-once execution, delayed jobs, priority, retries, observability.</p>
-<div class="arch-box">Producers → Job Queue (Redis / Kafka / SQS)
-                    ↓
-             Dispatcher / Broker
-                    ↓
-             Worker Pool (horizontal scale)
-                    ↓
-          ┌─ Success → mark complete in Job Store
-          └─ Failure → retry with backoff → DLQ after N attempts</div>
-<div class="section-title">Delayed jobs (scheduled tasks)</div>
-<div class="cmd-list">
-<div class="cmd"># Redis sorted set — score = execution timestamp
-ZADD delayed_jobs 1735689600 "job:abc123"   # execute at Unix time
-
-# Poller (every second):
-jobs = ZRANGEBYSCORE delayed_jobs 0 NOW LIMIT 0 100
-for job in jobs:
-    push to ready_queue
-    ZREM delayed_jobs job</div>
-</div>
-<div class="section-title">At-least-once vs exactly-once</div>
-<div class="arch-box">At-least-once:  Ack only after successful processing
-                Idempotency key on the job consumer side
-Exactly-once:   Impossible in distributed systems without 2PC overhead
-                → Design jobs to be idempotent instead</div>
-<div class="tip"><b>Interview tip:</b> Celery + Redis/RabbitMQ is fine for most workloads. For 10M+ jobs/day with complex dependencies: Temporal (workflow orchestration). Mention visibility timeout — job becomes visible again if worker crashes without acking. Must be &gt; expected max job duration.</div>`
-},
-
-{
-  n:10, tag:'scalability',
-  q:'Design a web crawler at Google scale. Crawl 1 billion pages per day.',
-  body:`<p>Hard problems: politeness (don't hammer a single domain), deduplication, dynamic content, distributed coordination.</p>
-<div class="arch-box">Seed URLs → URL Frontier (priority queue)
-                 ↓
-        Dispatcher → Fetcher Workers (1000s, distributed)
-                 ↓                ↓
-        DNS Resolver Cache    HTML Parser
-                 ↓
-        Content Seen? ──→ Yes: discard
-              ↓ No
-        Content Store (GCS / S3)
-              ↓
-        URL Extractor → URL Normaliser → URL Seen Filter → URL Frontier</div>
-<div class="section-title">Deduplication</div>
-<div class="cmd-list">
-<div class="cmd"># URL dedup: Bloom filter (fast, probabilistic, no false negatives)
-bloom.add(url)
-if bloom.check(url): skip  # 1% false positive rate acceptable
-
-# Content dedup: SimHash / MinHash to detect near-duplicate pages
-# Exact dedup: SHA-256 of content stored in distributed cache</div>
-</div>
-<div class="section-title">Politeness</div>
-<div class="cmd-list">
-<div class="cmd"># Per-domain queue + delay
-# Respect robots.txt — cache it per domain (1h TTL)
-# Back-pressure: rate limit to 1 req/sec per domain by default
-# Crawl-Delay directive in robots.txt: honour it</div>
-</div>
-<div class="tip"><b>Principal answer:</b> URL Frontier is a priority queue — prioritise high-PageRank domains. Use a multi-level queue: fresh (recrawl changed pages quickly) vs stale. DNS is the #1 bottleneck at scale — maintain a local DNS cache with thousands of entries. 1 DNS lookup per URL at 1B pages/day = ~11K DNS queries/sec.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   RELIABILITY
-═══════════════════════════════════════════════ */
-{
-  n:11, tag:'reliability',
-  q:'Design a system that achieves 99.99% availability. What does that mean operationally?',
-  body:`<p>99.99% = 52 minutes downtime/year. 99.999% = 5 minutes/year. Every architectural decision must be justified against this budget.</p>
-<div class="arch-box">Availability budget breakdown (99.99% = 52 min/year):
-  Planned maintenance:  &lt;10 min  (rolling deploys, zero-downtime)
-  Incident response:    &lt;42 min  (~4 incidents × 10 min MTTR each)
-
-MTTR must be &lt; 10 minutes → requires:
-  • Automated alerting (PagerDuty, &lt; 2 min to page)
-  • Runbooks for top 10 failure modes
-  • Feature flags for instant rollback
-  • Health checks + auto-restart (Kubernetes liveness probe)</div>
-<div class="section-title">Architectural requirements for 99.99%</div>
-<div class="cmd-list">
-<div class="cmd">1. No single points of failure
-   — Multi-AZ deployment (lose 1 AZ, still serving)
-   — N+2 redundancy for stateless services
-
-2. Graceful degradation
-   — Circuit breakers (fail fast, don't cascade)
-   — Fallback: serve stale cache instead of error
-
-3. Load shedding
-   — Reject low-priority requests under overload
-   — Rate limiting protects against thundering herd
-
-4. Chaos engineering
-   — Intentionally kill instances to verify recovery
-   — GameDay exercises quarterly</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Availability = MTBF / (MTBF + MTTR). To improve: increase MTBF (fewer failures) OR decrease MTTR (faster recovery). Recovery automation gives 10× more leverage than trying to make systems never fail.</div>`
-},
-
-{
-  n:12, tag:'reliability',
-  q:'Design a distributed cache system. Handle 1M RPS with sub-millisecond latency.',
-  body:`<p>Caching is the single highest-leverage performance optimisation. Get the design right or you'll fight cache stampedes and inconsistency bugs forever.</p>
-<div class="arch-box">Client → Cache Cluster (Redis / Memcached, consistent hashing)
-                   ↓ miss
-              Primary DB → write result to cache → return to client</div>
-<div class="section-title">Cache patterns</div>
-<div class="arch-box">Cache-aside (lazy loading):
-  App checks cache → miss → fetch DB → write cache → return
-  Pros: only cache what's used. Cons: cold start latency.
-
-Write-through:
-  App writes DB and cache atomically
-  Pros: cache always fresh. Cons: write penalty, caches unused data.
-
-Write-behind (write-back):
-  App writes cache only → async flush to DB
-  Pros: very fast writes. Cons: data loss if cache crashes before flush.
-
-Read-through:
-  Cache fetches from DB on miss (cache library handles it)
-  Pros: simpler app logic.</div>
-<div class="section-title">Cache stampede prevention</div>
-<div class="cmd-list">
-<div class="cmd"># Problem: key expires, 10K requests hit DB simultaneously
-
-# Solution 1: probabilistic early expiration
-if time_to_expire &lt; threshold and random() &lt; probability:
-    refresh_in_background()
-
-# Solution 2: Redis lock on cache miss
-if not redis.set(lock_key, 1, nx=True, ex=5):
-    sleep(0.05); return get_from_cache()  # wait for first request to populate</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Redis Cluster for 1M RPS: 6 nodes (3 primary + 3 replica), consistent hashing across slots. Each node handles ~167K RPS — well within Redis's 500K+ RPS single-node ceiling. Use pipelining for batch gets. Watch out for hot keys — a viral post accessed by millions needs key sharding or a local L1 in-process cache.</div>`
-},
-
-{
-  n:13, tag:'reliability',
-  q:'Design a circuit breaker. When and how does a service fail fast?',
-  body:`<p>Circuit breakers prevent cascade failures — when a downstream service is slow or down, fail fast instead of queuing up requests that time out.</p>
-<div class="arch-box">State machine:
-
-CLOSED (normal) ──[failure threshold exceeded]──→ OPEN (fail fast)
-    ↑                                                  ↓
-    └──[success threshold met]── HALF-OPEN ←──[timeout elapsed]</div>
-<div class="section-title">Implementation</div>
-<div class="cmd-list">
-<div class="cmd">class CircuitBreaker:
-    CLOSED, OPEN, HALF_OPEN = 0, 1, 2
-
-    def __init__(self, failure_threshold=5, timeout=30, success_threshold=2):
-        self.state = self.CLOSED
-        self.failure_count = 0
-        self.last_failure_time = None
-
-    def call(self, fn, *args):
-        if self.state == self.OPEN:
-            if time.time() - self.last_failure_time &gt; self.timeout:
-                self.state = self.HALF_OPEN
-            else:
-                raise CircuitOpenError("Circuit open — failing fast")
-
-        try:
-            result = fn(*args)
-            self._on_success()
-            return result
-        except Exception as e:
-            self._on_failure()
-            raise
-
-    def _on_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count &gt;= self.failure_threshold:
-            self.state = self.OPEN
-
-    def _on_success(self):
-        if self.state == self.HALF_OPEN:
-            self.state = self.CLOSED
-        self.failure_count = 0</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Libraries: Resilience4j (Java), Polly (.NET), Hystrix (deprecated). In cloud-native: use Envoy/Istio service mesh — circuit breaker at the proxy layer, no code changes. Set fallback: return cached data, default response, or degrade gracefully ("show general recommendations instead of personalised").</div>`
-},
-
-{
-  n:14, tag:'reliability',
-  q:'Design a distributed transaction system. Handle payments across microservices.',
-  body:`<p>Distributed transactions are notoriously hard. 2PC is slow and blocking. The practical answer for most systems is Saga pattern.</p>
-<div class="section-title">2PC (Two-Phase Commit) — avoid in microservices</div>
-<div class="arch-box">Phase 1 (Prepare): Coordinator asks all participants "can you commit?"
-Phase 2 (Commit):  If all say yes → commit. If any says no → rollback.
-
-Problems:
-  • Coordinator is SPOF
-  • Blocking: participants hold locks during Phase 1
-  • Slow: 2 round trips of network calls minimum</div>
-<div class="section-title">Saga pattern — the practical answer</div>
-<div class="arch-box">Choreography-based Saga (event-driven):
-  OrderService → emit OrderCreated
-  PaymentService → listen, charge card → emit PaymentCompleted
-  InventoryService → listen, reserve stock → emit StockReserved
-  ShippingService → listen, schedule delivery
-
-Failure: each service publishes compensating event
-  PaymentFailed → OrderService listens → cancel order
-  StockInsufficient → PaymentService listens → refund payment</div>
-<div class="cmd-list">
-<div class="cmd"># Outbox pattern — prevents dual-write problem
-# In same DB transaction:
-BEGIN;
-  INSERT INTO orders (id, status) VALUES (123, 'pending');
-  INSERT INTO outbox (event_type, payload) VALUES ('OrderCreated', '{...}');
-COMMIT;
-# Background process reads outbox → publishes to Kafka → marks as sent</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Choreography works well for simple flows. Orchestration (Temporal, AWS Step Functions) is better when: you need visibility into flow state, workflows are complex, or you need timeouts and compensation logic in one place. Always implement idempotency — payment services must handle duplicate events without double-charging.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   DATA SYSTEMS
-═══════════════════════════════════════════════ */
-{
-  n:15, tag:'data',
-  q:'Design a time-series metrics storage system (like Prometheus at scale).',
-  body:`<p>Time-series data has unique characteristics: always append-only, high cardinality, queries are usually recent data, compression is very effective.</p>
-<div class="arch-box">Agents (Node Exporter, cAdvisor)
-  → Prometheus scrape / push gateway
-  → Ingest Service
-  → Write path:  WAL → In-memory chunk → Flush to TSDB (disk blocks)
-  → Long-term:   Thanos / Cortex → Object storage (S3/GCS)
-  → Query path:  PromQL → Query Planner → Block reader → Result</div>
-<div class="section-title">Storage design</div>
-<div class="cmd-list">
-<div class="cmd"># Time-series: (metric_name, labels_map) → [(timestamp, value)]
-# High cardinality problem: {user_id="..."} label → millions of series
-
-# Delta encoding: store differences, not absolute values
-# e.g., [100, 101, 103, 106] → [100, +1, +2, +3]
-
-# XOR compression (Gorilla by Facebook):
-# Consecutive float values differ in only a few bits → 1.37 bytes/sample
-# vs 16 bytes uncompressed → 12× compression ratio</div>
-</div>
-<div class="section-title">Thanos for global scale</div>
-<div class="arch-box">Per-cluster Prometheus (local retention: 2h)
-  → Thanos Sidecar → Object store (S3, GCS)
-  → Thanos Query   → fan-out queries across all Prometheus + store
-  → Thanos Compactor → downsampling (5m, 1h resolution for old data)</div>
-<div class="tip"><b>Interview tip:</b> High cardinality is the #1 killer of Prometheus performance. Each unique label combination = a separate time series. Never use user IDs or request IDs as labels. Use histograms for latency (not gauges per request). Retention policy: 15 days local, compress to 5m resolution after 7 days, 1h resolution after 30 days.</div>`
-},
-
-{
-  n:16, tag:'data',
-  q:'Design a real-time log aggregation pipeline. Handle 1TB/day of logs.',
-  body:`<p>Log pipelines must be: reliable (no log loss), scalable, queryable, and cost-controlled.</p>
-<div class="arch-box">App instances → Fluent Bit (agent, lightweight)
-                        ↓
-              Kafka (buffer + replay capability)
-              ├── Topic: logs.app      (structured JSON)
-              ├── Topic: logs.infra    (system metrics)
-              └── Topic: logs.audit    (compliance, long retention)
-                        ↓
-              Stream Processor (Flink / Spark Streaming)
-              ├── Parse & enrich (add k8s metadata, geo-IP)
-              ├── Detect anomalies (error spike alerting)
-              └── Route by log level
-                        ↓
-              ┌── Hot storage:  Elasticsearch / OpenSearch (30 days, queryable)
-              └── Cold storage: S3 + Parquet (1 year, Athena queryable)</div>
-<div class="section-title">Cost control — 1TB/day</div>
-<div class="cmd-list">
-<div class="cmd"># Sampling: DEBUG logs sampled at 1%, INFO at 10%, WARN/ERROR at 100%
-# Compression: gzip on Kafka messages → ~5× reduction → 200 GB/day effective
-# Tiering: Elasticsearch for 30 days, then archive to S3 Glacier
-# Estimated monthly cost: ~$500 ES + ~$150 S3 for 1TB/day</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Kafka is the critical buffer — it absorbs spikes (deploy wave, incident) and allows consumer lag without data loss. Set retention to 72h on Kafka topics. If Elasticsearch is down, consumers lag but Kafka retains. Never write directly from agent to Elasticsearch — you'll lose logs on ES restarts.</div>`
-},
-
-{
-  n:17, tag:'data',
-  q:'Design a search autocomplete / typeahead system. Return results in &lt;100ms.',
-  body:`<p>Typeahead requires extremely low latency (every keystroke). The system must handle billions of queries and millions of distinct prefixes.</p>
-<div class="arch-box">User types "plat" →
-  Client (debounce 100ms) → CDN edge cache (popular prefixes)
-                              ↓ miss
-                          Trie service → Redis prefix cache
-                              ↓ miss
-                          Precomputed prefix table (top-10 per prefix)
-                              ↓
-                          Return ranked suggestions</div>
-<div class="section-title">Data structure: Trie with top-K per node</div>
-<div class="cmd-list">
-<div class="cmd"># Each trie node stores top-10 completions sorted by frequency
-# "pl" → ["platform engineer", "platform team", "playbook", ...]
-# "pla" → ["platform engineer", "platform team", "plan", ...]
-
-# Precomputed and stored in Redis:
-redis.setex("prefix:pla", 3600, json.dumps(top_10_results))
-
-# Update frequency (offline, batch):
-# Kafka → Spark aggregation (hourly) → recompute top-10 → Redis update</div>
-</div>
-<div class="section-title">Latency budget for 100ms</div>
-<div class="cmd-list">
-<div class="cmd">Network (client to edge CDN):   ~5ms
-CDN cache hit:                  ~1ms   (serve cached top prefixes)
-Cache miss → Redis lookup:      ~2ms
-Redis miss → DB lookup:        ~10ms
-Total (cache hit):             ~6ms ✓
-Total (cache miss):            ~17ms ✓</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Cache hit ratio for typeahead is very high — top 1000 prefixes cover ~80% of queries. Pre-warm the cache on deploy. Handle personalisation separately: blend global top-10 with user's recent searches client-side to avoid per-user cache fragmentation.</div>`
-},
-
-{
-  n:18, tag:'data',
-  q:'Design a distributed ID generation system (like Twitter Snowflake).',
-  body:`<p>IDs must be: globally unique, sortable by time (for pagination), high throughput (100K+/sec), no central bottleneck.</p>
-<div class="section-title">Snowflake ID structure (64-bit integer)</div>
-<div class="arch-box">Bit layout:
-  [0]      — sign bit (always 0)
-  [1–41]   — timestamp (ms since epoch) → ~69 years of unique IDs
-  [42–51]  — machine/datacenter ID (10 bits → 1024 machines)
-  [52–63]  — sequence number (12 bits → 4096 IDs/ms/machine)
-
-Max throughput: 1024 machines × 4096 IDs/ms = 4.2 billion IDs/second</div>
-<div class="cmd-list">
-<div class="cmd">class SnowflakeGenerator:
-    EPOCH = 1288834974657  # Twitter epoch (Nov 4, 2010)
-
-    def __init__(self, machine_id):
-        self.machine_id = machine_id  # 0–1023
-        self.sequence = 0
-        self.last_ms = -1
-
-    def generate(self):
-        ms = int(time.time() * 1000) - self.EPOCH
-        if ms == self.last_ms:
-            self.sequence = (self.sequence + 1) &amp; 0xFFF
-            if self.sequence == 0:
-                while ms &lt;= self.last_ms:  # busy wait for next ms
-                    ms = int(time.time() * 1000) - self.EPOCH
-        else:
-            self.sequence = 0
-        self.last_ms = ms
-        return (ms &lt;&lt; 22) | (self.machine_id &lt;&lt; 12) | self.sequence</div>
-</div>
-<div class="tip"><b>Alternatives:</b> UUID v4 (random, not sortable, 128-bit), ULID (sortable UUID), database sequences (single SPOF). For most services, a database auto-increment sequence is fine up to ~50K inserts/sec. Use Snowflake when you need sortable IDs across shards without a central DB sequence.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   PLATFORM
-═══════════════════════════════════════════════ */
-{
-  n:19, tag:'platform',
-  q:'Design a multi-region Kubernetes platform. Handle active-active across 3 regions.',
-  body:`<p>Multi-region Kubernetes is the hardest class of PE design question. Focus on: traffic routing, data consistency, failure isolation, and operational complexity.</p>
-<div class="arch-box">Global Traffic Layer:
-  Anycast IP (Global Accelerator / Cloud Armor LB)
-  → Route to nearest healthy region (health check + latency-based routing)
-
-Per-region stack:
-  GKE / EKS cluster
-  ├── App workloads (stateless — active in all regions)
-  ├── Local PostgreSQL primary + cross-region read replica
-  └── Redis cluster (eventually consistent cross-region via CRDTs)
-
-Control plane:
-  ArgoCD (one per region, sync from same Git repo)
-  Fleet management via GKE Hub / EKS anywhere</div>
-<div class="section-title">Data strategies per tier</div>
-<div class="arch-box">Stateless services:   Deploy identical in all regions. No data concerns.
-User sessions:        Redis CRDT (Riak) or route user to same region (sticky DNS)
-Transactional data:   Primary in one region, failover via Aurora Global / Spanner
-Analytics/events:     Multi-region Kafka MirrorMaker 2 → eventual consistency
-User-generated content: S3/GCS with CRR (cross-region replication)</div>
-<div class="tip"><b>Principal answer:</b> Don't default to active-active. It's 3–5× harder than active-passive. Ask: what's the actual RTO/RPO requirement? For most companies, active-passive (RPO &lt; 1min, RTO &lt; 15min) via Aurora Global DB + standby cluster is correct. Active-active only when regulatory requirements demand data residency in each region simultaneously, or when single-region latency is unacceptable for global users.</div>`
-},
-
-{
-  n:20, tag:'platform',
-  q:'Design a CI/CD platform for 500 microservices and 200 engineers.',
-  body:`<p>At this scale, the pipeline itself becomes a product. Engineers are your customers. Standardisation, speed, and self-service are the design goals.</p>
-<div class="arch-box">Developer push → GitHub
-  → GitHub Actions (or Tekton on-cluster)
-  ├── Lint + Test (parallel, cached dependencies)
-  ├── Container build (Buildkit, layer caching)
-  ├── Security scan (Trivy, Grype — fail on CRITICAL)
-  ├── Push to Artifact Registry (tagged by git SHA)
-  └── Update GitOps repo (PR to k8s-config repo)
-                  ↓
-           ArgoCD (per-environment)
-  ├── Staging: auto-sync on PR merge
-  ├── Prod:    sync on manual approval + canary analysis
-  └── Rollback: git revert → ArgoCD auto-applies</div>
-<div class="section-title">Standardisation via golden path</div>
-<div class="cmd-list">
-<div class="cmd"># Backstage software template:
-# Engineer runs: `npx @backstage/create-app`
-# Generates: Dockerfile, GitHub Actions workflow, Helm chart,
-#            ArgoCD Application, PagerDuty integration, Datadog monitors
-# 80% of services use the golden path. 20% get custom support.</div>
-</div>
-<div class="section-title">Metrics that matter</div>
-<div class="cmd-list">
-<div class="cmd">DORA metrics:
-  Deployment frequency:    target daily or on-demand per service
-  Lead time for change:    commit → production &lt; 30 minutes
-  Change failure rate:     &lt; 5% of deployments cause incidents
-  MTTR:                    &lt; 1 hour for P1 incidents</div>
-</div>
-<div class="tip"><b>Principal answer:</b> At 500 services, the biggest problem isn't tooling — it's standardisation. Platform team builds golden paths (opinionated templates) and scores services on adoption. Enforce via Scorecard in Backstage: security scan ✓, SLO defined ✓, runbook linked ✓. Teams that score &lt;70% get Platform team office hours, not mandates.</div>`
-},
-
-{
-  n:21, tag:'platform',
-  q:'Design a feature flag system for safe production rollouts.',
-  body:`<p>Feature flags decouple deployment from release. Critical for: canary rollouts, A/B testing, kill switches, and dark launches.</p>
-<div class="arch-box">Flag Config Store (PostgreSQL + Redis cache)
-  ├── flag_key, enabled, rollout_percentage, targeting_rules, variants
-  └── Admin UI → flag management
-
-SDK (embedded in each service):
-  → Fetch flags on startup → local cache (in-memory)
-  → Refresh every 30s via polling or SSE (Server-Sent Events)
-  → Evaluate: is user X in rollout bucket for flag Y?
-
-Evaluation logic:
-  1. Is flag globally off? → return default
-  2. Is user in targeting rule? (beta_users group, specific user IDs) → return variant
-  3. Hash(user_id + flag_key) mod 100 &lt; rollout_pct? → return variant
-  4. Return default</div>
-<div class="section-title">Consistent bucketing</div>
-<div class="cmd-list">
-<div class="cmd">def get_bucket(user_id: str, flag_key: str) -&gt; int:
-    # Same user always gets same bucket for same flag
-    hash_input = f"{user_id}:{flag_key}"
-    return int(hashlib.sha256(hash_input.encode()).hexdigest(), 16) % 100
-
-# user_id="abc123", flag="new_checkout" → bucket 47
-# Always 47 → consistent experience across sessions and services</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Use flag SDK with &lt;1ms evaluation latency — never make a network call per flag evaluation in the request path. Cache flags locally, stream updates via SSE. Log every flag evaluation to a data warehouse for analytics (who saw which variant, what was their conversion rate). This is the foundation of experimentation infrastructure.</div>`
-},
-
-{
-  n:22, tag:'platform',
-  q:'Design an Internal Developer Platform (IDP). What components does it need?',
-  body:`<p>An IDP reduces cognitive load for developers — they shouldn't need to understand Kubernetes, Terraform, or CI/CD to ship software safely.</p>
-<div class="arch-box">Developer-facing:
-  ┌── Service Catalogue (Backstage)
-  │   ├── Software templates (golden paths)
-  │   ├── Tech docs (docs-as-code, MkDocs)
-  │   └── Scorecards (compliance, security posture)
-  ├── Self-service portal
-  │   ├── Provision environment (namespace + resources)
-  │   ├── Manage secrets (Vault UI)
-  │   └── View logs, traces, metrics (linked from service page)
-  └── CLI tool
-      └── `platform new service` / `platform env create` / `platform deploy`
-
-Platform-facing (hidden from devs):
-  Kubernetes + ArgoCD + Terraform + Vault + Crossplane</div>
-<div class="section-title">The golden path contract</div>
-<div class="cmd-list">
-<div class="cmd">Developer provides:
-  ├── service name
-  ├── tech stack (Node/Python/Go/Java)
-  ├── resource requirements (CPU, memory, replicas)
-  └── environment variables (plain) + secrets (references to Vault paths)
-
-Platform provides automatically:
-  ├── Kubernetes namespace + RBAC
-  ├── CI/CD pipeline (GitHub Actions workflow)
-  ├── Ingress + TLS certificate
-  ├── Observability (metrics, logs, traces pre-wired)
-  ├── PagerDuty integration
-  └── Cost attribution labels</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Measure IDP success by: time-to-first-deployment for a new service (target &lt;1 day from zero), % services on golden path (target &gt;80%), and developer satisfaction score (quarterly survey). Don't build what you can buy — Backstage for catalogue, Vault for secrets, Crossplane for cloud resources. Build the integration layer, not the primitives.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   NETWORKING
-═══════════════════════════════════════════════ */
-{
-  n:23, tag:'networking',
-  q:'Design a global CDN architecture. How does edge caching work at scale?',
-  body:`<p>CDNs reduce origin load and user latency by serving content from edge nodes close to users. Design involves: cache hierarchy, cache invalidation, origin protection, and routing.</p>
-<div class="arch-box">User (Mumbai) → Anycast DNS → Nearest PoP (Mumbai edge)
-                              ↓ cache miss
-                        Regional hub (Singapore)
-                              ↓ cache miss
-                        Origin shield (single region close to origin)
-                              ↓ cache miss
-                        Origin servers</div>
-<div class="section-title">Cache key design</div>
-<div class="cmd-list">
-<div class="cmd"># Default cache key: URL only
-# Vary by: Accept-Encoding (gzip vs br), Accept-Language, device type
-
-# Cache-Control headers (origin controls caching):
-Cache-Control: public, max-age=31536000, immutable    # versioned assets
-Cache-Control: public, max-age=300, stale-while-revalidate=60  # API responses
-Cache-Control: private, no-store                       # user-specific data</div>
-</div>
-<div class="section-title">Cache invalidation strategies</div>
-<div class="cmd-list">
-<div class="cmd">1. URL versioning (best): /app.v1.2.3.js → never expires, change URL to invalidate
-2. Cache purge API:        cdn.purge("/api/products/123") → instant but expensive at scale
-3. Surrogate keys:         tag responses with logical keys → purge by tag
-4. Short TTL:              max-age=60 → accept 60s staleness, no active invalidation</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Origin Shield is critical for large CDNs — it collapses all cache misses from all edge PoPs into a single PoP before hitting origin. Without it, a cache invalidation for a popular asset triggers N simultaneous origin requests (N = number of edge PoPs). With Origin Shield: exactly 1 origin request per object per cache refresh.</div>`
-},
-
-{
-  n:24, tag:'networking',
-  q:'Design a load balancer. Explain L4 vs L7 and when to use each.',
-  body:`<p>Load balancers distribute traffic across backend instances. L4 operates at transport layer (TCP/UDP); L7 operates at application layer (HTTP/gRPC/WebSocket).</p>
-<div class="arch-box">L4 Load Balancer (TCP):
-  ├── Sees: IP, port, TCP flags — not HTTP content
-  ├── Very fast: ~100ns decision (hardware), ~10µs (software)
-  ├── Algorithms: IP hash, round-robin, least connections
-  └── Use: any TCP traffic, non-HTTP, highest throughput needs
-
-L7 Load Balancer (HTTP):
-  ├── Sees: URL, headers, cookies, body, TLS cert
-  ├── Slower: ~1ms per request (TLS + HTTP parsing overhead)
-  ├── Features: content routing, auth, rate limiting, WAF, health checks
-  └── Use: HTTP APIs, A/B testing, canary routing, session affinity</div>
-<div class="section-title">Health checking</div>
-<div class="cmd-list">
-<div class="cmd"># L4: TCP connect probe (is the port open?)
-# L7: HTTP GET /health → expect 200 + healthy body
-# Passive: monitor real request error rates → remove if error rate &gt; threshold
-
-# Remove from pool: 3 consecutive failures in 10s
-# Add back to pool: 2 consecutive successes (conservative)</div>
-</div>
-<div class="section-title">Consistent hashing for session affinity</div>
-<div class="cmd-list">
-<div class="cmd"># Sticky sessions: route user to same backend
-# Option 1: Cookie (LB sets __lb_session=backend_id)
-# Option 2: IP hash (fragile — changes with proxies/CG-NAT)
-# Option 3: Consistent hashing on session token (best for scale)</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Use both in sequence. L4 (NLB/IPVS) at the front for TLS termination and connection distribution. L7 (NGINX/Envoy) behind it for routing, auth, and observability. This two-tier approach scales better than a single L7 handling all TLS connections (TLS handshakes are CPU-intensive).</div>`
-},
-
-{
-  n:25, tag:'networking',
-  q:'Design a WebSocket / real-time messaging system. Handle 1M concurrent connections.',
-  body:`<p>Long-lived connections at scale require stateful servers — which breaks horizontal scaling assumptions.</p>
-<div class="arch-box">Client ──WebSocket──→ WS Gateway (stateful, sticky LB)
-                              ↓ (Pub/Sub)
-                          Redis Pub/Sub
-                              ↑
-                    Message Producer Services
-                    (Chat, Notifications, etc.)
-
-WS Gateway publishes received messages → Redis → all gateways
-→ Each gateway fans out to its local connected clients</div>
-<div class="section-title">Connection capacity planning</div>
-<div class="cmd-list">
-<div class="cmd"># 1M concurrent connections:
-# Each idle WebSocket: ~40KB memory (kernel TCP state + buffer)
-# 1M × 40KB = ~40GB RAM just for connections
-# Distribute: 50 servers × 20K connections each → 800MB RAM/server ✓
-
-# Message fan-out: if 1M users in 10K channels (100 users/channel avg)
-# Send to channel: 1 Redis publish → 50 WS servers receive → each fans to local subs
-# Cost: O(channels × servers) not O(users) — scalable</div>
-</div>
-<div class="section-title">Scaling challenges</div>
-<div class="cmd-list">
-<div class="cmd">1. Sticky sessions: WS connections are long-lived → LB must route to same server
-2. Reconnection: client disconnects → reconnect with exponential backoff (1s, 2s, 4s...)
-3. State recovery: on reconnect, send all missed messages since last_seen_id
-4. Heartbeat: ping every 30s, close if no pong in 10s (detect zombie connections)</div>
-</div>
-<div class="tip"><b>Interview tip:</b> Redis Pub/Sub is eventually consistent — some messages may be lost on Redis restart. For guaranteed delivery use Redis Streams or Kafka. Distinguish: fire-and-forget (notifications) vs guaranteed delivery (chat history). For chat, store every message in Cassandra; WebSocket is just the delivery mechanism, not the source of truth.</div>`
-},
-
-/* ═══════════════════════════════════════════════
-   TRADE-OFFS
-═══════════════════════════════════════════════ */
-{
-  n:26, tag:'tradeoffs',
-  q:'When do you use a message queue vs direct API call vs event streaming?',
-  body:`<p>This decision defines service coupling, reliability, and operational complexity. Get it wrong and you'll fight it for years.</p>
-<div class="arch-box">Direct API call (synchronous, point-to-point):
-  ✓ Simple, request-response, immediate feedback
-  ✓ Use when: caller needs the result, operation is &lt;100ms, failure = retry immediately
-  ✗ Tight coupling: if downstream is down, upstream fails
-  ✗ No buffering: traffic spike propagates directly to consumer
-  → Examples: user login validation, inventory check before checkout
-
-Message queue (async, point-to-point):
-  ✓ Decouples producer from consumer availability
-  ✓ Natural load levelling (workers drain at their own pace)
-  ✓ Use when: task can be deferred, producer shouldn't wait, work is heavy
-  ✗ Not real-time; adds latency (ms to seconds)
-  → Examples: send email, resize image, process payment confirmation
-  → Tools: SQS, RabbitMQ, Celery
-
-Event streaming (pub/sub, many consumers):
-  ✓ Multiple independent consumers process same event
-  ✓ Replay: process historical events for new consumers
-  ✓ Use when: audit log, fan-out, event sourcing, real-time analytics
-  ✗ Higher operational complexity (Kafka cluster management)
-  → Examples: order events consumed by inventory + analytics + notifications
-  → Tools: Kafka, Kinesis, Pub/Sub</div>
-<div class="tip"><b>Principal decision rule:</b> Start with synchronous API calls. When you see: retry queues appearing in code, caller blocking for long operations, fan-out to multiple consumers, or cross-team dependencies — introduce async. Don't over-engineer with Kafka before you need it.</div>`
-},
-
-{
-  n:27, tag:'tradeoffs',
-  q:'Explain database sharding strategies and their trade-offs.',
-  body:`<p>Sharding partitions data across multiple database instances. The sharding key choice is the most consequential schema decision you'll ever make.</p>
-<div class="section-title">Sharding strategies</div>
-<div class="arch-box">Range sharding:   Users A–M → Shard 1, N–Z → Shard 2
-  Pros: range queries efficient, easy to add shards at end
-  Cons: hot spots (all new users go to last shard), uneven distribution
-
-Hash sharding:    Shard = hash(user_id) % N
-  Pros: even distribution, no hot spots
-  Cons: range queries hit all shards, resharding requires moving half the data
-
-Directory sharding: lookup table maps user_id → shard_id
-  Pros: flexible redistribution, no resharding math
-  Cons: lookup table is SPOF, extra network round-trip per query
-
-Geography sharding: EU users → EU shard, US users → US shard
-  Pros: data residency compliance, lower latency for regional users
-  Cons: cross-region queries complex, uneven growth if one region grows faster</div>
-<div class="section-title">Resharding — the hard problem</div>
-<div class="cmd-list">
-<div class="cmd"># Online resharding without downtime:
-1. Add new shard (start empty)
-2. Dual-write: new writes go to old + new shard
-3. Backfill: migrate existing data from old to new shard
-4. Verify: compare checksums
-5. Cut over: reads switch to new shard
-6. Remove dual-write, decommission old shard</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Shard only when you must. Most systems never need sharding — a well-tuned PostgreSQL on high-memory hardware handles 100K+ RPS with proper indexing and read replicas. Sharding adds enormous operational complexity: cross-shard joins become application logic, distributed transactions across shards require Sagas, and resharding can take months. Consider Vitess (MySQL) or Citus (PostgreSQL) before rolling your own sharding.</div>`
-},
-
-{
-  n:28, tag:'tradeoffs',
-  q:'Design a leader election system for distributed coordination.',
-  body:`<p>Leader election ensures exactly one node acts as coordinator. Required for: primary DB selection, distributed cron (run job once), cluster membership.</p>
-<div class="section-title">Option 1: etcd / Zookeeper (purpose-built)</div>
-<div class="cmd-list">
-<div class="cmd"># etcd lease-based leader election
-import etcd3
-
-client = etcd3.client()
-# Try to acquire lease (TTL = 10s — leader must renew every 5s)
-lease = client.lease(ttl=10)
-
-# Atomic write: only succeeds if key doesn't exist
-success, _ = client.transaction(
-    compare=[client.transactions.version('/election/leader') == 0],
-    success=[client.transactions.put('/election/leader', node_id, lease=lease)],
-    failure=[]
-)
-if success:
-    print("I am the leader")
-    # Keep renewing lease — stop renewing = abdicate leadership
-    while True:
-        lease.refresh()
-        time.sleep(5)</div>
-</div>
-<div class="section-title">Option 2: Redis (simpler, less reliable)</div>
-<div class="cmd-list">
-<div class="cmd"># SET NX (set if not exists) + TTL
-acquired = redis.set('leader', node_id, nx=True, ex=30)
-if acquired:
-    # Renew: must reset TTL before it expires
-    redis.expire('leader', 30)</div>
-</div>
-<div class="arch-box">Split-brain problem: two nodes think they're leader simultaneously
-  Cause: network partition — leader A can't see quorum but still holds lease
-  Solution: Raft consensus (etcd uses it)
-            — Leader needs majority vote to remain leader
-            — If A is isolated from majority, it steps down</div>
-<div class="tip"><b>Interview tip:</b> For Kubernetes: use Lease objects (leader-election library built into controller-runtime). For general use: etcd is the gold standard. Redis leader election is fine for advisory locks (best-effort) but not safe for cases where dual-leadership causes data corruption.</div>`
-},
-
-{
-  n:29, tag:'tradeoffs',
-  q:'Design a multi-tenant SaaS platform. How do you isolate tenants?',
-  body:`<p>Tenancy model choice affects: cost, isolation strength, compliance, and operational complexity. There's no universally right answer — it depends on customer tier and requirements.</p>
-<div class="arch-box">Model 1: Shared everything (silo = false)
-  One DB, one app cluster, tenant_id column on every table
-  ✓ Cheapest, easiest to operate
-  ✗ Noisy neighbour, blast radius = all tenants, compliance risk (HIPAA?)
-  → Use for: SMB SaaS, free tier, &lt;10K tenants
-
-Model 2: Shared app, separate DB per tenant
-  One app cluster, DB per tenant (separate schemas or instances)
-  ✓ Data isolation, easier compliance
-  ✗ DB sprawl (1000 tenants = 1000 DBs), connection pool explosion
-  → Use for: mid-market, regulated industries
-
-Model 3: Dedicated cluster per tenant
-  Separate Kubernetes namespace or cluster per tenant
-  ✓ Full isolation, custom configuration per tenant
-  ✗ Very expensive, high operational overhead
-  → Use for: enterprise, government, customers who require it contractually</div>
-<div class="section-title">Hybrid tiered model (recommended)</div>
-<div class="cmd-list">
-<div class="cmd">Free / Starter tier:    shared pool (Model 1), noisy neighbour acceptable
-Professional tier:      shared app + separate DB schema (Model 2)
-Enterprise tier:        dedicated namespace or cluster (Model 3)
-# Migrate tenant between tiers: move data, update routing config, no app code change</div>
-</div>
-<div class="tip"><b>Principal answer:</b> Implement tenant routing at the gateway layer — every request carries tenant_id (from JWT or subdomain). Gateway resolves tenant_id → connection string → routes to correct DB. App code never deals with routing. This makes tier migration transparent to the application.</div>`
-},
-
-{
-  n:30, tag:'tradeoffs',
-  q:'You inherit a monolith. How do you migrate it to microservices safely?',
-  body:`<p>The strangler fig pattern: gradually extract services from the monolith without a big-bang rewrite. The monolith keeps running and shrinks over time.</p>
-<div class="arch-box">Phase 1: Observe (month 1–2)
-  Map the monolith: bounded contexts, DB tables, traffic patterns
-  Identify extraction candidates: high-change rate, clear boundaries, team ownership
-  Add instrumentation: trace every module call (basis for SLO baseline)
-
-Phase 2: Strangle at the edges (month 3–9)
-  Extract peripheral services first (auth, notifications, image resizing)
-  Use API gateway to route: /auth → new service, everything else → monolith
-  Share the DB initially — acceptable short-term compromise
-
-Phase 3: Extract core services (month 9–18)
-  Separate DB per service (Database Decomposition pattern)
-  Dual-write during transition → cut over → remove monolith path
-  Beware: distributed joins now need API calls or data denormalisation
-
-Phase 4: Retire monolith (month 18–24)
-  Shell is empty — decommission</div>
-<div class="section-title">What makes migrations fail</div>
-<div class="cmd-list">
-<div class="cmd">✗ Big bang rewrite (6 months, then nobody uses the new system)
-✗ Extracting too many services simultaneously (coordination overhead explodes)
-✗ Shared DB for too long (services can't evolve schemas independently)
-✗ No SLO baseline before extraction (can't tell if new service is worse)
-✗ Wrong first extraction (core transactional service → high risk)</div>
-</div>
-<div class="tip"><b>Principal answer:</b> The decision to migrate should be driven by pain, not hype. If the monolith deploys weekly with a 5-person team and has 99.9% uptime — don't migrate. Migrate when: deploy takes 2+ hours blocking all teams, a bug in billing affects the feed algorithm, or you need to scale one component 10× without scaling all. Team topology (Conway's Law) should drive service boundaries, not technical architecture.</div>`
-},
-
-]; // end QS
-
-/* ── render ─────────────────────────────────── */
+/* ── render cards ────────────────────────── */
 (function(){
   var list = document.getElementById('q-list');
   QS.forEach(function(q){
@@ -1268,7 +412,7 @@ Phase 4: Retire monolith (month 18–24)
     card.innerHTML =
       '<div class="q-header" onclick="toggleQ(' + q.n + ')">' +
         '<span class="q-num">' + q.n + '.</span>' +
-        '<span class="q-title">' + q.q + '</span>' +
+        '<span class="q-title">' + escHtml(q.q) + '</span>' +
         '<div class="q-right">' +
           '<span class="badge ' + q.tag + '">' + q.tag + '</span>' +
           '<span class="chevron" id="c' + q.n + '">&#9660;</span>' +
@@ -1280,7 +424,11 @@ Phase 4: Retire monolith (month 18–24)
   document.getElementById('count-bar').textContent = 'Showing ' + QS.length + ' questions';
 })();
 
-/* ── interactions ───────────────────────────── */
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── toggle Q ────────────────────────────── */
 var openCount = 0;
 function toggleQ(id){
   var body = document.getElementById('b'+id);
@@ -1290,6 +438,7 @@ function toggleQ(id){
   if(isOpen){ openCount++; document.getElementById('open-count').textContent = openCount; }
 }
 
+/* ── filter ──────────────────────────────── */
 var activeFilter = 'all';
 function setFilter(f, el){
   activeFilter = f;
@@ -1305,16 +454,16 @@ function filterQs(){
     var title = c.querySelector('.q-title').textContent.toLowerCase();
     var body  = c.querySelector('.q-body') ? c.querySelector('.q-body').textContent.toLowerCase() : '';
     var tag   = c.getAttribute('data-tag') || '';
-    var ok = (!q || title.indexOf(q) !== -1 || body.indexOf(q) !== -1) &&
-             (activeFilter === 'all' || tag === activeFilter);
+    var ok = (!q || title.indexOf(q)!==-1 || body.indexOf(q)!==-1) &&
+             (activeFilter==='all' || tag===activeFilter);
     c.style.display = ok ? '' : 'none';
     if(ok) shown++;
   });
   document.getElementById('count-bar').textContent =
-    'Showing ' + shown + ' question' + (shown !== 1 ? 's' : '');
+    'Showing ' + shown + ' question' + (shown!==1 ? 's' : '');
 }
 
-/* ── interview mode ─────────────────────────── */
+/* ── interview mode ──────────────────────── */
 var fmQs=[], fmIdx=0, fmGot=0, fmMiss=0;
 function fmStart(){
   var all = document.querySelectorAll('.q-card');
@@ -1327,31 +476,29 @@ function fmStart(){
     });
   });
   fmQs.sort(function(){ return Math.random() - .5; });
-  fmIdx = 0; fmGot = 0; fmMiss = 0;
+  fmIdx=0; fmGot=0; fmMiss=0;
   document.getElementById('fm-bar').classList.add('open');
   fmShow();
 }
 function fmShow(){
   if(fmIdx >= fmQs.length){
     document.getElementById('fm-q-text').innerHTML =
-      '<span style="color:var(--accent);font-weight:700;">&#10003; Done! Score: ' + fmGot + '/' + (fmGot+fmMiss) + '</span>';
+      '<span style="color:var(--accent);font-weight:700;">&#10003; Done! Score: '+fmGot+'/'+(fmGot+fmMiss)+'</span>';
     document.getElementById('fm-answer').classList.remove('show');
-    document.getElementById('fm-reveal').style.display = 'none';
-    document.getElementById('fm-got').style.display = 'none';
-    document.getElementById('fm-miss').style.display = 'none';
+    ['fm-reveal','fm-got','fm-miss'].forEach(function(id){ document.getElementById(id).style.display='none'; });
     document.getElementById('fm-prog').style.width = '100%';
     return;
   }
   var total = fmQs.length;
-  document.getElementById('fm-meta').textContent = 'Question ' + (fmIdx+1) + ' of ' + total;
+  document.getElementById('fm-meta').textContent = 'Question '+(fmIdx+1)+' of '+total;
   document.getElementById('fm-q-text').textContent = fmQs[fmIdx].q;
   document.getElementById('fm-answer').innerHTML = fmQs[fmIdx].a;
   document.getElementById('fm-answer').classList.remove('show');
   document.getElementById('fm-reveal').style.display = '';
   document.getElementById('fm-got').style.display = 'none';
   document.getElementById('fm-miss').style.display = 'none';
-  document.getElementById('fm-score').textContent = fmGot + '/' + fmIdx + ' correct';
-  document.getElementById('fm-prog').style.width = (fmIdx/total*100) + '%';
+  document.getElementById('fm-score').textContent = fmGot+'/'+fmIdx+' correct';
+  document.getElementById('fm-prog').style.width = (fmIdx/total*100)+'%';
 }
 function fmReveal(){
   document.getElementById('fm-answer').classList.add('show');
