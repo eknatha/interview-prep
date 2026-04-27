@@ -24,6 +24,7 @@
 | 10 | Git in Production | `git_production_interview_guide.html` | 50 | Branching, recovery, CI/CD, governance |
 | 11 | Observability & Monitoring | `observability_interview_guide.html` | 30 | Prometheus, Grafana, SLOs, OTel, alerting |
 | 12 | CI/CD Pipelines | `cicd_interview_guide.html` | 30 | GitHub Actions, ArgoCD, Cloud Build, GitOps |
+| 13 | System Design | `system_design_interview_guide.html` | 30 | URL shortener, rate limiter, distributed cache, multi-region K8s, IDP |
 |  | **Total** |  | **500+** |  |
 
 ---
@@ -58,6 +59,7 @@ interview-prep/
 ├── git_production_interview_guide.html          ← 50 questions
 ├── observability_interview_guide.html           ← 30 questions
 ├── cicd_interview_guide.html                    ← 30 questions
+├── system_design_interview_guide.html           ← 30 questions
 └── README.md                                    ← this file
 ```
 
@@ -71,7 +73,7 @@ All files are standalone HTML — no build step, no dependencies, no internet re
 🚀 500+ DevOps & Platform Engineering interview questions — free, no login, works offline.
 
 Covers: Terraform · Kubernetes · GCP · AWS · Azure
-Linux · Networking · Databases · Containers · Git · CI/CD · Observability
+Linux · Networking · Databases · Containers · Git · CI/CD · Observability · System Design
 
 Features:
 🌙 Dark mode · 🃏 Flashcard interview mode with scoring · 🔍 Full-text search
