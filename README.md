@@ -4,7 +4,7 @@
 > Networking, Linux, Databases, Containers, Git, Observability, and CI/CD.
 > Free · Offline-ready · No login needed.
 
-**Live portal → <https://eknatha.github.io/interview-prep>**
+**Live portal → <https://interview-prep.eknathalabs.com/>**
 
 ---
 
@@ -80,7 +80,7 @@ Features:
 
 Real commands. Real architecture patterns. Principal-level answers.
 
-👉 https://eknatha.github.io/interview-prep
+👉 https://interview-prep.eknathalabs.com/
 
 #PlatformEngineering #DevOps #Kubernetes #Terraform #GCP #AWS
 #Linux #Observability #InterviewPrep #EknathaLabs
