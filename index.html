@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EknathaLabs — Platform & DevOps Engineering Interview Portal</title>
-<meta name="description" content="500+ production-grade interview Q&A across Terraform, Kubernetes, GCP, AWS, Azure, Networking, Linux, Databases, Containers, Git, Observability, CI/CD. Free, offline-ready.">
+<meta name="description" content="600+ production-grade interview Q&A across Terraform, Kubernetes, GCP, AWS, Azure, Networking, Linux, Databases, Containers, Git, Observability, CI/CD. Free, offline-ready.">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -173,10 +173,10 @@ footer a:hover { text-decoration: underline; }
 <div class="hero">
   <div class="pill"><span class="pill-dot"></span>Platform & DevOps Engineer Interview Prep</div>
   <h1>Crack your next<br><mark>Platform or DevOps Engineer</mark> interview</h1>
-  <p class="sub">500+ production-grade questions with real commands, architecture patterns, and Principal-level answers.</p>
+  <p class="sub">600+ production-grade questions with real commands, architecture patterns, and Principal-level answers.</p>
   <div class="counters">
-    <div class="ctr"><div class="ctr-n">500+</div><div class="ctr-l">Total questions</div></div>
-    <div class="ctr"><div class="ctr-n">13</div><div class="ctr-l">Topic guides</div></div>
+    <div class="ctr"><div class="ctr-n">600+</div><div class="ctr-l">Total questions</div></div>
+    <div class="ctr"><div class="ctr-n">15</div><div class="ctr-l">Topic guides</div></div>
     <div class="ctr"><div class="ctr-n">100%</div><div class="ctr-l">Free &amp; offline</div></div>
     <div class="ctr"><div class="ctr-n">0</div><div class="ctr-l">Login required</div></div>
   </div>
@@ -188,7 +188,7 @@ footer a:hover { text-decoration: underline; }
     <input type="text" id="search" placeholder="Search guides…" oninput="filterCards()">
   </div>
   <div class="filter-row">
-    <div class="chip on" onclick="setTag('all',this)">All (13)</div>
+    <div class="chip on" onclick="setTag('all',this)">All (15)</div>
     <div class="chip" onclick="setTag('infra',this)">Infrastructure</div>
     <div class="chip" onclick="setTag('containers',this)">Containers</div>
     <div class="chip" onclick="setTag('cloud',this)">Cloud</div>
@@ -198,7 +198,7 @@ footer a:hover { text-decoration: underline; }
 </div>
 
 <div class="section">
-  <div class="section-meta" id="meta">Showing 13 guides · 500+ questions</div>
+  <div class="section-meta" id="meta">Showing 15 guides · 600+ questions</div>
   <div class="grid" id="grid">
 
     <!-- Terraform -->
@@ -381,6 +381,35 @@ footer a:hover { text-decoration: underline; }
       </div>
     </a>
 
+    <!-- SRE Guide -->
+    <a class="card t-teal" href="sre_reliability_interview_guide.html" data-tags="ops infra">
+      <div class="card-header">
+        <div class="card-icon">&#9851;</div>
+        <span class="cbadge">40 questions</span>
+      </div>
+      <div class="card-title">SRE Reliability &amp; Incident Management <span class="new-badge">NEW</span></div>
+      <div class="card-desc">SLIs/SLOs, error budgets, burn-rate alerting, on-call rotations, incident command, blameless postmortems, toil, resilience patterns, chaos engineering, and capacity planning.</div>
+      <div class="card-tags"><span class="ctag">SLOs</span><span class="ctag">Error Budgets</span><span class="ctag">Incident</span><span class="ctag">Postmortems</span><span class="ctag">Resilience</span></div>
+      <div class="card-foot">
+        <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+        <span class="clevel lv-adv">Advanced</span>
+      </div>
+    </a>
+
+    <!-- Product Managment -->
+    <a class="card t-purp" href="product_management_interview_guide.html" data-tags="dev ops">
+      <div class="card-header">
+        <div class="card-icon">&#128202;</div>
+        <span class="cbadge">60 questions</span>
+      </div>
+      <div class="card-title">Technical / Platform PM <span class="new-badge">NEW</span></div>
+      <div class="card-desc">Platform product sense, internal-platform metrics, build-vs-buy, API design, golden paths, prioritization (RICE), influence without authority, GTM/adoption, and PM behavioral.</div>
+      <div class="card-tags"><span class="ctag">Product Sense</span><span class="ctag">Metrics</span><span class="ctag">Strategy</span><span class="ctag">RICE</span><span class="ctag">Behavioral</span></div>
+      <div class="card-foot">
+        <span class="open-btn">Open guide <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+        <span class="clevel lv-adv">Advanced</span>
+      </div>
+    </a>
     <!-- System Design -->
     <a class="card t-purp" href="system_design_interview_guide.html" data-tags="infra dev">
       <div class="card-header">
