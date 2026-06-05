@@ -1,6 +1,6 @@
 # EknathaLabs — Platform and DevOps Engineering Interview Portal
 
-> 500+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
+> 600+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
 > Networking, Linux, Databases, Containers, Git, Observability, and CI/CD.
 > Free · Offline-ready · No login needed.
 
@@ -25,7 +25,9 @@
 | 11 | Observability & Monitoring | `observability_interview_guide.html` | 30 | Prometheus, Grafana, SLOs, OTel, alerting |
 | 12 | CI/CD Pipelines | `cicd_interview_guide.html` | 30 | GitHub Actions, ArgoCD, Cloud Build, GitOps |
 | 13 | System Design | `system_design_interview_guide.html` | 30 | URL shortener, rate limiter, distributed cache, multi-region K8s, IDP |
-|  | **Total** |  | **500+** |  |
+| 14 | SRE Reliability & Incident Management | `sre_reliability_interview_guide.html` | 40 | SLOs, error budgets, burn-rate alerting, incident command, postmortems, toil, resilience, chaos, capacity |
+| 15 | Technical / Platform Product Management | `product_management_interview_guide.html` | 60 | Product sense, platform metrics, build-vs-buy, API design, RICE prioritization, GTM/adoption, PM behavioral |
+|  | **Total** |  | **600+** |  |
 
 ---
 
@@ -60,6 +62,8 @@ interview-prep/
 ├── observability_interview_guide.html           ← 30 questions
 ├── cicd_interview_guide.html                    ← 30 questions
 ├── system_design_interview_guide.html           ← 30 questions
+├── sre_reliability_interview_guide.html         ← 40 questions
+├── product_management_interview_guide.html      ← 60 questions
 └── README.md                                    ← this file
 ```
 
