@@ -1,6 +1,6 @@
 # EknathaLabs — Platform , SRE and DevOps Engineering Interview Portal
 
-> 800+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
+> 900+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
 > Networking, Linux, Databases, Containers, Git, Observability, CI/CD,
 > System Design, SRE, Platform PM, and Coding & Scripting.
 > Free  · No login needed.
@@ -69,6 +69,7 @@ interview-prep/
 ├── product_management_interview_guide.html      ← 60 questions
 ├── coding_scripting_interview_guide.html        ← 100 questions
 ├── devsecops_security_interview_guide.html      ← 100 questions
+├── behavioral_star_interview_guide.html         ← 100 questions
 └── README.md                                    ← this file
 ```
 
@@ -79,7 +80,7 @@ All files are standalone HTML — no build step, no dependencies, no internet re
 ## Share on LinkedIn
 
 ```
-🚀 800+ DevOps & Platform Engineering interview questions — free, no login, works offline.
+🚀 900+ DevOps & Platform Engineering interview questions — free, no login, works offline.
 
 Covers: Terraform · Kubernetes · GCP · AWS · Azure
 Linux · Networking · Databases · Containers · Git · CI/CD · Observability
