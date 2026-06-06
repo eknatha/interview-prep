@@ -1,8 +1,9 @@
 # EknathaLabs — Platform and DevOps Engineering Interview Portal
 
-> 600+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
-> Networking, Linux, Databases, Containers, Git, Observability, and CI/CD.
-> Free · Offline-ready · No login needed.
+> 700+ production-grade Q&A across Terraform, Kubernetes, GCP, AWS, Azure,
+> Networking, Linux, Databases, Containers, Git, Observability, CI/CD,
+> System Design, SRE, Platform PM, and Coding & Scripting.
+> Free  · No login needed.
 
 **Live portal → <https://interview-prep.eknathalabs.com/>**
 
@@ -27,7 +28,8 @@
 | 13 | System Design | `system_design_interview_guide.html` | 30 | URL shortener, rate limiter, distributed cache, multi-region K8s, IDP |
 | 14 | SRE Reliability & Incident Management | `sre_reliability_interview_guide.html` | 40 | SLOs, error budgets, burn-rate alerting, incident command, postmortems, toil, resilience, chaos, capacity |
 | 15 | Technical / Platform Product Management | `product_management_interview_guide.html` | 60 | Product sense, platform metrics, build-vs-buy, API design, RICE prioritization, GTM/adoption, PM behavioral |
-|  | **Total** |  | **600+** |  |
+| 16 | Coding & Scripting for SRE / Platform | `coding_scripting_interview_guide.html` | 100 | Bash strict-mode & awk, Python automation, algorithms for log-scale data, API pagination, K8s/cloud scripting, Go basics, live-coding walkthrough |
+|  | **Total** |  | **700+** |  |
 
 ---
 
@@ -64,6 +66,7 @@ interview-prep/
 ├── system_design_interview_guide.html           ← 30 questions
 ├── sre_reliability_interview_guide.html         ← 40 questions
 ├── product_management_interview_guide.html      ← 60 questions
+├── coding_scripting_interview_guide.html        ← 100 questions
 └── README.md                                    ← this file
 ```
 
@@ -74,10 +77,11 @@ All files are standalone HTML — no build step, no dependencies, no internet re
 ## Share on LinkedIn
 
 ```
-🚀 500+ DevOps & Platform Engineering interview questions — free, no login, works offline.
+🚀 700+ DevOps & Platform Engineering interview questions — free, no login, works offline.
 
 Covers: Terraform · Kubernetes · GCP · AWS · Azure
-Linux · Networking · Databases · Containers · Git · CI/CD · Observability · System Design
+Linux · Networking · Databases · Containers · Git · CI/CD · Observability
+System Design · SRE · Platform PM · Coding & Scripting
 
 Features:
 🌙 Dark mode · 🃏 Flashcard interview mode with scoring · 🔍 Full-text search
