@@ -1,4 +1,5 @@
-<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#185FA5;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">35 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<meta charset="utf-8">
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#185FA5;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">120 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 .wrap { padding: 1rem 0 2rem; font-family: var(--font-sans); }
@@ -162,7 +163,7 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
 </div>
 
 <div class="filters">
-  <div class="chip active" onclick="setFilter('all',this)">All (35)</div>
+  <div class="chip active" onclick="setFilter('all',this)">All (120)</div>
   <div class="chip" onclick="setFilter('pods',this)">Pods &amp; workloads</div>
   <div class="chip" onclick="setFilter('networking',this)">Networking</div>
   <div class="chip" onclick="setFilter('storage',this)">Storage</div>
@@ -174,9 +175,9 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-n n-blue">35</div><div class="stat-l">Total questions</div></div>
-  <div class="stat"><div class="stat-n n-teal">20</div><div class="stat-l">Core operations</div></div>
-  <div class="stat"><div class="stat-n n-amber">15</div><div class="stat-l">Production scenarios</div></div>
+  <div class="stat"><div class="stat-n n-blue">120</div><div class="stat-l">Total questions</div></div>
+  <div class="stat"><div class="stat-n n-teal">70</div><div class="stat-l">Core operations</div></div>
+  <div class="stat"><div class="stat-n n-amber">50</div><div class="stat-l">Production scenarios</div></div>
   <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
 </div>
 
@@ -585,6 +586,1726 @@ EOF</div>
 </div>
 <p>A Principal Platform Engineer owns: cluster lifecycle (provisioning, upgrades, capacity planning), golden paths (opinionated templates teams use to deploy safely), reliability SLOs for the platform itself, security posture enforcement, observability standards, and developer productivity metrics. The platform should make the right thing the easy thing — teams deploy to production without thinking about Kubernetes internals.</p>
 <div class='tip'><b>SonicWall context:</b> Frame your answer around mentoring — a Principal defines the standards other engineers follow. Show you think in terms of platforms and APIs, not just individual cluster operations. That's what separates a Staff/Principal from a Senior engineer.</div>`
+  },
+  { n:36, tag:'pods',
+    q:'Explain init containers vs sidecar containers. When do you use each in production?',
+    body:`<p>Both add containers to a pod beyond the main app, but they differ in lifecycle. Init containers run to completion <b>before</b> app containers start, sequentially; sidecars run <b>alongside</b> the main container for its whole life.</p>
+<div class='sec'>Init container — runs once, before app</div>
+<div class='cmds'>
+  <div class='cmd'>initContainers:
+  - name: wait-for-db
+    image: busybox
+    command: ['sh','-c','until nc -z db 5432; do sleep 2; done']</div>
+</div>
+<p>Use init containers for: waiting on a dependency, running DB migrations, fetching config/secrets, setting kernel params, cloning a git repo into a shared volume.</p>
+<div class='sec'>Sidecar — runs for the pod's lifetime</div>
+<p>Use sidecars for: log shippers, service-mesh proxies (Envoy), metrics exporters, config reloaders. Since K8s 1.28+ native sidecars are <code>initContainers</code> with <code>restartPolicy: Always</code> — they start before the app and shut down after it, fixing the old job-sidecar termination problem.</p>
+<div class='tip'><b>Interview tip:</b> The native sidecar (1.29 GA) solved two long-standing pain points: sidecars now start before the main container (so the proxy is ready first) and don't block Job completion. Mention this — it shows you track recent K8s.</div>`
+  },
+  { n:37, tag:'pods',
+    q:'What is the difference between resources.requests and resources.limits? What happens at each boundary?',
+    body:`<p>Requests are what the scheduler reserves; limits are the hard ceiling the runtime enforces. They drive scheduling, QoS class, and eviction order.</p>
+<div class='cmds'>
+  <div class='cmd'>resources:
+  requests: { cpu: "250m", memory: "256Mi" }   # scheduler reserves this
+  limits:   { cpu: "500m", memory: "512Mi" }   # hard cap</div>
+</div>
+<div class='sec'>What happens at the boundary</div>
+<p>CPU is compressible: exceeding the CPU limit <b>throttles</b> the container (CFS quota), it is not killed. Memory is incompressible: exceeding the memory limit gets the container <b>OOMKilled</b> (exit 137). Requests affect which node it lands on and the QoS class.</p>
+<div class='sec'>QoS classes (eviction priority)</div>
+<div class='cmds'>
+  <div class='cmd'>Guaranteed  : requests == limits for all resources  (evicted last)
+Burstable   : requests &lt; limits                       (evicted middle)
+BestEffort  : no requests/limits set                   (evicted first)</div>
+</div>
+<div class='warn'><b>Production gotcha:</b> Setting a CPU limit can cause latency spikes from CFS throttling even when the node has spare CPU. Many teams set CPU <i>requests</i> but omit CPU <i>limits</i> for latency-sensitive workloads, while always setting memory limits to prevent node OOM.</div>`
+  },
+  { n:38, tag:'pods',
+    q:'Walk through the full pod lifecycle and termination sequence. Why do graceful shutdowns fail?',
+    body:`<p>Understanding termination is key to zero-downtime deploys. The sequence is not just "send SIGTERM."</p>
+<div class='sec'>Termination sequence</div>
+<div class='cmds'>
+  <div class='cmd'>1. Pod marked Terminating; removed from Endpoints (stops getting new traffic)
+2. preStop hook runs (if defined)
+3. SIGTERM sent to PID 1 in each container
+4. Wait up to terminationGracePeriodSeconds (default 30s)
+5. SIGKILL if still running</div>
+</div>
+<div class='sec'>Why graceful shutdown fails</div>
+<p>The endpoint removal (step 1) and SIGTERM (step 3) happen <b>in parallel</b>, not in order — kube-proxy/ingress may still route traffic for a moment after SIGTERM. The app can get requests after it started shutting down.</p>
+<div class='cmds'>
+  <div class='cmd'>lifecycle:
+  preStop:
+    exec: { command: ["sh","-c","sleep 5"] }   # let endpoint removal propagate
+terminationGracePeriodSeconds: 45</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The classic fix is a <code>preStop</code> sleep of a few seconds so load balancers de-register the pod before SIGTERM, plus an app that handles SIGTERM by draining in-flight requests. Also ensure PID 1 actually receives SIGTERM (use an init like <code>tini</code> if your entrypoint is a shell that swallows signals).</div>`
+  },
+  { n:39, tag:'pods',
+    q:'Deployment vs StatefulSet vs DaemonSet vs Job/CronJob — when do you choose each?',
+    body:`<p>Picking the right workload controller is a common design question.</p>
+<div class='sec'>The four</div>
+<div class='cmds'>
+  <div class='cmd'>Deployment  : stateless, interchangeable replicas; rolling updates
+StatefulSet : stable identity + ordered start/stop + per-pod storage
+DaemonSet   : one pod per node (agents)
+Job/CronJob : run-to-completion / scheduled batch</div>
+</div>
+<div class='sec'>StatefulSet guarantees</div>
+<p>Stable network ID (<code>pod-0</code>, <code>pod-1</code>...), stable storage (PVC per pod via <code>volumeClaimTemplates</code>), ordered rollout and scale-down (reverse order). Use for databases, Kafka, ZooKeeper, anything needing identity or per-replica disks.</p>
+<div class='sec'>DaemonSet examples</div>
+<p>Log collectors (Fluent Bit), node monitoring (node-exporter), CNI agents, storage daemons, security agents — anything that must run on every node.</p>
+<div class='tip'><b>Interview tip:</b> A frequent trap: "can I run a database as a Deployment?" Technically yes with a single replica, but you lose stable identity and ordered operations. For HA stateful systems use a StatefulSet (or better, an operator like CloudNativePG / Strimzi that manages the StatefulSet plus failover logic).</div>`
+  },
+  { n:40, tag:'pods',
+    q:'How do liveness, readiness, and startup probes differ? What\'s the danger of a bad liveness probe?',
+    body:`<p>The three probe types serve different purposes and conflating them causes outages.</p>
+<div class='cmds'>
+  <div class='cmd'>livenessProbe   : is it alive? FAIL -&gt; restart the container
+readinessProbe  : ready for traffic? FAIL -&gt; remove from Service endpoints
+startupProbe    : has it finished booting? gates the other two for slow starters</div>
+</div>
+<div class='sec'>The danger of a bad liveness probe</div>
+<p>If a liveness probe is too aggressive (short timeout, low threshold) or depends on a downstream service, a transient blip restarts healthy containers. Under load this creates a <b>restart storm</b> — the very thing you didn't want. Liveness should check only "is this process wedged," never "is my database up."</p>
+<div class='cmds'>
+  <div class='cmd'>readinessProbe:
+  httpGet: { path: /healthz/ready, port: 8080 }
+  periodSeconds: 5
+  failureThreshold: 3
+livenessProbe:
+  httpGet: { path: /healthz/live, port: 8080 }
+  initialDelaySeconds: 15
+  failureThreshold: 3</div>
+</div>
+<div class='warn'><b>Rule:</b> Readiness can depend on dependencies (so you stop serving when DB is down); liveness must NOT — it should only detect a deadlocked process. A liveness probe that pings the DB will restart-loop your whole fleet during a DB incident.</div>`
+  },
+  { n:41, tag:'pods',
+    q:'Explain HPA, VPA, and how they conflict. How does HPA actually compute replica count?',
+    body:`<p>Horizontal Pod Autoscaler scales replica count; Vertical Pod Autoscaler adjusts requests/limits. They fight if both target CPU/memory.</p>
+<div class='sec'>HPA formula</div>
+<div class='cmds'>
+  <div class='cmd'>desiredReplicas = ceil( currentReplicas * (currentMetric / targetMetric) )
+
+# e.g. 4 pods at 80% CPU, target 50%:
+# ceil(4 * 80/50) = ceil(6.4) = 7 replicas</div>
+</div>
+<p>HPA reads metrics from <code>metrics-server</code> (resource metrics) or custom/external metrics adapters (Prometheus Adapter, KEDA). It has a stabilization window to avoid flapping and won't scale on missing metrics.</p>
+<div class='sec'>The HPA/VPA conflict</div>
+<p>Both reacting to CPU/memory will oscillate. Safe combos: HPA on CPU + VPA on memory in <code>recommendation</code>-only mode, or HPA on custom metrics (RPS, queue depth) + VPA on resources. Never both on the same signal in <code>Auto</code> mode.</p>
+<div class='tip'><b>Interview tip:</b> For event-driven scaling (queue length, Kafka lag, scale-to-zero), name <b>KEDA</b> — it extends HPA with external scalers. For node-level scaling mention Cluster Autoscaler or Karpenter. Showing the formula and the HPA/VPA conflict is what separates a real answer.</div>`
+  },
+  { n:42, tag:'scheduling',
+    q:'Explain taints, tolerations, node affinity, and pod affinity/anti-affinity with a real use case.',
+    body:`<p>These control where pods land. Taints repel; affinities attract; anti-affinity spreads.</p>
+<div class='sec'>Taints + tolerations (node repels unless pod tolerates)</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl taint nodes gpu-node-1 dedicated=gpu:NoSchedule
+# pod must tolerate to land there:
+tolerations:
+- { key: dedicated, operator: Equal, value: gpu, effect: NoSchedule }</div>
+</div>
+<p>Effects: <code>NoSchedule</code> (don't place), <code>PreferNoSchedule</code> (soft), <code>NoExecute</code> (evict existing pods too).</p>
+<div class='sec'>Node affinity (pod selects nodes) + pod anti-affinity (spread)</div>
+<div class='cmds'>
+  <div class='cmd'>affinity:
+  podAntiAffinity:           # spread replicas across nodes
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector: { matchLabels: { app: web } }
+      topologyKey: kubernetes.io/hostname</div>
+</div>
+<div class='sec'>Real use case</div>
+<p>GPU nodes tainted so only ML workloads (with tolerations + node affinity for <code>gpu=true</code>) land there. Web tier uses pod anti-affinity across <code>topology.kubernetes.io/zone</code> so a zone failure never takes all replicas.</p>
+<div class='tip'><b>Interview tip:</b> For simple even spreading prefer <code>topologySpreadConstraints</code> over anti-affinity — it scales better and supports <code>maxSkew</code>. Anti-affinity (especially <code>required</code>) can leave pods Pending if there aren't enough distinct nodes.</div>`
+  },
+  { n:43, tag:'scheduling',
+    q:'What are topologySpreadConstraints and why are they preferred over pod anti-affinity?',
+    body:`<p>Topology spread constraints distribute pods evenly across failure domains (zones, nodes) with a tunable skew, scaling far better than anti-affinity.</p>
+<div class='cmds'>
+  <div class='cmd'>topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: DoNotSchedule    # or ScheduleAnyway (soft)
+  labelSelector: { matchLabels: { app: web } }</div>
+</div>
+<div class='sec'>Why preferred over anti-affinity</div>
+<p>Pod anti-affinity is O(N^2) to evaluate (every pod checked against every other) and is binary — a pod either can or can't co-locate. Spread constraints are evaluated more efficiently and let you say "keep zones within 1 pod of each other" with <code>maxSkew</code>, giving even distribution instead of just "not together."</p>
+<div class='sec'>whenUnsatisfiable</div>
+<p><code>DoNotSchedule</code> = hard (pod stays Pending if it would violate skew); <code>ScheduleAnyway</code> = best-effort. Combine zone-level and node-level constraints for resilient placement.</p>
+<div class='warn'><b>Gotcha:</b> With <code>DoNotSchedule</code> and a cluster that lacks enough zones/nodes, pods go Pending. Use <code>ScheduleAnyway</code> for soft spreading, or ensure your node pools actually span the topology keys you reference.</div>`
+  },
+  { n:44, tag:'scheduling',
+    q:'How does the kube-scheduler decide where to place a pod? Explain the filter and score phases.',
+    body:`<p>The scheduler runs a two-phase pipeline per pending pod: filter (which nodes <i>can</i> run it) then score (which is <i>best</i>).</p>
+<div class='sec'>Filter (predicates) — eliminate infeasible nodes</div>
+<div class='cmds'>
+  <div class='cmd'>- NodeResourcesFit   : enough allocatable CPU/mem for requests?
+- NodeAffinity       : node selector / affinity match?
+- TaintToleration    : tolerates the node's taints?
+- NodeUnschedulable  : node cordoned?
+- VolumeBinding      : can required PVCs bind here?</div>
+</div>
+<div class='sec'>Score (priorities) — rank feasible nodes</div>
+<div class='cmds'>
+  <div class='cmd'>- NodeResourcesBalancedAllocation : even CPU/mem usage
+- ImageLocality                   : node already has the image
+- InterPodAffinity / TopologySpread
+- LeastAllocated vs MostAllocated  : spread vs bin-pack</div>
+</div>
+<p>Highest-scoring node wins; the pod is bound (a write to the API setting <code>nodeName</code>), then kubelet on that node starts it.</p>
+<div class='tip'><b>Interview tip:</b> Pending almost always means the <i>filter</i> phase rejected every node — <code>kubectl describe pod</code> Events shows which predicate failed (insufficient cpu, untolerated taint, no matching affinity, unbound PVC). You can customize scoring via the scheduler framework or run multiple scheduler profiles.</div>`
+  },
+  { n:45, tag:'scheduling',
+    q:'Explain PodDisruptionBudgets. How do they interact with node drains and upgrades?',
+    body:`<p>A PodDisruptionBudget limits how many pods of an app can be voluntarily disrupted at once, protecting availability during drains, upgrades, and autoscaling.</p>
+<div class='cmds'>
+  <div class='cmd'>apiVersion: policy/v1
+kind: PodDisruptionBudget
+spec:
+  minAvailable: 2        # or maxUnavailable: 1
+  selector: { matchLabels: { app: web } }</div>
+</div>
+<div class='sec'>Voluntary vs involuntary</div>
+<p>PDBs only govern <b>voluntary</b> disruptions: <code>kubectl drain</code>, cluster autoscaler scale-down, node pool upgrades. They do <b>not</b> protect against involuntary events (node crash, OOM, kernel panic).</p>
+<div class='sec'>Interaction with drains</div>
+<p><code>kubectl drain</code> uses the Eviction API, which respects PDBs. If evicting a pod would violate <code>minAvailable</code>, the eviction is blocked and the drain waits. A misconfigured PDB (e.g. <code>minAvailable</code> equal to replica count) makes drains hang forever.</p>
+<div class='warn'><b>Production gotcha:</b> <code>minAvailable: 100%</code> or a PDB on a single-replica Deployment deadlocks node maintenance — the node can never be safely drained. Always leave headroom (e.g. <code>maxUnavailable: 1</code>) and run >=2 replicas for anything with a PDB.</div>`
+  },
+  { n:46, tag:'pods',
+    q:'What is a ConfigMap vs Secret, and how do you safely roll config changes without downtime?',
+    body:`<p>ConfigMaps hold non-sensitive config; Secrets hold sensitive data (base64-encoded, not encrypted by default). Both can be mounted as volumes or injected as env vars.</p>
+<div class='sec'>Env var vs volume mount — a key difference</div>
+<p>Env vars are read <b>once at container start</b> — changing the ConfigMap does NOT update them; you must restart the pod. Volume-mounted ConfigMaps/Secrets are <b>updated in place</b> (eventually, via kubelet sync) but the app must re-read the file.</p>
+<div class='sec'>Rolling config safely</div>
+<div class='cmds'>
+  <div class='cmd'># Trigger a rollout when config changes: hash the config into an annotation
+kubectl rollout restart deployment/web        # simplest manual trigger
+# or use a checksum annotation in the pod template so the hash change rolls pods</div>
+</div>
+<div class='warn'><b>Security note:</b> Secrets are only base64-encoded in etcd by default. Enable <b>encryption at rest</b> (EncryptionConfiguration with a KMS provider) and restrict RBAC on secrets. Better: pull from an external store (Vault, cloud Secret Manager) via CSI Secrets Store or External Secrets Operator so secrets never live in etcd/git.</div>
+<div class='tip'><b>Interview tip:</b> Mention the <code>immutable: true</code> field on ConfigMaps/Secrets — it improves performance (kubelet stops watching) and prevents accidental edits; you roll a new named object instead.</div>`
+  },
+  { n:47, tag:'pods',
+    q:'How do you debug a pod that\'s running but the application inside is misbehaving (no shell in image)?',
+    body:`<p>Distroless/scratch images have no shell, so <code>kubectl exec</code> fails. Use ephemeral debug containers.</p>
+<div class='sec'>kubectl debug — ephemeral container</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl debug -it &lt;pod&gt; --image=busybox --target=&lt;container&gt; -- sh
+# shares the target container's process namespace — see its PIDs, /proc, network</div>
+</div>
+<div class='sec'>Debug a node</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl debug node/&lt;node&gt; -it --image=ubuntu   # host PID/net/IPC, /host mount</div>
+</div>
+<div class='sec'>Copy a pod with a shell for deeper work</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl debug &lt;pod&gt; -it --copy-to=debug-pod --image=nicolaka/netshoot --share-processes</div>
+</div>
+<p>Other tools: <code>kubectl logs --previous</code> for crashed instances, <code>kubectl cp</code> to pull files, <code>kubectl port-forward</code> to hit the app locally, and <code>nsenter</code>/<code>crictl</code> on the node for runtime-level inspection.</p>
+<div class='tip'><b>Interview tip:</b> <code>kubectl debug</code> with <code>--target</code> and process-namespace sharing is the modern answer for distroless images. <code>netshoot</code> is the go-to debug image (dig, curl, tcpdump, ss). This shows you operate hardened, shell-less production images.</div>`
+  },
+  { n:48, tag:'pods',
+    q:'Explain rolling update strategy parameters (maxSurge, maxUnavailable) and how to do a safe canary.',
+    body:`<p>Deployment rollout speed and safety are governed by two knobs.</p>
+<div class='cmds'>
+  <div class='cmd'>strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 25%          # extra pods above desired during rollout
+    maxUnavailable: 0      # never drop below desired (safest)</div>
+</div>
+<p><code>maxUnavailable: 0</code> + <code>maxSurge: 1</code> gives zero-downtime: a new pod must be Ready before an old one is removed. Larger surge = faster but more resource use.</p>
+<div class='sec'>Canary without extra tooling</div>
+<div class='cmds'>
+  <div class='cmd'># Run a small second Deployment with the new image + same Service selector
+# 1 canary pod alongside 9 stable -&gt; ~10% traffic, watch metrics, then promote</div>
+</div>
+<div class='sec'>Canary with tooling</div>
+<p>Argo Rollouts or Flagger give progressive delivery: automated step weights (10%->50%->100%), metric analysis, and auto-rollback on SLO breach — far safer than manual.</p>
+<div class='tip'><b>Interview tip:</b> Tie in the earlier termination point — zero-downtime needs <code>maxUnavailable: 0</code> AND readiness probes AND preStop drain. All three together. Mention DB migrations must be backward-compatible (expand/contract) since old and new pods run simultaneously mid-rollout.</div>`
+  },
+  { n:49, tag:'scheduling',
+    q:'What is pod priority and preemption? How can it cause cascading evictions?',
+    body:`<p>PriorityClasses let higher-priority pods preempt (evict) lower-priority ones when the cluster is full.</p>
+<div class='cmds'>
+  <div class='cmd'>apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata: { name: high-priority }
+value: 1000000
+globalDefault: false</div>
+</div>
+<p>When a high-priority pod can't schedule, the scheduler finds the lowest-priority pods whose removal would make room and evicts them (respecting PDBs where possible).</p>
+<div class='sec'>Cascading eviction risk</div>
+<p>If many high-priority pods arrive, they can evict a wave of low-priority pods, which then re-queue and may themselves trigger node scale-up or further churn. Misused priorities (everything "high") defeat the purpose and cause thrash.</p>
+<div class='warn'><b>Gotcha:</b> System-critical components use reserved classes <code>system-cluster-critical</code> / <code>system-node-critical</code>. Don't assign these to app workloads. Preemption can disrupt lower-priority pods even when they have PDBs if no other placement exists. Keep a sane priority hierarchy and use it sparingly.</div>
+<div class='tip'><b>Interview tip:</b> Good real use: give batch/CI jobs low priority so they yield to production traffic during spikes, and use Cluster Autoscaler with priority expander so preemption is a bridge until new nodes come online.</div>`
+  },
+  { n:50, tag:'pods',
+    q:'A pod was OOMKilled but the app\'s heap looks fine. What else could consume the memory limit?',
+    body:`<p>The cgroup memory limit counts <b>everything</b> in the container, not just your app's heap. OOMKills with a "healthy" heap usually come from overlooked memory users.</p>
+<div class='sec'>Hidden memory consumers</div>
+<div class='cmds'>
+  <div class='cmd'>- Page cache from heavy file I/O (counts toward cgroup memory)
+- Off-heap / native allocations (JNI, mmap, direct ByteBuffers in JVM)
+- tmpfs / emptyDir{medium: Memory} volumes count against the limit
+- Thread stacks (many threads x stack size)
+- The JVM/runtime itself not being container-aware (old runtimes)</div>
+</div>
+<div class='sec'>Diagnosis</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl describe pod &lt;pod&gt;            # Last State: OOMKilled, exit 137
+kubectl top pod &lt;pod&gt; --containers   # live usage
+# on node: cat /sys/fs/cgroup/memory.max  and  memory.current</div>
+</div>
+<div class='warn'><b>JVM gotcha:</b> Pre-Java 10 JVMs ignored cgroup limits and sized the heap from host RAM -&gt; instant OOM. Use a container-aware JVM and <code>-XX:MaxRAMPercentage</code>. For Node.js, set <code>--max-old-space-size</code> below the limit.</div>
+<div class='tip'><b>Interview tip:</b> Mention that <code>emptyDir</code> with <code>medium: Memory</code> and writable page cache both count against the limit — a surprising number of OOMKills are tmpfs or log files, not the heap.</div>`
+  },
+  { n:51, tag:'scheduling',
+    q:'How does the Cluster Autoscaler work, and how is Karpenter different?',
+    body:`<p>Cluster Autoscaler (CA) adds/removes <b>nodes</b> when pods can't schedule or nodes are underused. Karpenter is a newer, more flexible alternative.</p>
+<div class='sec'>Cluster Autoscaler</div>
+<p>Watches for Pending pods that fail only due to insufficient resources -&gt; scales up a node group (ASG/MIG). Scales down nodes that are underutilized and whose pods can move elsewhere (respecting PDBs, local storage, etc.). Works on fixed, pre-defined node groups.</p>
+<div class='sec'>Karpenter — group-less, just-in-time</div>
+<div class='cmds'>
+  <div class='cmd'>- No node groups: picks instance types per pending pods' actual needs
+- Faster: provisions nodes in seconds, bin-packs across instance types
+- Consolidation: actively repacks workloads onto fewer/cheaper nodes
+- Native spot handling and instance diversification</div>
+</div>
+<div class='warn'><b>Scale-down blockers:</b> CA won't remove a node running a pod without a controller, a pod with local storage, a pod that can't be moved due to PDB, or kube-system pods lacking a PDB. A single such pod can pin an expensive node up indefinitely.</div>
+<div class='tip'><b>Interview tip:</b> Karpenter's consolidation + per-pod instance selection usually cuts cost vs CA's fixed groups. Mention the scale-down blockers — they're the #1 reason "autoscaling isn't saving money."</div>`
+  },
+  { n:52, tag:'pods',
+    q:'Explain how a Service selects pods and what happens when none are Ready. How do headless Services differ?',
+    body:`<p>A Service is a stable virtual IP that load-balances to a dynamic set of pod IPs chosen by a label selector. The glue is the Endpoints/EndpointSlice object.</p>
+<div class='sec'>Selector -&gt; EndpointSlice</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl get endpointslices -l kubernetes.io/service-name=&lt;svc&gt;
+# only READY pods appear here; not-ready pods are excluded from routing</div>
+</div>
+<p>If no pods are Ready, the EndpointSlice is empty and connections fail (connection refused / timeout). This is why readiness probes matter — a failing readiness check pulls the pod from the endpoints, not the Service.</p>
+<div class='sec'>Headless Service (clusterIP: None)</div>
+<div class='cmds'>
+  <div class='cmd'>spec:
+  clusterIP: None      # no virtual IP / no proxying
+  selector: { app: db }</div>
+</div>
+<p>DNS returns the <b>individual pod IPs</b> (A records) instead of one VIP. Used with StatefulSets so clients can address specific pods (<code>db-0.db.ns.svc</code>) — essential for databases and peer discovery.</p>
+<div class='tip'><b>Interview tip:</b> Distinguish the Service types: ClusterIP (internal VIP), NodePort (port on every node), LoadBalancer (cloud LB), ExternalName (CNAME), and Headless (no VIP, direct pod DNS). Headless + StatefulSet is the standard pattern for stateful peer-aware systems.</div>`
+  },
+  { n:53, tag:'networking',
+    q:'Walk through exactly how a packet travels from one pod to another pod on a different node.',
+    body:`<p>This is the canonical CNI question. The path crosses veth pairs, the node's network namespace, and an overlay or routed fabric.</p>
+<div class='sec'>The path (pod A on node1 -&gt; pod B on node2)</div>
+<div class='cmds'>
+  <div class='cmd'>1. Pod A sends to Pod B's IP; leaves via eth0 (one end of a veth pair)
+2. Other veth end is in node1's root netns, attached to a bridge / CNI datapath
+3. Routing: node knows Pod B's IP belongs to node2's pod CIDR
+4. Encapsulation (overlay: VXLAN/Geneve) OR direct routing (no overlay)
+5. Across the node network to node2
+6. Decapsulate -&gt; node2 routes to Pod B's veth -&gt; Pod B eth0</div>
+</div>
+<div class='sec'>Overlay vs routed</div>
+<p>Overlay (Flannel VXLAN, Calico IP-in-IP): pod traffic is encapsulated; works anywhere but adds overhead. Routed/native (Calico BGP, GKE/EKS VPC-native): pod IPs are real routable addresses in the VPC; lower overhead, integrates with cloud routing.</p>
+<div class='tip'><b>Interview tip:</b> The K8s networking model requires: every pod gets its own IP, pods communicate without NAT, and nodes can reach all pods. CNI plugins implement this. Mention eBPF-based Cilium replacing kube-proxy/iptables for performance, and that the veth pair + per-node pod CIDR is the core mechanism. Knowing overlay-vs-routed trade-offs signals depth.</div>`
+  },
+  { n:54, tag:'networking',
+    q:'How does kube-proxy implement Services? Compare iptables vs IPVS vs eBPF modes.',
+    body:`<p>kube-proxy programs the node's datapath so a Service's virtual IP load-balances to backend pods. The mode determines how.</p>
+<div class='sec'>iptables mode (default historically)</div>
+<p>Installs iptables rules: Service VIP DNAT'd to a random backend pod IP. Simple and robust, but rule evaluation is O(N) — thousands of Services create huge rule chains and slow updates.</p>
+<div class='sec'>IPVS mode</div>
+<p>Uses the kernel's IPVS (hash tables) for O(1) lookup and real LB algorithms (round-robin, least-conn, etc.). Scales to thousands of Services far better than iptables.</p>
+<div class='sec'>eBPF (Cilium, kube-proxy replacement)</div>
+<div class='cmds'>
+  <div class='cmd'># Cilium can REPLACE kube-proxy entirely:
+# Service load-balancing done in eBPF at the socket/XDP layer
+# - no iptables rule explosion, lower latency, better observability</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The progression iptables -&gt; IPVS -&gt; eBPF is about scaling Service count and cutting latency. In large clusters, iptables rule churn becomes a real bottleneck (slow Service updates, CPU on rule eval). eBPF/Cilium is the modern direction — name it and explain <i>why</i> (no linear rule chains).</div>`
+  },
+  { n:55, tag:'networking',
+    q:'Explain Kubernetes DNS. How is a Service name resolved and what are common DNS failure modes?',
+    body:`<p>CoreDNS resolves Service and pod names cluster-wide. Understanding the resolution path and its pitfalls is key to debugging "intermittent" failures.</p>
+<div class='sec'>Resolution</div>
+<div class='cmds'>
+  <div class='cmd'>svc.namespace.svc.cluster.local   # fully qualified Service name
+# A pod's /etc/resolv.conf:
+search ns.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10   # the CoreDNS Service ClusterIP
+options ndots:5</div>
+</div>
+<div class='sec'>The ndots:5 performance trap</div>
+<p><code>ndots:5</code> means any name with fewer than 5 dots is first tried against every search-domain suffix. <code>api.example.com</code> (2 dots) becomes 4+ failed lookups before the real one. High-QPS apps generate massive DNS load and latency from this.</p>
+<div class='sec'>Common failure modes</div>
+<div class='cmds'>
+  <div class='cmd'>- CoreDNS pods under-resourced / not enough replicas (use autoscaler)
+- ndots:5 amplifying lookups (use FQDN with trailing dot, or NodeLocal DNSCache)
+- conntrack race on UDP (old kernels) -&gt; intermittent 5s timeouts
+- NetworkPolicy accidentally blocking egress to CoreDNS</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Name <b>NodeLocal DNSCache</b> as the standard fix — a per-node DNS cache that cuts CoreDNS load and avoids the UDP conntrack 5s-timeout bug. The <code>ndots:5</code> trap and using fully-qualified names (trailing dot) for external hosts is a classic senior optimization.</div>`
+  },
+  { n:56, tag:'networking',
+    q:'What is an Ingress vs a Service of type LoadBalancer vs the Gateway API? When use each?',
+    body:`<p>These expose workloads externally at different layers and maturity levels.</p>
+<div class='sec'>Service type LoadBalancer</div>
+<p>L4 (TCP/UDP). Provisions one cloud load balancer per Service — simple but one LB (and cost) per Service, no HTTP routing.</p>
+<div class='sec'>Ingress</div>
+<p>L7 HTTP(S) routing through a shared ingress controller (NGINX, Traefik, cloud LB). Host/path-based routing, TLS termination, one LB for many Services. The long-standing standard, but the spec is limited and vendors bolt on features via annotations.</p>
+<div class='sec'>Gateway API — the successor</div>
+<div class='cmds'>
+  <div class='cmd'># Role-oriented: GatewayClass (infra) / Gateway (cluster-op) / HTTPRoute (app dev)
+# Expressive routing (header/method/weight), protocol-aware, portable across vendors
+# Replaces annotation-soup of Ingress; supports traffic splitting natively</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Use LoadBalancer for raw TCP/non-HTTP; Ingress for HTTP routing today; and know the <b>Gateway API</b> is the future (GA, role separation, native traffic splitting and multi-protocol). Mentioning Gateway API and why it exists — to fix Ingress's expressiveness and annotation portability problems — signals current knowledge.</div>`
+  },
+  { n:57, tag:'networking',
+    q:'Explain NetworkPolicies. Why is a pod \'open\' by default and how do you implement zero-trust?',
+    body:`<p>By default, all pods can talk to all pods — the cluster is flat and open. NetworkPolicies add firewall rules, but only if the CNI enforces them.</p>
+<div class='sec'>Default-open, then default-deny</div>
+<div class='cmds'>
+  <div class='cmd'># Start zero-trust: deny all ingress in a namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny-ingress }
+spec:
+  podSelector: {}            # all pods in namespace
+  policyTypes: [Ingress]     # no ingress rules = deny all ingress</div>
+</div>
+<p>Then add explicit allow rules per app. The moment a pod is selected by any policy, it switches from allow-all to allow-only-what's-listed.</p>
+<div class='sec'>Allow specific traffic</div>
+<div class='cmds'>
+  <div class='cmd'>ingress:
+- from:
+  - podSelector: { matchLabels: { app: frontend } }
+  ports: [{ protocol: TCP, port: 8080 }]</div>
+</div>
+<div class='warn'><b>Critical:</b> NetworkPolicies are enforced by the CNI — Flannel (basic) ignores them; Calico/Cilium enforce them. A policy with no enforcing CNI is a silent no-op. Also remember to allow egress to CoreDNS (port 53) in default-deny-egress namespaces, or DNS breaks.</div>
+<div class='tip'><b>Interview tip:</b> Zero-trust = default-deny + explicit allows per flow. Cilium adds L7-aware policies (allow only <code>GET /api</code>) and identity-based rules via eBPF, going beyond the L3/L4 stock NetworkPolicy.</div>`
+  },
+  { n:58, tag:'networking',
+    q:'You have intermittent 5-second latency on some pod-to-service calls. What\'s the likely cause?',
+    body:`<p>Intermittent ~5s delays on DNS or new connections are a fingerprint of the classic conntrack/DNS race on UDP.</p>
+<div class='sec'>The root cause</div>
+<p>On older kernels, parallel DNS lookups (A and AAAA sent simultaneously over UDP) hit a race in the kernel conntrack DNAT insertion; one packet is dropped, and the client waits for the <b>5s DNS retransmit timeout</b>. The <code>ndots:5</code> setting multiplies lookups, increasing the chance.</p>
+<div class='sec'>Fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- NodeLocal DNSCache (queries go to a local cache over TCP-ish path; avoids the race)
+- single-request-reopen / use-vc in resolv.conf options
+- reduce ndots / use FQDN for external names
+- upgrade kernel (the conntrack race is fixed in newer kernels)</div>
+</div>
+<div class='sec'>How to confirm</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl exec &lt;pod&gt; -- sh -c 'time nslookup my-svc'   # ~5s = the tell
+# tcpdump on the node for DNS retransmits; check CoreDNS latency metrics</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The 5-second-exactly pattern is the giveaway — it maps to the DNS UDP retransmit timer. NodeLocal DNSCache is the canonical fix and a great thing to name. This question tests whether you've actually operated clusters, not just read docs.</div>`
+  },
+  { n:59, tag:'storage',
+    q:'Explain the PV / PVC / StorageClass model and dynamic provisioning end to end.',
+    body:`<p>Kubernetes decouples storage requests (PVC) from storage implementation (PV) via StorageClass-driven dynamic provisioning.</p>
+<div class='sec'>The objects</div>
+<div class='cmds'>
+  <div class='cmd'>StorageClass : the "type" of storage + provisioner (e.g. gp3, ssd)
+PVC          : a pod's REQUEST for storage (size, access mode, class)
+PV           : the actual provisioned volume (bound 1:1 to a PVC)</div>
+</div>
+<div class='sec'>Dynamic provisioning flow</div>
+<div class='cmds'>
+  <div class='cmd'>1. Pod references a PVC
+2. PVC names a StorageClass
+3. The CSI provisioner for that class creates a real disk (EBS/PD/etc.)
+4. A PV is created and BOUND to the PVC
+5. The volume is attached + mounted into the pod</div>
+</div>
+<div class='sec'>Access modes & binding</div>
+<p><code>ReadWriteOnce</code> (one node), <code>ReadOnlyMany</code>, <code>ReadWriteMany</code> (needs NFS/EFS-style backend), <code>ReadWriteOncePod</code> (single pod). <code>volumeBindingMode: WaitForFirstConsumer</code> delays provisioning until a pod is scheduled, so the disk lands in the right zone.</p>
+<div class='tip'><b>Interview tip:</b> The <code>WaitForFirstConsumer</code> binding mode is a key production detail — without it, a disk can be created in zone-a while the pod schedules to zone-b and can never mount it. Always use it for zonal block storage.</div>`
+  },
+  { n:60, tag:'storage',
+    q:'What is the CSI architecture? Walk through what happens when a volume is attached to a pod.',
+    body:`<p>The Container Storage Interface standardizes how K8s talks to storage backends via out-of-tree drivers. It has a controller plane and a node plane.</p>
+<div class='sec'>Components</div>
+<div class='cmds'>
+  <div class='cmd'>CSI Controller (Deployment): Provision/Delete + Attach/Detach (talks to cloud API)
+CSI Node (DaemonSet)       : Stage + Publish (mounts on the actual node)
+Sidecars: external-provisioner, external-attacher, node-driver-registrar</div>
+</div>
+<div class='sec'>Attach -&gt; mount sequence</div>
+<div class='cmds'>
+  <div class='cmd'>1. ControllerPublishVolume : attach disk to the node (cloud API call)
+2. NodeStageVolume         : format + mount to a global staging path on node
+3. NodePublishVolume       : bind-mount staging path into the pod's mount namespace</div>
+</div>
+<p>Detach reverses it on pod deletion. The split (stage once per node, publish per pod) lets multiple pods share a staged volume where allowed.</p>
+<div class='tip'><b>Interview tip:</b> CSI also enables snapshots, volume expansion, and cloning as standardized features. A common failure: a volume stuck attaching because the previous node didn't cleanly detach (force-detach / <code>VolumeAttachment</code> cleanup needed). Knowing the controller-vs-node split explains why some failures are cloud-side (attach) vs node-side (mount).</div>`
+  },
+  { n:61, tag:'storage',
+    q:'A StatefulSet pod is stuck and its PVC won\'t move to a new node. Why, and how do you resolve it?',
+    body:`<p>StatefulSet pods bind to specific PVCs and (for block storage) specific zones — that stickiness is by design but causes stuck-pod scenarios.</p>
+<div class='sec'>Why it's stuck</div>
+<div class='cmds'>
+  <div class='cmd'>- ReadWriteOnce block volume can attach to only ONE node at a time
+- If the old node died uncleanly, the volume is still "attached" to it
+- The pod can't start on a new node until the volume detaches
+- Zonal disk (EBS/PD) can only mount in its own zone -&gt; pod pinned to that zone</div>
+</div>
+<div class='sec'>Resolution</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl get volumeattachment            # find the stale attachment
+kubectl get pods -o wide                # confirm pod can't bind
+# If node is truly gone: delete the Node object so the attach-detach
+# controller force-detaches; then the pod can reschedule + mount.
+kubectl delete node &lt;dead-node&gt;</div>
+</div>
+<div class='warn'><b>Danger:</b> Never force-detach a volume that might still be written to by a live node — RWO exists to prevent two writers corrupting data. Only force-detach when you're certain the old node is dead. This is why split-brain protection matters for stateful workloads.</div>
+<div class='tip'><b>Interview tip:</b> Mention that the cloud's node-not-ready timeout (often ~6 min) gates automatic force-detach, which is why a failed-node stateful pod takes minutes to recover. For faster failover, operators (e.g. CloudNativePG) handle promotion at the app layer rather than relying on volume reattach.</div>`
+  },
+  { n:62, tag:'storage',
+    q:'How do you expand a PVC, take snapshots, and back up stateful data in Kubernetes?',
+    body:`<p>CSI standardizes volume expansion, snapshots, and (via tools) backup of stateful workloads.</p>
+<div class='sec'>Online volume expansion</div>
+<div class='cmds'>
+  <div class='cmd'># StorageClass must have allowVolumeExpansion: true
+kubectl patch pvc &lt;pvc&gt; -p '{"spec":{"resources":{"requests":{"storage":"50Gi"}}}}'
+# CSI grows the disk; filesystem resize often happens online (no pod restart on modern CSI)</div>
+</div>
+<div class='sec'>Volume snapshots</div>
+<div class='cmds'>
+  <div class='cmd'>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+spec:
+  volumeSnapshotClassName: csi-snapclass
+  source: { persistentVolumeClaimName: data-db-0 }
+# restore by creating a PVC with dataSource pointing at the snapshot</div>
+</div>
+<div class='sec'>Application-consistent backups</div>
+<p>Snapshots are crash-consistent, not app-consistent — quiesce the DB (or use its native backup) for consistency. <b>Velero</b> backs up cluster objects + PV snapshots together and restores to another cluster (DR).</p>
+<div class='warn'><b>Gotcha:</b> You can only <i>grow</i> a PVC, never shrink it. And a snapshot of a running database without flushing/locking may be unrestorable — pair CSI snapshots with the DB's own consistent-backup hooks.</div>
+<div class='tip'><b>Interview tip:</b> Name Velero for cluster-level backup/DR and stress crash-consistent vs application-consistent — the distinction interviewers look for in anyone who's restored real stateful data.</div>`
+  },
+  { n:63, tag:'networking',
+    q:'How does service mesh mTLS work in Kubernetes, and what\'s the cost of running a mesh?',
+    body:`<p>A service mesh (Istio, Linkerd) injects a sidecar proxy per pod that transparently encrypts and authenticates service-to-service traffic with mutual TLS.</p>
+<div class='sec'>How mTLS works</div>
+<div class='cmds'>
+  <div class='cmd'>- Control plane issues short-lived per-workload certs (SPIFFE identity)
+- Sidecar proxies intercept all pod traffic (via iptables/eBPF redirect)
+- Proxy A presents its cert, proxy B verifies + presents its own -&gt; mutual auth
+- Traffic encrypted in transit; app code unchanged</div>
+</div>
+<div class='sec'>What the mesh adds beyond mTLS</div>
+<p>Uniform retries/timeouts/circuit-breaking, traffic splitting (canary), L7 observability (golden signals for every call), and authorization policies — all without app changes.</p>
+<div class='sec'>The cost</div>
+<div class='cmds'>
+  <div class='cmd'>- Per-pod sidecar: extra CPU/memory + ~1 hop of latency per call
+- A control plane to operate and upgrade
+- Debugging complexity (traffic goes through proxies)
+- Overkill for a handful of services</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Be balanced: mesh gives free mTLS + observability + traffic control, but the sidecar tax (resources, latency, ops) is real. Mention <b>Linkerd</b> (lighter) vs <b>Istio</b> (feature-rich) and the move to sidecar-less / ambient / eBPF (Cilium) meshes to cut the per-pod overhead.</div>`
+  },
+  { n:64, tag:'networking',
+    q:'Explain dual-stack, IP exhaustion, and pod CIDR sizing problems at scale.',
+    body:`<p>At scale, pod/Service IP ranges become a hard constraint that must be planned up front — you can't easily resize them later.</p>
+<div class='sec'>The exhaustion problem</div>
+<div class='cmds'>
+  <div class='cmd'>- Each node gets a slice of the pod CIDR (e.g. /24 = 254 pods/node)
+- Cluster pod CIDR (e.g. /16) caps total nodes x pods-per-node
+- VPC-native clusters consume REAL VPC IPs for pods -&gt; can exhaust the VPC
+- Resizing the cluster CIDR usually means rebuilding the cluster</div>
+</div>
+<div class='sec'>Mitigations</div>
+<div class='cmds'>
+  <div class='cmd'>- Size the pod CIDR generously at creation (plan for peak nodes x density)
+- Reduce per-node max pods if IPs are tight
+- Use non-VPC-routable pod ranges / IP masquerade where appropriate
+- Secondary ranges / custom CNI IPAM to extend address space</div>
+</div>
+<div class='sec'>Dual-stack</div>
+<p>IPv4/IPv6 dual-stack assigns both families to pods/Services, easing IPv4 exhaustion. Requires CNI + cloud support and careful Service <code>ipFamilyPolicy</code> config.</p>
+<div class='tip'><b>Interview tip:</b> The headline is "CIDR sizing is a day-0 decision you can rarely undo." On EKS, the classic fix for VPC IP exhaustion is prefix delegation or custom networking; on GKE, planning the secondary ranges. Showing you'd capacity-plan IPs before cluster creation signals real scale experience.</div>`
+  },
+  { n:65, tag:'storage',
+    q:'When would you use emptyDir, hostPath, local PV, and network storage? Trade-offs of each?',
+    body:`<p>Different volume types suit different needs — ephemeral scratch vs node-local performance vs durable network storage.</p>
+<div class='sec'>The options</div>
+<div class='cmds'>
+  <div class='cmd'>emptyDir   : ephemeral, lives with the pod; gone on pod delete (scratch, cache)
+hostPath   : mounts a node directory; tied to that node; risky (security, portability)
+local PV   : node-local disk as a PV; high perf, but pod pinned to that node
+network PV : EBS/PD/NFS/Ceph; durable, survives node loss, portable across nodes</div>
+</div>
+<div class='sec'>Trade-offs</div>
+<p><b>emptyDir</b> is fast and simple but non-durable (and <code>medium: Memory</code> counts against the mem limit). <b>hostPath</b> breaks scheduling portability and is a security risk (don't use in multi-tenant). <b>local PV</b> gives NVMe-class performance for databases but loses HA — node dies, data is stranded; rely on app-level replication. <b>Network PV</b> is durable and reschedulable but slower and zone-bound.</p>
+<div class='tip'><b>Interview tip:</b> Local PV is the right call for performance-critical stateful systems that handle their own replication (Cassandra, Kafka) — you trade K8s-level durability for speed and let the app replicate. Network PV is the default for everything that needs the volume to follow the pod. Flag hostPath as a smell outside of node-agent DaemonSets.</div>`
+  },
+  { n:66, tag:'networking',
+    q:'How do you expose a gRPC or long-lived connection service correctly behind a Kubernetes LB?',
+    body:`<p>L4 load balancers and HTTP/2 (gRPC) interact badly with the default Service round-robin, causing uneven load.</p>
+<div class='sec'>The problem</div>
+<p>gRPC multiplexes many requests over one long-lived HTTP/2 connection. A connection-level (L4) LB pins that connection to one backend pod, so all requests from a client hit one pod — load is uneven, and new pods get no traffic until clients reconnect.</p>
+<div class='sec'>Fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- Use an L7 proxy that load-balances per-REQUEST (Envoy/Ingress with HTTP/2,
+  or a service mesh) instead of per-connection
+- Client-side load balancing: headless Service -&gt; client sees all pod IPs,
+  balances requests itself (gRPC name resolver + round_robin policy)
+- Periodic connection recycling (MAX_CONNECTION_AGE) to redistribute</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Scaling up a gRPC service often doesn't relieve load because existing connections never move. You must force rebalancing (request-level LB, headless+client LB, or connection max-age) — adding replicas alone does nothing.</div>
+<div class='tip'><b>Interview tip:</b> This is a favorite "have you actually run gRPC on K8s" question. The crisp answer: per-connection L4 balancing breaks HTTP/2 multiplexing; solve with request-level L7 balancing, client-side LB via headless Service, or connection age limits.</div>`
+  },
+  { n:67, tag:'storage',
+    q:'What is the Operator pattern and how does it manage stateful applications via CRDs?',
+    body:`<p>An Operator encodes human operational knowledge (deploy, backup, failover, upgrade) into a controller that reconciles a Custom Resource toward desired state.</p>
+<div class='sec'>The mechanism</div>
+<div class='cmds'>
+  <div class='cmd'>CRD: defines a new type, e.g. kind: PostgresCluster
+CR : an instance: "I want a 3-node Postgres, v16, with backups"
+Operator (controller): watches CRs -&gt; reconciles reality to match
+  (creates StatefulSet, Services, secrets, runs failover, schedules backups)</div>
+</div>
+<div class='sec'>Why for stateful apps</div>
+<p>StatefulSets give identity + storage but not application logic. An Operator adds the domain smarts: primary election, automated failover, point-in-time restore, version upgrades with data migration, scaling with rebalancing.</p>
+<div class='sec'>Examples</div>
+<p>CloudNativePG / Zalando (Postgres), Strimzi (Kafka), Elastic Operator, Prometheus Operator. The reconcile loop (observe -&gt; diff -&gt; act) is the same control-loop pattern as built-in controllers.</p>
+<div class='tip'><b>Interview tip:</b> Frame Operators as "automating the on-call runbook." The CRD extends the K8s API; the controller is just another reconcile loop. For production databases on K8s, an Operator is strongly preferred over a hand-rolled StatefulSet because it handles the hard parts — failover and backups — that raw StatefulSets don't.</div>`
+  },
+  { n:68, tag:'networking',
+    q:'How does external traffic reach a pod end-to-end (cloud LB to container)? What is externalTrafficPolicy?',
+    body:`<p>External ingress traverses a cloud LB, a node port, kube-proxy, and finally the pod. <code>externalTrafficPolicy</code> changes the hop behavior and source-IP visibility.</p>
+<div class='sec'>The path</div>
+<div class='cmds'>
+  <div class='cmd'>Internet -&gt; Cloud LB -&gt; NodePort on a node -&gt; kube-proxy -&gt; pod
+# With type=LoadBalancer, the cloud LB targets node ports across the fleet</div>
+</div>
+<div class='sec'>externalTrafficPolicy: Cluster vs Local</div>
+<div class='cmds'>
+  <div class='cmd'>Cluster (default): LB hits any node; kube-proxy may forward to a pod on ANOTHER
+  node -> extra hop, SNAT hides the real client source IP, even load
+Local: only nodes that HAVE a backend pod accept traffic; no second hop,
+  PRESERVES client source IP, but load can be uneven (depends on pod placement)</div>
+</div>
+<div class='sec'>Implications</div>
+<p><code>Local</code> preserves client IP (needed for allowlists, geo, logging) and avoids a hop, but requires the LB health check to only target nodes with pods, and pod distribution affects balance.</p>
+<div class='tip'><b>Interview tip:</b> The source-IP question is the heart of it: default <code>Cluster</code> policy SNATs and loses the client IP; switch to <code>Local</code> to preserve it (or use proxy protocol / X-Forwarded-For at L7). Knowing the extra-hop and load-balance trade-off of <code>Local</code> shows real network operations experience.</div>`
+  },
+  { n:69, tag:'storage',
+    q:'How do you run a database on Kubernetes safely? What are the real risks and mitigations?',
+    body:`<p>Running stateful databases on K8s is viable but demands care — the risks are around data safety during node/volume failures.</p>
+<div class='sec'>The real risks</div>
+<div class='cmds'>
+  <div class='cmd'>- Volume reattach delay on node failure (minutes) -&gt; downtime
+- RWO split-brain if force-detach is misused -&gt; data corruption
+- Naive rescheduling moving a pod away from its zonal disk
+- An aggressive liveness probe restarting a healthy-but-slow DB
+- etcd/control-plane issues cascading to data-plane churn</div>
+</div>
+<div class='sec'>Mitigations</div>
+<div class='cmds'>
+  <div class='cmd'>- Use an Operator (CloudNativePG, Strimzi) for failover + backups, not raw StatefulSet
+- App-level replication (>=3 replicas) so a lost node/volume isn't data loss
+- StatefulSet + headless Service + per-pod PVC + anti-affinity across zones
+- Conservative probes; PDBs; tested restore (Velero / native backups)
+- Local NVMe PV + app replication for performance-critical stores</div>
+</div>
+<div class='warn'><b>Honest take:</b> For mission-critical OLTP, many teams still use managed DBs (Cloud SQL, RDS) and keep K8s for stateless tiers. Running DBs on K8s is best when an Operator handles failover/backup and the DB replicates at the application layer.</div>
+<div class='tip'><b>Interview tip:</b> The mature answer weighs build-vs-buy: K8s-hosted DB (control, portability, cost) vs managed DB (operational safety). If on K8s, an Operator + app-level replication + tested backups are non-negotiable.</div>`
+  },
+  { n:70, tag:'security',
+    q:'Explain Kubernetes RBAC. How do Roles, ClusterRoles, and bindings actually combine?',
+    body:`<p>RBAC governs who can do what on which resources. Four objects compose: Role/ClusterRole (permissions) and RoleBinding/ClusterRoleBinding (who gets them).</p>
+<div class='sec'>The four objects</div>
+<div class='cmds'>
+  <div class='cmd'>Role               : permissions WITHIN a namespace
+ClusterRole        : cluster-wide permissions (or reusable across namespaces)
+RoleBinding        : grant a Role (or ClusterRole) to subjects in a namespace
+ClusterRoleBinding : grant a ClusterRole cluster-wide</div>
+</div>
+<div class='sec'>A subtle combination</div>
+<p>A <b>RoleBinding</b> can reference a <b>ClusterRole</b> — this grants that ClusterRole's permissions but scoped to the binding's namespace. This is how you define a permission set once (ClusterRole) and apply it per-namespace.</p>
+<div class='cmds'>
+  <div class='cmd'>rules:
+- apiGroups: [""]
+  resources: ["pods","pods/log"]
+  verbs: ["get","list","watch"]</div>
+</div>
+<div class='warn'><b>RBAC is additive only — there are no deny rules.</b> Permissions accumulate from all bindings a subject has. You restrict by granting less, never by denying. Audit with <code>kubectl auth can-i --list --as=&lt;user&gt;</code>.</div>
+<div class='tip'><b>Interview tip:</b> Least privilege: prefer namespaced Roles over ClusterRoles, bind to specific ServiceAccounts not <code>default</code>, and avoid wildcards (<code>verbs: ["*"]</code>). Mention <code>kubectl auth can-i</code> for verification — it shows you actually audit RBAC.</div>`
+  },
+  { n:71, tag:'security',
+    q:'What replaced PodSecurityPolicy? Explain Pod Security Admission and its three levels.',
+    body:`<p>PodSecurityPolicy (PSP) was removed in 1.25. Pod Security Admission (PSA) is the built-in replacement — a namespace-label-driven admission controller enforcing the Pod Security Standards.</p>
+<div class='sec'>Three standards</div>
+<div class='cmds'>
+  <div class='cmd'>privileged : unrestricted (no constraints)
+baseline   : prevents known privilege escalations (no hostNetwork, no privileged)
+restricted : hardened best-practice (non-root, drop ALL caps, seccomp, RO rootfs)</div>
+</div>
+<div class='sec'>Three modes, set via namespace labels</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl label ns prod \\
+  pod-security.kubernetes.io/enforce=restricted \\
+  pod-security.kubernetes.io/warn=restricted \\
+  pod-security.kubernetes.io/audit=restricted
+# enforce = block; warn = allow but warn; audit = log to audit only</div>
+</div>
+<p>You can enforce baseline while warning on restricted, easing migration.</p>
+<div class='warn'><b>Limitation:</b> PSA is namespace-level and coarse (3 fixed profiles). For fine-grained or custom policy (registry allowlists, required labels, specific seccomp profiles), use a policy engine — OPA Gatekeeper or Kyverno — alongside or instead of PSA.</div>
+<div class='tip'><b>Interview tip:</b> Know the timeline (PSP deprecated 1.21, removed 1.25 -&gt; PSA). The <code>restricted</code> profile maps to the hardening you'd describe anyway: runAsNonRoot, drop all capabilities, seccomp RuntimeDefault, no privilege escalation, read-only root FS.</div>`
+  },
+  { n:72, tag:'security',
+    q:'How do you harden a pod\'s securityContext for a CKS-level restricted workload?',
+    body:`<p>A hardened securityContext minimizes the blast radius if a container is compromised. This is core CKS material.</p>
+<div class='sec'>The hardened spec</div>
+<div class='cmds'>
+  <div class='cmd'>securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+  seccompProfile:
+    type: RuntimeDefault</div>
+</div>
+<div class='sec'>What each does</div>
+<div class='cmds'>
+  <div class='cmd'>runAsNonRoot            : refuse to run as UID 0
+allowPrivilegeEscalation: block setuid/gaining more privs than parent
+readOnlyRootFilesystem  : container can't write its own FS (use emptyDir for tmp)
+drop ALL capabilities   : remove all Linux caps, add back only what's needed
+seccompProfile          : restrict syscalls to the runtime default allowlist</div>
+</div>
+<div class='warn'><b>Never:</b> <code>privileged: true</code> (full host access), mounting the Docker socket, <code>hostPID/hostNetwork/hostIPC</code> unless an agent truly needs it, or running as root. Each is a container-escape vector.</div>
+<div class='tip'><b>Interview tip:</b> If the app needs to bind a low port, add <code>NET_BIND_SERVICE</code> back rather than running as root. Mention AppArmor/SELinux profiles and a read-only rootfs + writable emptyDir for <code>/tmp</code> as the standard pattern. This is exactly what the PSA <code>restricted</code> profile enforces.</div>`
+  },
+  { n:73, tag:'security',
+    q:'Explain how a container escape could happen and the layered defenses against it.',
+    body:`<p>A container is a process with namespaces + cgroups, not a VM. Escapes exploit misconfigurations or kernel bugs to reach the host.</p>
+<div class='sec'>Common escape vectors</div>
+<div class='cmds'>
+  <div class='cmd'>- privileged: true               -> near-full host access
+- Mounting the host Docker/containerd socket -> control the runtime
+- hostPath mount of / or /var    -> read/write host files
+- CAP_SYS_ADMIN and friends       -> many escape primitives
+- Kernel exploit (shared kernel)  -> break out via a vuln
+- Writable /proc or host PID ns    -> tamper with host processes</div>
+</div>
+<div class='sec'>Layered defenses (defense in depth)</div>
+<div class='cmds'>
+  <div class='cmd'>1. Don't grant privilege: drop caps, no privileged, no host mounts/namespaces
+2. seccomp + AppArmor/SELinux: restrict syscalls and file access
+3. Run as non-root + read-only rootfs
+4. Stronger isolation: gVisor (userspace kernel) or Kata (microVM) per pod
+5. Runtime detection: Falco/Tetragon alert on suspicious syscalls
+6. Patch nodes (kernel) promptly</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The headline: containers share the host kernel, so isolation is only as strong as the kernel + your constraints. For hostile multi-tenant workloads, name <b>gVisor</b> or <b>Kata Containers</b> (VM-level isolation) as the answer when namespaces aren't enough, and <b>Falco</b> for runtime threat detection.</div>`
+  },
+  { n:74, tag:'security',
+    q:'How does Workload Identity (GKE) / IRSA (EKS) work and why is it better than node service accounts?',
+    body:`<p>Workload Identity binds a Kubernetes ServiceAccount to a cloud IAM identity so pods get short-lived, scoped cloud credentials without static keys.</p>
+<div class='sec'>The mechanism</div>
+<div class='cmds'>
+  <div class='cmd'># K8s SA -> annotated to map to a cloud IAM role/SA
+# Pod requests a projected SA token (OIDC) -> exchanged for cloud creds
+# Creds are short-lived, auto-rotated, scoped to that workload's IAM role</div>
+</div>
+<div class='sec'>Why better than node SA / static keys</div>
+<div class='cmds'>
+  <div class='cmd'>Node SA       : EVERY pod on the node inherits the node's cloud permissions
+                (over-broad; a compromised pod gets node-level cloud access)
+Static keys   : long-lived secrets in env/Secret -> leak risk, manual rotation
+Workload Id   : per-pod least-privilege, no stored secret, auto-rotated</div>
+</div>
+<div class='warn'><b>Anti-pattern:</b> Giving the node's service account broad cloud IAM and relying on it for pod access — any pod (and any attacker who lands in one) gets those permissions. Disable legacy metadata access and use Workload Identity / IRSA so each workload gets only its own role.</div>
+<div class='tip'><b>Interview tip:</b> This maps directly to your earlier secrets point — Workload Identity solves the bootstrapping problem (how a pod proves who it is) without a stored secret. On EKS it's IRSA (IAM Roles for Service Accounts) via OIDC; on GKE it's Workload Identity. Per-pod least privilege is the win.</div>`
+  },
+  { n:75, tag:'security',
+    q:'What is admission control? Compare validating/mutating webhooks, OPA Gatekeeper, and Kyverno.',
+    body:`<p>Admission controllers intercept API requests after authn/authz but before persistence, to validate or mutate objects — the enforcement point for policy.</p>
+<div class='sec'>Two webhook types</div>
+<div class='cmds'>
+  <div class='cmd'>Mutating webhook   : can MODIFY the object (inject sidecar, add labels, set defaults)
+Validating webhook : can ACCEPT or REJECT (enforce policy), runs after mutating</div>
+</div>
+<div class='sec'>Policy engines</div>
+<div class='cmds'>
+  <div class='cmd'>OPA Gatekeeper : policies in Rego (powerful, steeper learning curve)
+                 ConstraintTemplates + Constraints; great for complex logic
+Kyverno        : policies as YAML/Kubernetes-native (easier to read/write)
+                 validate, mutate, generate, and verifyImages in one tool</div>
+</div>
+<div class='sec'>Typical policies</div>
+<p>Require resource limits, block <code>:latest</code> tags, enforce allowed registries, require labels/probes, disallow privileged, verify image signatures (cosign).</p>
+<div class='warn'><b>Gotcha:</b> A failing/slow validating webhook with <code>failurePolicy: Fail</code> can block ALL API writes (including system controllers) — a self-inflicted outage. Scope webhooks narrowly (namespaceSelector, objectSelector) and consider <code>failurePolicy: Ignore</code> for non-critical policies.</div>
+<div class='tip'><b>Interview tip:</b> Kyverno (YAML-native, simpler) vs Gatekeeper/OPA (Rego, more powerful) is the comparison to make. Both replace the removed PSP for custom policy and integrate supply-chain checks (image signature verification).</div>`
+  },
+  { n:76, tag:'security',
+    q:'Explain supply-chain security for containers: image scanning, signing, SBOM, and admission.',
+    body:`<p>Supply-chain security ensures only trusted, verified images run. The pillars are scanning, SBOM, signing, and admission enforcement.</p>
+<div class='sec'>The pipeline</div>
+<div class='cmds'>
+  <div class='cmd'>1. SCAN   : Trivy/Grype scan image for CVEs in build CI (fail on criticals)
+2. SBOM   : generate a Software Bill of Materials (Syft) -> know what's inside
+3. SIGN   : cosign signs the image + attestations (provenance, SLSA)
+4. ADMIT  : cluster admission verifies signature before allowing the image to run</div>
+</div>
+<div class='sec'>Admission-time verification</div>
+<div class='cmds'>
+  <div class='cmd'># Kyverno / Gatekeeper / sigstore policy-controller:
+# reject any image that is unsigned or not from an allowed registry,
+# and verify the cosign signature + SLSA provenance attestation</div>
+</div>
+<div class='sec'>Hardening the image itself</div>
+<p>Minimal/distroless base, non-root user, pinned digests (not tags), multi-stage builds to drop build tooling, no secrets baked in.</p>
+<div class='tip'><b>Interview tip:</b> Name the concrete tools: <b>Trivy/Grype</b> (scan), <b>Syft</b> (SBOM), <b>cosign/sigstore</b> (sign + verify), <b>SLSA</b> (provenance framework), and admission verification via Kyverno/policy-controller. Pinning by digest and verifying signatures at admission closes the "someone pushed a malicious :latest" gap.</div>`
+  },
+  { n:77, tag:'security',
+    q:'How do you manage secrets securely in Kubernetes beyond the built-in Secret object?',
+    body:`<p>Native Secrets are only base64-encoded in etcd and easily over-exposed. Production setups keep secrets out of etcd/git and inject them just-in-time.</p>
+<div class='sec'>Layered improvements</div>
+<div class='cmds'>
+  <div class='cmd'>1. Encryption at rest: EncryptionConfiguration with a KMS provider
+   (so etcd holds ciphertext, not base64)
+2. Tight RBAC on the secrets resource + audit access
+3. External Secrets Operator: sync from Vault/cloud Secret Manager into K8s Secrets
+4. CSI Secrets Store: mount secrets directly from Vault/cloud at pod runtime
+   (nothing persisted in etcd)
+5. Vault dynamic secrets: short-lived, per-request DB creds that auto-expire</div>
+</div>
+<div class='sec'>GitOps + secrets</div>
+<p>Never commit plaintext secrets. Use Sealed Secrets (encrypted, safe in git, decrypted in-cluster) or reference an external store via External Secrets Operator so git holds only a pointer.</p>
+<div class='warn'><b>Anti-pattern:</b> Plaintext secrets in a Git repo, in container env baked into the image, or shared across all namespaces. Any of these turns one leak into total compromise.</div>
+<div class='tip'><b>Interview tip:</b> The strongest answer mirrors your secrets-management design point: prefer dynamic, short-lived secrets (Vault) and runtime injection (CSI Secrets Store) so credentials never sit in etcd or git, and solve identity via Workload Identity rather than a stored token.</div>`
+  },
+  { n:78, tag:'security',
+    q:'Walk through securing the Kubernetes API server and control plane (CKS perspective).',
+    body:`<p>The API server is the front door to the cluster; hardening it and the control plane is foundational CKS content.</p>
+<div class='sec'>API server hardening</div>
+<div class='cmds'>
+  <div class='cmd'>- Strong authn (OIDC / cloud IAM), no anonymous auth
+- Least-privilege RBAC; no wildcard cluster-admin handouts
+- Enable audit logging (who did what, when)
+- Restrict network exposure: private control plane / authorized networks
+- Disable insecure port; TLS everywhere; rotate certs</div>
+</div>
+<div class='sec'>etcd — the crown jewels</div>
+<div class='cmds'>
+  <div class='cmd'>- Encrypt etcd at rest (KMS); etcd holds ALL cluster data + secrets
+- mTLS between API server and etcd; restrict etcd network access
+- Regular encrypted etcd backups (and test restore)</div>
+</div>
+<div class='sec'>Node + kubelet</div>
+<p>Kubelet authn/authz on (no anonymous), rotate kubelet certs, restrict kubelet API, run CIS Benchmark checks (<code>kube-bench</code>), keep nodes patched.</p>
+<div class='tip'><b>Interview tip:</b> Name <b>kube-bench</b> (CIS Benchmark) and <b>audit logging</b> explicitly. Stress that etcd is the highest-value target — its compromise = all secrets — so encryption at rest + mTLS + restricted access + tested backups are non-negotiable. On managed clusters (GKE/EKS) the provider handles much of this; know what's yours vs theirs.</div>`
+  },
+  { n:79, tag:'security',
+    q:'What runtime security threats exist after a pod is running, and how do Falco/Tetragon help?',
+    body:`<p>Build-time scanning misses runtime threats — a compromised running container behaving maliciously. Runtime security detects and responds to that.</p>
+<div class='sec'>Runtime threats</div>
+<div class='cmds'>
+  <div class='cmd'>- Reverse shell spawned in a container
+- Unexpected process execution (crypto miner, recon tools)
+- Sensitive file reads (/etc/shadow), writes to system dirs
+- Unexpected outbound network connections (C2, exfiltration)
+- Privilege escalation attempts, container escape behavior</div>
+</div>
+<div class='sec'>Falco / Tetragon</div>
+<div class='cmds'>
+  <div class='cmd'>Falco    : rules over syscalls (kernel module/eBPF) -> alert on suspicious behavior
+           e.g. "shell spawned in a container", "write below /etc"
+Tetragon : eBPF-based observability + ENFORCEMENT (can kill offending processes)</div>
+</div>
+<p>These complement, not replace, prevention: even a hardened container can be exploited via an app vuln, and runtime detection catches the post-exploitation behavior.</p>
+<div class='tip'><b>Interview tip:</b> Frame the layers: prevent (scan, sign, harden) + detect/respond (Falco/Tetragon at runtime). eBPF is the modern data source — low overhead, kernel-level visibility. Tetragon's ability to enforce (kill the process) not just alert is a notable distinction to mention.</div>`
+  },
+  { n:80, tag:'security',
+    q:'How do you implement multi-tenancy securely in a shared cluster? What are the isolation boundaries?',
+    body:`<p>Multi-tenancy on one cluster trades cost-efficiency for weaker isolation than separate clusters. You stack namespace-level controls to approximate isolation.</p>
+<div class='sec'>Isolation layers per tenant</div>
+<div class='cmds'>
+  <div class='cmd'>Namespace        : the basic boundary (one+ per tenant)
+RBAC             : tenant SAs scoped to their namespaces only
+ResourceQuota    : cap CPU/mem/object counts per namespace (noisy-neighbor)
+LimitRange       : default + max requests/limits per pod
+NetworkPolicy    : default-deny cross-namespace traffic
+PSA / policy     : enforce restricted pod security per namespace
+Node isolation   : taints + RuntimeClass (gVisor/Kata) for hostile tenants</div>
+</div>
+<div class='sec'>The hard truth about the boundary</div>
+<p>Namespaces are NOT a hard security boundary — they share the same kernel, control plane, and (by default) nodes. A kernel exploit or control-plane bug crosses namespaces.</p>
+<div class='warn'><b>When soft multi-tenancy isn't enough:</b> For untrusted/hostile tenants, use separate clusters, dedicated node pools per tenant (taints + node affinity), and sandboxed runtimes (gVisor/Kata). "Hard" multi-tenancy of untrusted code on shared nodes is genuinely difficult.</div>
+<div class='tip'><b>Interview tip:</b> Distinguish soft multi-tenancy (trusted internal teams — namespace + quota + RBAC + NetworkPolicy suffices) from hard multi-tenancy (untrusted — separate clusters or VM-isolated runtimes). Stating that a namespace is not a security boundary is the senior insight.</div>`
+  },
+  { n:81, tag:'security',
+    q:'Explain ServiceAccount tokens, token projection, and why auto-mounting can be a risk.',
+    body:`<p>Every pod gets a ServiceAccount; its token authenticates to the API server. Mismanaged, it's an easy lateral-movement path.</p>
+<div class='sec'>The risk of auto-mount</div>
+<div class='cmds'>
+  <div class='cmd'># By default the SA token is mounted into every pod at:
+/var/run/secrets/kubernetes.io/serviceaccount/token
+# If the pod doesn't need the API, that's an unnecessary credential an
+# attacker can steal to talk to the API server with the SA's RBAC.</div>
+</div>
+<div class='sec'>Mitigations</div>
+<div class='cmds'>
+  <div class='cmd'>automountServiceAccountToken: false   # on the SA or the pod, if API access unneeded
+# Use bound, projected tokens (default in 1.22+): short-lived, audience-scoped,
+# auto-rotated -- vs the old never-expiring Secret-based tokens.</div>
+</div>
+<div class='sec'>Bound service account tokens</div>
+<p>Modern tokens are time-bound, audience-bound, and tied to the pod's lifetime (projected volume), so a leaked token expires and can't be replayed elsewhere — unlike legacy long-lived Secret tokens.</p>
+<div class='tip'><b>Interview tip:</b> Two crisp points: (1) disable token auto-mount for pods that don't call the API (least privilege), and (2) bound/projected tokens (1.22+) replaced the old non-expiring Secret tokens, shrinking the blast radius of a leak. Pair with tight RBAC on the SA so even a stolen token does little.</div>`
+  },
+  { n:82, tag:'security',
+    q:'A CVE drops for your base image fleet-wide. Walk through your response process.',
+    body:`<p>This tests incident process for supply-chain/runtime vulnerabilities — triage, assess, remediate, verify.</p>
+<div class='sec'>1. Triage / assess exposure</div>
+<div class='cmds'>
+  <div class='cmd'>- Is it exploitable in our context? (network-reachable? privileged? present in the path?)
+- Inventory affected images via SBOMs / registry scan (Trivy across all images)
+- Severity + exploit availability -> prioritize</div>
+</div>
+<div class='sec'>2. Contain (if actively exploited)</div>
+<div class='cmds'>
+  <div class='cmd'>- NetworkPolicy to limit blast radius, or scale down exposed services
+- Runtime detection (Falco) for exploitation signs
+- Admission rule to block the vulnerable image from new scheduling</div>
+</div>
+<div class='sec'>3. Remediate + roll out</div>
+<div class='cmds'>
+  <div class='cmd'>- Patch base image, rebuild, rescan to confirm fixed
+- Roll out via normal CD (canary -> fleet), backward-compatible
+- For urgent: prioritized rollout of the most-exposed services first</div>
+</div>
+<div class='sec'>4. Verify + prevent recurrence</div>
+<p>Re-scan the fleet to confirm zero affected images remain; add/enforce the CVE gate in CI; consider digest pinning and signed images.</p>
+<div class='tip'><b>Interview tip:</b> Lead with <b>exposure assessment</b> — not every critical CVE is reachable in your setup, and triage prevents a needless fire drill. SBOMs make "which images are affected" answerable in minutes instead of days; mention them as the reason you can respond fast.</div>`
+  },
+  { n:83, tag:'security',
+    q:'What\'s the difference between authentication, authorization, and admission in the API request flow?',
+    body:`<p>Every API request passes through three sequential gates. Knowing the order clarifies where a given control lives.</p>
+<div class='sec'>The request pipeline</div>
+<div class='cmds'>
+  <div class='cmd'>Request -> [1 AuthN] -> [2 AuthZ] -> [3 Admission] -> persisted to etcd
+
+1. Authentication : WHO are you? (certs, OIDC tokens, SA tokens, cloud IAM)
+2. Authorization  : are you ALLOWED? (RBAC / ABAC / Webhook / Node authorizer)
+3. Admission      : SHOULD this specific object be allowed/mutated?
+                    (mutating webhooks, then validating webhooks/PSA/policy)</div>
+</div>
+<div class='sec'>Where controls live</div>
+<div class='cmds'>
+  <div class='cmd'>"User X can't authenticate"        -> AuthN (bad/expired cert or token)
+"User X forbidden to list pods"     -> AuthZ (RBAC missing the verb)
+"Pod rejected: must run non-root"   -> Admission (PSA/policy engine)
+"Sidecar auto-injected"             -> Admission (mutating webhook)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The crisp framing: authN = identity, authZ = permission, admission = policy on the object itself. Mutating admission runs before validating admission. This mental model lets you instantly place where any security control or failure belongs — a clean way to structure a security answer.</div>`
+  },
+  { n:84, tag:'security',
+    q:'How do you scan and harden a cluster against the CIS Benchmark? What does kube-bench check?',
+    body:`<p>The CIS Kubernetes Benchmark is the standard hardening checklist; <code>kube-bench</code> automates checking a cluster against it.</p>
+<div class='sec'>What kube-bench checks</div>
+<div class='cmds'>
+  <div class='cmd'>- Control plane component flags (api-server, controller-manager, scheduler, etcd)
+- File permissions/ownership of config files and certs
+- kubelet configuration (anonymous auth off, authz mode, cert rotation)
+- etcd encryption + TLS settings
+- Logging/auditing enabled</div>
+</div>
+<div class='sec'>Running it</div>
+<div class='cmds'>
+  <div class='cmd'>kube-bench run --targets master,node,etcd,policies
+# outputs PASS/FAIL/WARN per CIS control with remediation steps</div>
+</div>
+<div class='sec'>Managed vs self-managed</div>
+<p>On GKE/EKS/AKS the provider hardens the control plane (you can't set those flags), so node/policy checks are your responsibility. On self-managed (kubeadm), you own all of it.</p>
+<div class='tip'><b>Interview tip:</b> Pair <b>kube-bench</b> (CIS config hardening) with <b>kube-hunter</b> (active pen-test of the cluster) and Trivy (workload/image scanning) for a full posture check. Knowing that managed clusters shift control-plane checks to the provider — and what remains yours (nodes, RBAC, policies, workloads) — shows real operational understanding.</div>`
+  },
+  { n:85, tag:'security',
+    q:'Explain seccomp, AppArmor, and SELinux in the context of containers. When use each?',
+    body:`<p>These are Linux kernel security modules that constrain what a container can do — defense in depth below the K8s layer.</p>
+<div class='sec'>The three</div>
+<div class='cmds'>
+  <div class='cmd'>seccomp   : filters which SYSCALLS a process may make (allowlist/denylist)
+AppArmor  : path-based MAC -> restrict file access, capabilities, network per profile
+SELinux   : label-based MAC -> enforce policy via security labels on processes/files</div>
+</div>
+<div class='sec'>In Kubernetes</div>
+<div class='cmds'>
+  <div class='cmd'>securityContext:
+  seccompProfile: { type: RuntimeDefault }   # blocks ~dangerous syscalls
+# AppArmor via annotation/profile; SELinux via seLinuxOptions</div>
+</div>
+<p><code>RuntimeDefault</code> seccomp blocks dozens of rarely-needed, dangerous syscalls with near-zero effort — the easiest high-value hardening. Custom profiles tighten further but need testing (a missing syscall crashes the app).</p>
+<div class='sec'>When each</div>
+<p>seccomp: always enable RuntimeDefault as a baseline. AppArmor: Debian/Ubuntu nodes, path-based file/cap restriction. SELinux: RHEL/CoreOS nodes, label-based enforcement (default on OpenShift).</p>
+<div class='tip'><b>Interview tip:</b> The pragmatic answer: turn on <code>seccompProfile: RuntimeDefault</code> everywhere (huge win, trivial cost), then layer AppArmor or SELinux depending on your node OS. These operate at the kernel boundary, complementing RBAC/NetworkPolicy which operate at the K8s API/network layers.</div>`
+  },
+  { n:86, tag:'security',
+    q:'How would you detect and respond to a compromised pod that\'s mining crypto or beaconing out?',
+    body:`<p>This blends runtime detection, network controls, and incident response — a realistic security scenario.</p>
+<div class='sec'>Detection signals</div>
+<div class='cmds'>
+  <div class='cmd'>- CPU pegged at 100% with no legitimate workload change (mining)
+- Unexpected outbound connections to unknown IPs/pools (beaconing/C2)
+- Falco alerts: unexpected process spawn, shell in container, outbound to mining pool
+- New processes not in the image; writes to unexpected paths</div>
+</div>
+<div class='sec'>Response</div>
+<div class='cmds'>
+  <div class='cmd'>1. Isolate: apply a deny-all NetworkPolicy to the pod (cut C2/exfil)
+2. Preserve: snapshot for forensics BEFORE killing (capture evidence)
+3. Cordon the node if escape suspected; check for lateral movement
+4. Terminate the pod; rotate any credentials it could access (SA token, secrets)
+5. Root cause: which CVE / misconfig / leaked cred let them in?
+6. Remediate the entry vector; redeploy clean; verify</div>
+</div>
+<div class='sec'>Prevention going forward</div>
+<p>Egress NetworkPolicies (default-deny egress stops beaconing), runtime detection (Falco/Tetragon), least-privilege SA + tight RBAC so a compromised pod can't pivot, hardened securityContext to limit escape.</p>
+<div class='tip'><b>Interview tip:</b> Order matters: <b>isolate (network) and preserve evidence before you kill the pod</b> — terminating first destroys forensics and the attacker may have persistence elsewhere. Then rotate credentials the pod could reach and hunt for lateral movement. Egress controls are the prevention headline: default-deny egress would have blocked the beaconing outright.</div>`
+  },
+  { n:87, tag:'observability',
+    q:'How do you monitor a Kubernetes cluster? What are the layers and the key metrics at each?',
+    body:`<p>Cluster monitoring spans several layers; each has signals you must watch. Prometheus + Grafana is the de-facto stack.</p>
+<div class='sec'>The layers</div>
+<div class='cmds'>
+  <div class='cmd'>Cluster/control plane : apiserver latency, etcd health, scheduler/controller queues
+Nodes                 : CPU/mem/disk/network, node conditions, kubelet health
+Workloads             : pod restarts, OOMKills, readiness, HPA behavior
+Application           : RED (rate, errors, duration) / golden signals
+Kubernetes objects    : kube-state-metrics (deployment replicas, PVC status...)</div>
+</div>
+<div class='sec'>Where metrics come from</div>
+<div class='cmds'>
+  <div class='cmd'>node-exporter        : node-level OS metrics
+kube-state-metrics   : object state (desired vs ready replicas, pod phase)
+cAdvisor (in kubelet): per-container resource usage
+metrics-server       : live CPU/mem for HPA + kubectl top
+app /metrics         : your service's RED metrics (instrumented)</div>
+</div>
+<div class='sec'>Key alerts</div>
+<p>Pods crash-looping, nodes NotReady, PVCs near full, HPA at max replicas, apiserver/etcd latency high, certificate expiry, persistent OOMKills.</p>
+<div class='tip'><b>Interview tip:</b> Structure the answer by layer and cite the exporters by name (node-exporter, kube-state-metrics, cAdvisor) — that specificity shows hands-on monitoring experience. Tie app monitoring to RED/golden signals and mention kube-prometheus-stack as the batteries-included Helm chart.</div>`
+  },
+  { n:88, tag:'observability',
+    q:'Explain how Prometheus discovers and scrapes targets in Kubernetes. What is ServiceMonitor?',
+    body:`<p>Prometheus uses Kubernetes service discovery to find scrape targets dynamically as pods come and go.</p>
+<div class='sec'>Service discovery + scraping</div>
+<div class='cmds'>
+  <div class='cmd'># Prometheus watches the K8s API for pods/services/endpoints
+# kubernetes_sd_configs roles: pod, service, endpoints, node, ingress
+# Relabeling picks which targets to scrape and rewrites labels
+# Then it pulls /metrics from each target on an interval</div>
+</div>
+<div class='sec'>Prometheus Operator: ServiceMonitor / PodMonitor</div>
+<div class='cmds'>
+  <div class='cmd'>apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+spec:
+  selector: { matchLabels: { app: web } }
+  endpoints:
+  - { port: metrics, interval: 30s, path: /metrics }</div>
+</div>
+<p>The Operator turns ServiceMonitor/PodMonitor CRDs into Prometheus scrape config automatically — you declare "scrape services with this label" instead of editing prometheus.yml.</p>
+<div class='warn'><b>Scale gotcha:</b> Pull model + high-cardinality labels (per-pod, per-request-id) explode memory and TSDB size. Keep label cardinality bounded. For huge fleets use sharding/federation or a remote-write backend (Thanos, Mimir, Cortex) for long-term storage and global query.</div>
+<div class='tip'><b>Interview tip:</b> Explain relabeling as the filter mechanism, ServiceMonitor as the declarative Operator-native way to register scrape targets, and cardinality as the #1 thing that kills Prometheus — mirroring the TSDB cardinality point from system design.</div>`
+  },
+  { n:89, tag:'observability',
+    q:'What are the three pillars of observability and how do you implement them in Kubernetes?',
+    body:`<p>Metrics, logs, and traces together let you understand and debug a distributed system. Each answers a different question.</p>
+<div class='sec'>The three pillars</div>
+<div class='cmds'>
+  <div class='cmd'>Metrics : what & how much (aggregates, alerting)  -> Prometheus
+Logs    : what happened (discrete events, detail)  -> Loki / ELK / Cloud Logging
+Traces  : where & why slow (request path)          -> Jaeger / Tempo / OTel</div>
+</div>
+<div class='sec'>Implementation in K8s</div>
+<div class='cmds'>
+  <div class='cmd'>Metrics : Prometheus scrapes /metrics; Grafana dashboards; Alertmanager
+Logs    : DaemonSet collector (Fluent Bit/Promtail) tails container stdout
+          -> ships to Loki/Elasticsearch (don't write logs to pod disk)
+Traces  : OpenTelemetry SDK/collector; propagate trace context across services</div>
+</div>
+<div class='sec'>The glue: correlation</div>
+<p>Propagate a trace/correlation ID through all services and include it in logs + spans, so you can pivot metric alert -&gt; trace (which hop) -&gt; logs (root cause).</p>
+<div class='tip'><b>Interview tip:</b> Stress the workflow: a metric alert tells you something's wrong, a trace localizes the slow service, logs give the why — and correlation IDs tie them together. Name <b>OpenTelemetry</b> as the vendor-neutral instrumentation standard and that container logs should go to stdout for a DaemonSet collector, never to files on the pod.</div>`
+  },
+  { n:90, tag:'observability',
+    q:'How do you do centralized logging in Kubernetes? Why not write logs to files in the pod?',
+    body:`<p>Containers are ephemeral, so logs must leave the pod immediately. The standard pattern is stdout -&gt; node collector -&gt; central store.</p>
+<div class='sec'>The pattern</div>
+<div class='cmds'>
+  <div class='cmd'>App -> stdout/stderr
+  -> container runtime writes to /var/log/containers/*.log on the node
+  -> DaemonSet collector (Fluent Bit / Fluentd / Promtail) tails those
+  -> ships to Loki / Elasticsearch / Cloud Logging
+  -> Grafana / Kibana to query</div>
+</div>
+<div class='sec'>Why NOT log to a file in the pod</div>
+<div class='cmds'>
+  <div class='cmd'>- Pod deleted -> logs gone (ephemeral filesystem)
+- Files count against the container's storage/memory (emptyDir)
+- No central search; can't correlate across pods
+- Log rotation inside the container is fragile</div>
+</div>
+<div class='sec'>Enrichment</div>
+<p>The collector adds K8s metadata (namespace, pod, labels, node) so you can filter logs by workload. Use structured (JSON) logs for queryability.</p>
+<div class='tip'><b>Interview tip:</b> "Log to stdout, let a DaemonSet ship it" is the canonical answer. Mention Loki (label-indexed, cheaper, pairs with Grafana) vs the EFK/ELK stack (full-text, heavier). The key principle: treat logs as a stream that leaves the pod instantly, never as files on ephemeral storage.</div>`
+  },
+  { n:91, tag:'observability',
+    q:'How do you define SLOs and alert on them for a Kubernetes service? Explain burn-rate alerting.',
+    body:`<p>SLOs turn reliability into a measurable target; burn-rate alerting fires on the <i>rate</i> of error-budget consumption, not raw thresholds.</p>
+<div class='sec'>SLI / SLO / error budget</div>
+<div class='cmds'>
+  <div class='cmd'>SLI          : the measured signal (e.g. % of requests &lt; 300ms and 2xx/3xx)
+SLO          : the target (e.g. 99.9% success over 30 days)
+Error budget : 100% - SLO = 0.1% of requests may fail in the window</div>
+</div>
+<div class='sec'>Why burn-rate beats static thresholds</div>
+<p>Alerting "error rate &gt; 1%" is noisy (fires on harmless blips) or slow. Burn-rate measures how fast you're spending the error budget: a fast burn (budget gone in hours) pages immediately; a slow burn (budget gone in days) is a ticket.</p>
+<div class='cmds'>
+  <div class='cmd'># Multi-window, multi-burn-rate (Google SRE):
+# fast: 14.4x burn over 1h  -> page (budget exhausts in ~2 days at this rate)
+# slow: 3x burn over 6h     -> ticket
+# Requires BOTH a short and long window to fire (avoids flapping)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Burn-rate, multi-window alerting (from the Google SRE book) is the senior answer — it ties alert urgency to budget impact, cutting noise while catching real fast-burn incidents quickly. Implement SLIs as Prometheus recording rules and alerts in Alertmanager.</div>`
+  },
+  { n:92, tag:'cluster',
+    q:'Walk through what happens when a node goes NotReady. What\'s the timeline to pod rescheduling?',
+    body:`<p>Node failure recovery has a deliberately conservative timeline to avoid flapping — knowing it explains why recovery "takes minutes."</p>
+<div class='sec'>The timeline</div>
+<div class='cmds'>
+  <div class='cmd'>1. kubelet stops posting heartbeats (node lease)
+2. After ~40s (node-monitor-grace-period) node -> NotReady
+3. Node controller waits ~5min (pod eviction timeout) before evicting
+4. Pods marked for deletion; controllers (Deployment/RS) create replacements elsewhere
+5. For StatefulSet + RWO volume: must detach from dead node first (more delay)</div>
+</div>
+<div class='sec'>Why so slow on purpose</div>
+<p>Aggressive eviction on a brief network blip would cause needless churn and double-scheduling. The grace periods trade recovery speed for stability.</p>
+<div class='sec'>Speeding it up where needed</div>
+<div class='cmds'>
+  <div class='cmd'>- Tune node-monitor / eviction timeouts (carefully)
+- Run enough replicas across nodes/zones so one node loss = no outage
+- For stateful: app-level replication/failover beats waiting for volume reattach</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The honest takeaway: K8s self-heals node failure in <i>minutes</i>, not seconds, because of intentional grace periods — so availability comes from running redundant replicas across failure domains, not from fast rescheduling. Stateful workloads are slower still due to volume detach; that's why operators handle failover at the app layer.</div>`
+  },
+  { n:93, tag:'cluster',
+    q:'How do you upgrade a Kubernetes cluster safely with zero downtime? Control plane and nodes.',
+    body:`<p>Cluster upgrades follow version-skew rules and a control-plane-first, then-nodes order, draining nodes gracefully.</p>
+<div class='sec'>Order + skew rules</div>
+<div class='cmds'>
+  <div class='cmd'>1. Upgrade control plane first (api-server, then controller-manager/scheduler)
+2. Then nodes (kubelet) -- kubelet may be up to 3 minor versions behind apiserver
+3. One minor version at a time (no skipping, e.g. 1.28 -> 1.29 -> 1.30)
+4. Upgrade addons/CRDs as required by the new version</div>
+</div>
+<div class='sec'>Node upgrade (rolling, drained)</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl cordon &lt;node&gt;       # stop new pods
+kubectl drain &lt;node&gt; --ignore-daemonsets --delete-emptydir-data  # evict (respects PDBs)
+# upgrade kubelet / replace node, then:
+kubectl uncordon &lt;node&gt;</div>
+</div>
+<p>Managed clusters (GKE/EKS) automate this with surge upgrades — spin up new-version nodes, drain old ones, respecting PDBs.</p>
+<div class='warn'><b>Pre-flight:</b> Check deprecated/removed APIs in the target version (e.g. <code>kubectl deprecations</code> / pluto) — a removed API version breaks manifests/controllers. Verify PDBs allow draining (no single-replica deadlocks). Back up etcd first.</div>
+<div class='tip'><b>Interview tip:</b> The headline rules: control plane before nodes, one minor at a time, PDBs make drains safe, and check for removed APIs before upgrading. Zero downtime depends on the same trio as deploys — multiple replicas, readiness probes, PDBs.</div>`
+  },
+  { n:94, tag:'cluster',
+    q:'What is etcd\'s role, and how do you back up and restore it? What happens if etcd is unhealthy?',
+    body:`<p>etcd is the cluster's single source of truth — every object's desired state. Its health gates the entire control plane.</p>
+<div class='sec'>Role</div>
+<p>A distributed key-value store (Raft consensus) holding all API objects, secrets, and config. The API server is essentially a typed front-end over etcd.</p>
+<div class='sec'>Backup</div>
+<div class='cmds'>
+  <div class='cmd'>ETCDCTL_API=3 etcdctl snapshot save snapshot.db \\
+  --endpoints=https://127.0.0.1:2379 \\
+  --cacert=... --cert=... --key=...
+# store the snapshot encrypted, off-cluster; schedule regularly</div>
+</div>
+<div class='sec'>Restore</div>
+<div class='cmds'>
+  <div class='cmd'>etcdctl snapshot restore snapshot.db --data-dir /var/lib/etcd-restore
+# point etcd at the restored data dir, restart control plane</div>
+</div>
+<div class='sec'>If etcd is unhealthy</div>
+<p>Lose quorum (need majority of an odd-numbered cluster, e.g. 2 of 3) and the API becomes read-only or unavailable — no scheduling, no changes. Running pods keep running (kubelet is autonomous) but nothing can change. Disk-full or high latency on etcd degrades the whole control plane.</p>
+<div class='tip'><b>Interview tip:</b> Key facts: odd-sized etcd (3 or 5) for quorum, regular tested snapshot restores, and that a healthy data plane survives a brief control-plane/etcd outage (existing pods run) but no changes are possible. On managed clusters the provider runs etcd; on self-managed it's your most critical backup.</div>`
+  },
+  { n:95, tag:'cluster',
+    q:'How do you do capacity planning and bin-packing for a cluster? How do requests drive cost?',
+    body:`<p>Cluster cost is driven by node count, which is driven by pod <b>requests</b> (not actual usage) and how well pods bin-pack onto nodes.</p>
+<div class='sec'>Requests drive scheduling and cost</div>
+<div class='cmds'>
+  <div class='cmd'># The scheduler reserves based on REQUESTS, not real usage.
+# Over-requesting -> nodes "full" of reservations while actually idle -> wasted $$
+# Under-requesting -> overcommit -> contention, OOMKills, noisy neighbors</div>
+</div>
+<div class='sec'>Right-sizing</div>
+<div class='cmds'>
+  <div class='cmd'>- Measure actual usage (Prometheus / VPA recommendations) -> set requests to ~p90+headroom
+- Bin-pack: fewer, fuller nodes (MostAllocated scoring / Karpenter consolidation)
+- Separate node pools by workload shape (CPU-heavy vs mem-heavy vs GPU)
+- Use Cluster Autoscaler/Karpenter to match node count to demand</div>
+</div>
+<div class='sec'>The trade-off</div>
+<p>Tight bin-packing cuts cost but raises blast radius (more pods per node) and reduces burst headroom. Spreading improves resilience but costs more. Balance per workload criticality.</p>
+<div class='tip'><b>Interview tip:</b> The crisp insight interviewers want: <b>requests, not usage, determine cost</b> — the most common waste is over-provisioned requests reserving capacity that sits idle. VPA in recommendation mode + dashboards of request-vs-usage is how you find it. Karpenter's consolidation actively bin-packs to cut node count.</div>`
+  },
+  { n:96, tag:'cluster',
+    q:'Explain GitOps with Argo CD or Flux. How does it differ from push-based CI/CD for clusters?',
+    body:`<p>GitOps makes Git the single source of truth for cluster state; an in-cluster agent continuously reconciles the live cluster toward the repo.</p>
+<div class='sec'>Pull-based reconciliation</div>
+<div class='cmds'>
+  <div class='cmd'>Git repo (desired manifests) <- developers PR changes
+        ^                              |
+        | reconcile loop               v
+  Argo CD / Flux agent IN the cluster pulls + applies, detects drift</div>
+</div>
+<div class='sec'>vs push-based CI/CD</div>
+<div class='cmds'>
+  <div class='cmd'>Push (traditional): CI has cluster credentials, runs \`kubectl apply\` from outside
+  - external system holds prod creds (bigger attack surface)
+  - no continuous drift detection; manual changes go unnoticed
+Pull (GitOps): cluster agent pulls; no external creds; drift auto-corrected</div>
+</div>
+<div class='sec'>Benefits</div>
+<p>Git is the audit log + rollback (revert a commit), drift detection/self-heal, no cluster creds in CI, declarative and reviewable. Argo CD has a rich UI + sync waves; Flux is lightweight and CRD-driven.</p>
+<div class='tip'><b>Interview tip:</b> The security angle is the strongest differentiator: pull-based GitOps means CI never holds cluster credentials and the agent continuously corrects drift. Mention app-of-apps (Argo) for managing many apps, sync waves for ordering, and that Git revert = instant rollback. This ties to your CI/CD and platform work.</div>`
+  },
+  { n:97, tag:'cluster',
+    q:'How do you manage configuration across many environments? Helm vs Kustomize vs both.',
+    body:`<p>Multi-environment config (dev/stage/prod) needs templating or overlays. The two dominant tools take different approaches.</p>
+<div class='sec'>Helm — templating + packaging</div>
+<div class='cmds'>
+  <div class='cmd'>- Charts: templated YAML + values.yaml per environment
+- Package manager: versioning, dependencies, releases, rollback
+- Good for: distributing apps, complex parameterization
+- Downside: Go templating in YAML can get gnarly</div>
+</div>
+<div class='sec'>Kustomize — overlays, no templating</div>
+<div class='cmds'>
+  <div class='cmd'>- base/ + overlays/{dev,prod}: patch the base declaratively
+- No templating language: pure YAML merge/patch (kubectl -k built in)
+- Good for: env-specific tweaks to the same base manifests</div>
+</div>
+<div class='sec'>Both together (common)</div>
+<p>Helm to package/version the app + Kustomize to apply env-specific patches on the rendered output. Argo CD and Flux support both natively.</p>
+<div class='tip'><b>Interview tip:</b> The trade-off: Helm is powerful (packaging, dependencies, releases) but templating-heavy; Kustomize is simpler and template-free but lacks packaging/versioning. Many teams use Helm for third-party charts + Kustomize for their own overlays. Mention that secrets still need separate handling (External Secrets/Sealed Secrets) regardless of which you pick.</div>`
+  },
+  { n:98, tag:'observability',
+    q:'A service\'s p99 latency spiked but p50 is fine. How do you investigate in Kubernetes?',
+    body:`<p>A p99-only spike means a subset of requests are slow — tail latency. The investigation walks the layers from app to infra.</p>
+<div class='sec'>Likely causes (tail latency)</div>
+<div class='cmds'>
+  <div class='cmd'>- CPU throttling: CFS limits throttling some pods (check container_cpu_cfs_throttled)
+- One slow/unhealthy pod behind the Service (uneven load)
+- GC pauses, cold caches, lock contention on some requests
+- Noisy neighbor on a node; or a node with degraded disk/network
+- Downstream dependency tail (DB slow queries) on some calls
+- DNS 5s timeouts on a fraction of lookups</div>
+</div>
+<div class='sec'>Investigation path</div>
+<div class='cmds'>
+  <div class='cmd'>1. Traces: find the slow requests, see WHICH hop adds latency (Jaeger/Tempo)
+2. Per-pod metrics: is one replica slow? (uneven -> bad pod / placement)
+3. CFS throttling metric: container_cpu_cfs_throttled_seconds_total
+4. Node-level: is one node degraded? kubectl top nodes, node metrics
+5. Check GC/lock/app metrics; DB slow-query log for downstream</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The tell is p50-fine/p99-bad = tail, so look for what affects <i>some</i> requests: CPU throttling (very common — a CPU limit throttling bursty pods), one bad replica, or a downstream tail. Distributed tracing is the fastest way to localize the slow hop. Mentioning <code>cfs_throttled</code> shows you've debugged this for real.</div>`
+  },
+  { n:99, tag:'cluster',
+    q:'How do you implement multi-cluster Kubernetes? When do you need it and what are the patterns?',
+    body:`<p>Multi-cluster runs workloads across several clusters for HA, geo-distribution, isolation, or scale beyond a single cluster's limits.</p>
+<div class='sec'>Why multi-cluster</div>
+<div class='cmds'>
+  <div class='cmd'>- Region/DR: survive a region or cluster failure
+- Geo: serve users from the nearest cluster (latency)
+- Isolation: hard tenant/blast-radius separation (prod vs nonprod, per-team)
+- Scale: beyond a single cluster's node/object limits
+- Compliance/data residency</div>
+</div>
+<div class='sec'>Patterns + tooling</div>
+<div class='cmds'>
+  <div class='cmd'>GitOps fleet : Argo CD / Flux manage many clusters from one repo (app-of-apps)
+Multi-cluster services : route/failover across clusters (mesh: Istio multi-cluster)
+Global LB / GeoDNS : direct users to the right cluster
+Fleet management : Rancher, Anthos, Cluster API for provisioning at scale</div>
+</div>
+<div class='sec'>The cost</div>
+<p>Operational complexity multiplies: config consistency, cross-cluster networking/identity, observability aggregation, and data replication across clusters.</p>
+<div class='warn'><b>Don't over-reach:</b> A single well-run regional cluster with multi-zone node pools already survives zone failures. Reach for multi-cluster only when you need cross-region DR, hard isolation, or scale a single cluster can't meet — the complexity is real.</div>
+<div class='tip'><b>Interview tip:</b> Lead with "why" — most HA needs are met by one multi-zone cluster; multi-cluster is for region-level DR, hard isolation, or scale limits. Then name GitOps (Argo/Flux) for fleet config and Cluster API/Rancher/fleet tools for provisioning. Be honest about the complexity tax.</div>`
+  },
+  { n:100, tag:'observability',
+    q:'How do you debug high control-plane (API server) latency or throttling in a large cluster?',
+    body:`<p>At scale the API server and etcd become bottlenecks. Symptoms: slow kubectl, controller lag, scheduling delays, client throttling (429s).</p>
+<div class='sec'>Common causes</div>
+<div class='cmds'>
+  <div class='cmd'>- Too many/large objects (huge Secrets/ConfigMaps, thousands of CRs)
+- Expensive LIST calls without pagination (list all pods cluster-wide) hammering etcd
+- A hot controller / operator with a tight reconcile loop
+- etcd slow (disk latency) -> everything slows
+- High watch churn; large events volume</div>
+</div>
+<div class='sec'>Investigation</div>
+<div class='cmds'>
+  <div class='cmd'>- apiserver_request_duration_seconds  (latency by verb/resource)
+- apiserver_flowcontrol_*             (APF / Priority and Fairness throttling)
+- etcd_disk_wal_fsync_duration        (etcd disk health)
+- audit log: who's making expensive LISTs?  rate-limit/fix that client</div>
+</div>
+<div class='sec'>Mitigations</div>
+<p>API Priority and Fairness (APF) to isolate misbehaving clients, paginated/field-selector LISTs, fix chatty controllers, fast etcd disks, prune large objects/events, scale control plane (or rely on managed autoscaling).</p>
+<div class='tip'><b>Interview tip:</b> Name <b>API Priority and Fairness</b> (APF) — it prevents one client's flood from starving the control plane and is where you see throttling. The classic culprit is an operator or script doing unpaginated full LISTs against etcd. etcd disk latency underlies many control-plane slowdowns. This is a strong large-cluster operations signal.</div>`
+  },
+  { n:101, tag:'cluster',
+    q:'What are finalizers and why does a namespace or resource get stuck Terminating?',
+    body:`<p>Finalizers are pre-deletion hooks: a resource with finalizers won't be removed until each finalizer is cleared, letting controllers do cleanup first.</p>
+<div class='sec'>How they work</div>
+<div class='cmds'>
+  <div class='cmd'># metadata.finalizers: [ "example.com/cleanup" ]
+# Delete sets deletionTimestamp but the object STAYS until the controller
+# finishes cleanup and removes its finalizer -> then it's actually deleted.</div>
+</div>
+<div class='sec'>Why stuck Terminating</div>
+<div class='cmds'>
+  <div class='cmd'>- The controller responsible for the finalizer is gone/broken -> never clears it
+- A namespace stuck Terminating: a resource in it has a finalizer that can't complete
+  (common with broken CRDs / orphaned custom resources / failed APIService)
+- Dependent resources can't be cleaned up (external system unreachable)</div>
+</div>
+<div class='sec'>Resolution (carefully)</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl get ns &lt;ns&gt; -o json | jq '.spec.finalizers=[]' \\
+  | kubectl replace --raw /api/v1/namespaces/&lt;ns&gt;/finalize -f -
+# Force-removing a finalizer SKIPS the cleanup it guarded -> may orphan resources</div>
+</div>
+<div class='warn'><b>Caution:</b> Force-clearing finalizers can leak external resources (cloud LBs, disks) the controller would have cleaned up. Fix the broken controller/CRD first if possible; force-clear only as last resort.</div>
+<div class='tip'><b>Interview tip:</b> Explain that Terminating-but-stuck almost always = an uncleared finalizer waiting on a dead/broken controller. A frequent real case is a leftover APIService/CRD whose controller is gone, blocking namespace deletion. Knowing the finalize subresource trick (and its risk) shows real cleanup experience.</div>`
+  },
+  { n:102, tag:'cluster',
+    q:'How do you handle node maintenance, draining, and surge upgrades without impacting workloads?',
+    body:`<p>Safe node maintenance hinges on cordon + drain respecting PDBs, plus enough redundancy that losing a node is invisible.</p>
+<div class='sec'>The drain workflow</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl cordon &lt;node&gt;                       # mark unschedulable (no new pods)
+kubectl drain &lt;node&gt; --ignore-daemonsets \\
+  --delete-emptydir-data --grace-period=...  # evict via Eviction API (honors PDBs)
+# ... do maintenance / replace node ...
+kubectl uncordon &lt;node&gt;                     # back into rotation</div>
+</div>
+<div class='sec'>What makes it non-disruptive</div>
+<div class='cmds'>
+  <div class='cmd'>- PDBs ensure minAvailable replicas stay up during eviction
+- maxUnavailable:0 + readiness ensures replacements are Ready before old ones leave
+- Topology spread / anti-affinity so replicas weren't all on this node
+- DaemonSets stay (--ignore-daemonsets); emptyDir data is acknowledged lost</div>
+</div>
+<div class='sec'>Surge upgrades (managed)</div>
+<p>GKE/EKS surge upgrades create extra new-version nodes first, then cordon+drain old ones, keeping capacity constant — tune surge/unavailable to balance speed vs cost.</p>
+<div class='tip'><b>Interview tip:</b> The drain honoring PDBs is the safety mechanism — but a bad PDB (single replica, minAvailable=replicas) makes drain hang forever. So the real prerequisites are: >=2 replicas, sane PDBs, topology spread, and readiness probes. Surge upgrades keep capacity flat during the roll.</div>`
+  },
+  { n:103, tag:'observability',
+    q:'How do you instrument and trace a request across multiple microservices on Kubernetes?',
+    body:`<p>Distributed tracing follows a single request across service hops by propagating a trace context, revealing where latency and errors occur.</p>
+<div class='sec'>How tracing works</div>
+<div class='cmds'>
+  <div class='cmd'># Entry point creates a trace_id + root span
+# Each service: create a child span, propagate context via headers
+#   (W3C traceparent header) to the next service
+# Spans shipped to a collector -> assembled into one trace (waterfall view)</div>
+</div>
+<div class='sec'>Implementation with OpenTelemetry</div>
+<div class='cmds'>
+  <div class='cmd'>- Instrument apps with OTel SDK (auto-instrumentation for many languages)
+- OTel Collector (DaemonSet/Deployment) receives + exports spans
+- Backend: Jaeger / Tempo / cloud trace
+- Service mesh can add spans for service-to-service hops automatically</div>
+</div>
+<div class='sec'>Sampling</div>
+<p>100% tracing is expensive at scale. Head sampling (decide upfront) is cheap but may miss rare errors; tail sampling (decide after seeing the trace) keeps slow/error traces — better signal, more infra.</p>
+<div class='tip'><b>Interview tip:</b> The crux is <b>context propagation</b> — the W3C <code>traceparent</code> header carried hop to hop is what stitches spans into one trace. Name OpenTelemetry as the standard, mention a service mesh can auto-instrument the network hops, and discuss tail vs head sampling (tail keeps the interesting traces). Correlating trace IDs into logs closes the loop with the three pillars.</div>`
+  },
+  { n:104, tag:'cicd',
+    q:'Design a CI/CD pipeline that builds and deploys to Kubernetes. What are the stages?',
+    body:`<p>A production K8s pipeline separates CI (build/test/scan/push) from CD (deploy/verify), ideally with GitOps for the deploy half.</p>
+<div class='sec'>CI stages</div>
+<div class='cmds'>
+  <div class='cmd'>1. Lint + unit test
+2. Build image (reproducible, pinned base) -> tag with git SHA (not :latest)
+3. Scan: Trivy/Grype for CVEs (fail on criticals)
+4. SBOM (Syft) + sign image (cosign)
+5. Push to registry by digest
+6. Update the deployment manifest / Helm values with the new digest (commit to GitOps repo)</div>
+</div>
+<div class='sec'>CD stages (GitOps)</div>
+<div class='cmds'>
+  <div class='cmd'>7. Argo CD / Flux detects the repo change -> syncs to cluster
+8. Progressive rollout (canary / blue-green via Argo Rollouts)
+9. Automated verification: smoke tests + SLO/metric checks
+10. Auto-promote or auto-rollback on failure</div>
+</div>
+<div class='warn'><b>Anti-patterns:</b> deploying <code>:latest</code> (non-reproducible, can't roll back to a known image), giving CI direct cluster-admin creds (use GitOps pull instead), and skipping the scan/sign gate.</div>
+<div class='tip'><b>Interview tip:</b> The senior structure is CI pushes an artifact + opens a commit to a config repo; CD is a pull-based GitOps agent. Tag by immutable git SHA/digest so every deploy is reproducible and rollback is just pointing at the prior digest. Mentions of scan/sign/SBOM gates show supply-chain awareness.</div>`
+  },
+  { n:105, tag:'cicd',
+    q:'How do you build container images inside a Kubernetes cluster without the Docker daemon?',
+    body:`<p>Mounting the Docker socket into a CI pod is a major security risk (root on the node). Daemonless builders solve this.</p>
+<div class='sec'>Why not docker-in-docker / docker.sock</div>
+<div class='cmds'>
+  <div class='cmd'># Mounting /var/run/docker.sock = container can control the host daemon
+#   -> effectively root on the node (container escape). Avoid in CI.
+# DinD (privileged) is also insecure + slow.</div>
+</div>
+<div class='sec'>Daemonless builders</div>
+<div class='cmds'>
+  <div class='cmd'>Kaniko      : builds from a Dockerfile in an unprivileged container, pushes to registry
+Buildah     : daemonless OCI builds (rootless capable)
+BuildKit    : can run rootless; advanced caching, used by \`docker buildx\`
+Cloud Native Buildpacks : no Dockerfile -> auto-detect + build (pack / kpack)</div>
+</div>
+<div class='sec'>Caching for speed</div>
+<p>Layer caching (Kaniko cache, BuildKit registry cache) is essential or builds are slow. kpack/Buildpacks rebase only changed layers.</p>
+<div class='tip'><b>Interview tip:</b> The headline: never mount the Docker socket in CI — use <b>Kaniko</b> or <b>BuildKit rootless</b> to build unprivileged inside the cluster. Buildpacks (kpack) remove the Dockerfile entirely and standardize images. This is a security + supply-chain answer as much as a build one.</div>`
+  },
+  { n:106, tag:'cicd',
+    q:'Explain progressive delivery with Argo Rollouts. How do canary and blue-green differ?',
+    body:`<p>Argo Rollouts replaces the Deployment controller with one that supports canary and blue-green strategies plus automated analysis.</p>
+<div class='sec'>Canary — gradual shift</div>
+<div class='cmds'>
+  <div class='cmd'>strategy:
+  canary:
+    steps:
+    - setWeight: 10
+    - pause: { duration: 5m }
+    - analysis: { templates: [{ templateName: success-rate }] }
+    - setWeight: 50
+    - pause: {}
+    - setWeight: 100</div>
+</div>
+<p>Shifts a small % of traffic to the new version, runs metric analysis, and auto-rolls-back if SLOs degrade — then ramps up.</p>
+<div class='sec'>Blue-green — instant switch</div>
+<div class='cmds'>
+  <div class='cmd'>- Stand up the full new version (green) alongside old (blue)
+- Test green via a preview Service
+- Flip the Service selector blue -> green instantly (and back to roll back)</div>
+</div>
+<div class='sec'>Trade-offs</div>
+<p>Canary: gradual risk exposure, less spare capacity, slower; great with metric analysis. Blue-green: instant cutover + instant rollback, but needs 2x capacity and exposes all users at once at the flip.</p>
+<div class='tip'><b>Interview tip:</b> Tie the choice to risk + cost: canary for gradual, metric-gated rollout (best default); blue-green for fast cutover/rollback when you can afford double capacity and want an instant switch. The killer feature is automated analysis -> auto-rollback on SLO breach, removing humans from the rollback decision.</div>`
+  },
+  { n:107, tag:'cicd',
+    q:'How do you secure a CI/CD pipeline that deploys to Kubernetes end to end?',
+    body:`<p>Pipeline security spans source, build, artifact, and deploy — each a potential supply-chain entry point.</p>
+<div class='sec'>Layered controls</div>
+<div class='cmds'>
+  <div class='cmd'>Source : protected branches, signed commits, required reviews, no secrets in git
+Build  : ephemeral runners, no docker.sock, pinned base images, scan (Trivy)
+Artifact: SBOM (Syft), sign (cosign), push by digest, immutable tags
+Deploy : GitOps pull (CI holds no cluster creds), admission verifies signatures
+Runtime: least-privilege SA, NetworkPolicy, runtime detection (Falco)</div>
+</div>
+<div class='sec'>Credentials</div>
+<div class='cmds'>
+  <div class='cmd'>- OIDC federation from CI -> cloud (no long-lived keys stored in CI)
+- Short-lived, scoped tokens; rotate; never echo secrets in logs
+- Pull-based GitOps so prod cluster creds never live in the CI system</div>
+</div>
+<div class='sec'>Admission enforcement</div>
+<p>Cluster rejects unsigned images / disallowed registries (Kyverno/sigstore policy-controller), closing the loop so even a compromised CI can't deploy an unverified image.</p>
+<div class='tip'><b>Interview tip:</b> Frame it as SLSA-style supply-chain integrity: every step adds provenance, and admission verification at the cluster is the final gate. The two biggest wins: OIDC (no static cloud keys in CI) and pull-based GitOps (no cluster creds in CI) — both remove the most-stolen credentials from the pipeline.</div>`
+  },
+  { n:108, tag:'cicd',
+    q:'How do you manage Helm releases in CI/CD, and how do rollbacks work?',
+    body:`<p>Helm packages and versions releases; in CI/CD you template values per environment and rely on release history for rollback.</p>
+<div class='sec'>Release flow</div>
+<div class='cmds'>
+  <div class='cmd'>helm upgrade --install myapp ./chart \\
+  -f values-prod.yaml \\
+  --set image.tag=$GIT_SHA \\
+  --atomic --timeout 5m
+# --atomic: auto-rollback if the upgrade fails/times out</div>
+</div>
+<div class='sec'>Rollback</div>
+<div class='cmds'>
+  <div class='cmd'>helm history myapp              # list revisions
+helm rollback myapp 4           # revert to revision 4
+# Each upgrade stores a revision (in a Secret) -> rollback is reverting to it</div>
+</div>
+<div class='sec'>Helm in GitOps</div>
+<p>With Argo CD/Flux you usually don't run <code>helm upgrade</code> directly — the agent renders the chart and applies it; rollback = git revert of the values/chart version. This keeps git as the source of truth and audit log.</p>
+<div class='warn'><b>Gotcha:</b> <code>--atomic</code> + <code>--timeout</code> are important — without them a partially-applied failed upgrade leaves the release in a broken state. Also CRDs are not upgraded by Helm by default (Helm only installs CRDs on first install) — manage CRD upgrades explicitly.</div>
+<div class='tip'><b>Interview tip:</b> Mention <code>--atomic</code> (auto-rollback on failure) as the safety flag, that Helm stores revision history for rollback, and that in GitOps the rollback is a git revert rather than a <code>helm rollback</code>. The CRD-upgrade caveat is a real-world gotcha that signals experience.</div>`
+  },
+  { n:109, tag:'cicd',
+    q:'How do you run CI jobs themselves on Kubernetes (e.g. ephemeral runners)? Trade-offs?',
+    body:`<p>Running CI on K8s gives elastic, isolated, ephemeral build capacity — each job in a fresh pod — instead of static always-on runners.</p>
+<div class='sec'>The pattern</div>
+<div class='cmds'>
+  <div class='cmd'>- GitHub Actions runner controller / GitLab K8s executor / Tekton / Argo Workflows
+- Each pipeline job -> a fresh pod (clean env, no state bleed between builds)
+- Scale to zero when idle; burst to many pods under load (HPA/KEDA on queue depth)</div>
+</div>
+<div class='sec'>Trade-offs / challenges</div>
+<div class='cmds'>
+  <div class='cmd'>+ Elastic + cost-efficient (scale to zero), isolated, reproducible
++ Reuse cluster autoscaling + spot nodes for cheap build capacity
+- Build caching is harder (ephemeral pods lose local cache) -> use registry/remote cache
+- Image builds need daemonless (Kaniko/BuildKit) since no docker.sock
+- Cold-start latency for new pods/nodes; secrets must be injected securely</div>
+</div>
+<div class='sec'>Scaling on demand</div>
+<p>KEDA scales runner pods on queue depth (pending jobs), and Cluster Autoscaler/Karpenter add nodes — often on spot instances for cheap, interruptible build capacity.</p>
+<div class='tip'><b>Interview tip:</b> The wins are isolation + scale-to-zero economics; the catches are caching (use remote/registry cache) and daemonless image builds. Name KEDA for queue-based runner autoscaling and spot nodes for cost — a nice tie-in to FinOps and autoscaling topics.</div>`
+  },
+  { n:110, tag:'cicd',
+    q:'How do you handle database schema migrations safely during a Kubernetes rolling deploy?',
+    body:`<p>During a rolling update, old and new app versions run simultaneously against one database — so migrations must be backward-compatible. This is the expand/contract pattern.</p>
+<div class='sec'>The problem</div>
+<p>A rolling deploy means for a window both v1 and v2 pods are live. A destructive migration (drop/rename a column) breaks whichever version doesn't expect it. You cannot atomically swap schema + all pods.</p>
+<div class='sec'>Expand / contract (parallel change)</div>
+<div class='cmds'>
+  <div class='cmd'>1. EXPAND : add new column/table (additive, both versions still work)
+2. MIGRATE: deploy code that writes BOTH old+new, reads new (backfill data)
+3. CONTRACT: after all pods are v2 and data migrated, drop the old column
+# each step is backward-compatible with the version before it</div>
+</div>
+<div class='sec'>Where to run migrations</div>
+<div class='cmds'>
+  <div class='cmd'>- Init container or a Job (gated before rollout), NOT in every pod's startup race
+- Ensure idempotency + locking so concurrent pods don't double-run</div>
+</div>
+<div class='warn'><b>Never</b> do a destructive, non-backward-compatible migration in the same deploy as the code that needs it — mid-rollout the old pods will error. Split across releases (expand now, contract later).</div>
+<div class='tip'><b>Interview tip:</b> Expand/contract (a.k.a. parallel change) is the expected answer. Stress that rolling deploys force backward-compatible schemas because two versions share the DB, and run migrations as a gated Job, not racing in pod startup. This connects to the zero-downtime rollout point from the pods section.</div>`
+  },
+  { n:111, tag:'cluster',
+    q:'What\'s the difference between a Deployment rollback and a GitOps rollback? Which is safer?',
+    body:`<p>Both revert to a prior state, but one is imperative and ephemeral, the other declarative and auditable.</p>
+<div class='sec'>kubectl rollout undo</div>
+<div class='cmds'>
+  <div class='cmd'>kubectl rollout undo deployment/web            # revert to previous ReplicaSet
+kubectl rollout undo deployment/web --to-revision=3
+# Fast, but: it diverges from git -> the live state no longer matches the repo</div>
+</div>
+<div class='sec'>GitOps rollback</div>
+<div class='cmds'>
+  <div class='cmd'>git revert &lt;bad-commit&gt; && git push     # repo is source of truth
+# Argo/Flux syncs the cluster back -> live state matches git again</div>
+</div>
+<div class='sec'>Why GitOps is safer</div>
+<p>With GitOps, an imperative <code>rollout undo</code> creates <b>drift</b> — the agent will detect the live state differs from git and may re-sync forward to the "bad" version, undoing your manual rollback. The correct rollback is reverting the commit so git and cluster agree.</p>
+<div class='warn'><b>Gotcha:</b> Doing <code>kubectl rollout undo</code> on a GitOps-managed app is a trap — Argo CD sees drift and re-applies the repo (the broken version) unless auto-sync is paused. Always roll back in git for GitOps-managed workloads.</div>
+<div class='tip'><b>Interview tip:</b> The insight: in a GitOps world, the cluster is not the source of truth — git is. Manual <code>rollout undo</code> fights the reconciler. Safer rollback = git revert, which preserves auditability and keeps the reconcile loop consistent. Showing you understand drift vs source-of-truth is a strong platform signal.</div>`
+  },
+  { n:112, tag:'scheduling',
+    q:'How do you schedule GPU or other specialized hardware workloads? What\'s the device plugin model?',
+    body:`<p>GPUs and other devices aren't native K8s resources — the device plugin framework advertises them as schedulable resources on nodes.</p>
+<div class='sec'>Device plugin model</div>
+<div class='cmds'>
+  <div class='cmd'># A DaemonSet (e.g. NVIDIA device plugin) runs on GPU nodes:
+# - discovers GPUs, registers them with kubelet as nvidia.com/gpu
+# - pods request them like any resource:
+resources:
+  limits: { nvidia.com/gpu: 1 }</div>
+</div>
+<div class='sec'>Placement</div>
+<div class='cmds'>
+  <div class='cmd'>- Taint GPU nodes (nvidia.com/gpu=present:NoSchedule) so only GPU pods land there
+- GPU pods add a matching toleration + node affinity for the GPU node label
+- Node labels often auto-applied by NVIDIA GPU Operator / node feature discovery</div>
+</div>
+<div class='sec'>Sharing + efficiency</div>
+<p>GPUs are expensive and not natively shareable; options include time-slicing, MIG (multi-instance GPU partitioning), and MPS to pack multiple workloads per GPU. The NVIDIA GPU Operator manages drivers, plugin, and monitoring.</p>
+<div class='tip'><b>Interview tip:</b> The device plugin framework (DaemonSet advertising <code>vendor.com/resource</code> to kubelet) is the general mechanism — works for GPUs, FPGAs, NICs. Pair with taints (keep non-GPU pods off pricey nodes) + affinity. Mention MIG/time-slicing for GPU cost efficiency — a nice FinOps tie-in given how expensive GPU nodes are.</div>`
+  },
+  { n:113, tag:'observability',
+    q:'How do you alert effectively without alert fatigue? What makes a good vs bad Kubernetes alert?',
+    body:`<p>Good alerting pages humans only for actionable, user-impacting problems. Most cluster noise should be dashboards or tickets, not pages.</p>
+<div class='sec'>Bad alerts (cause fatigue)</div>
+<div class='cmds'>
+  <div class='cmd'>- Cause-based on transient states: "pod restarted once", "CPU > 80% for 1 min"
+- Non-actionable: nothing for the on-call to do
+- Per-pod noise in a fleet that self-heals
+- Static thresholds that flap</div>
+</div>
+<div class='sec'>Good alerts (symptom + actionable)</div>
+<div class='cmds'>
+  <div class='cmd'>- Symptom-based: user-facing SLO breach (error rate / latency burn-rate)
+- "Deployment has 0 available replicas for 5m" (real outage)
+- "PVC > 90% and filling" (will fail soon, actionable)
+- Has a runbook link + clear owner</div>
+</div>
+<div class='sec'>Principles</div>
+<p>Alert on symptoms (is the user affected?) not causes; use burn-rate/multi-window to cut flapping; route non-urgent signals to tickets/dashboards; every page must be actionable with a runbook.</p>
+<div class='tip'><b>Interview tip:</b> The Google SRE principle — <b>alert on symptoms, not causes</b> — is the headline. A single node at 80% CPU isn't a page; users seeing errors is. Burn-rate alerting (from the SLO question) reduces noise. Demonstrating you'd ruthlessly cut non-actionable alerts shows on-call maturity.</div>`
+  },
+  { n:114, tag:'networking',
+    q:'How does Cilium / eBPF change Kubernetes networking, and why are teams adopting it?',
+    body:`<p>Cilium uses eBPF to run networking, security, and load-balancing logic in the kernel datapath, replacing iptables-based kube-proxy and unlocking richer features.</p>
+<div class='sec'>What eBPF replaces</div>
+<div class='cmds'>
+  <div class='cmd'>- kube-proxy iptables/IPVS -> eBPF Service load-balancing (no rule explosion)
+- L3/L4 NetworkPolicy -> eBPF enforcement + identity-based (not IP-based) policy
+- Adds L7-aware policy (allow only GET /api), DNS-aware policy
+- Hubble: deep network observability (flow visibility) from eBPF</div>
+</div>
+<div class='sec'>Why teams adopt it</div>
+<div class='cmds'>
+  <div class='cmd'>- Performance at scale: no linear iptables chains; lower latency
+- Identity-based security: policy follows workload identity, not ephemeral pod IPs
+- Observability: Hubble shows every flow without sidecars
+- kube-proxy replacement + sidecar-less service mesh (ambient/eBPF mesh)</div>
+</div>
+<div class='sec'>The shift</div>
+<p>eBPF lets you run programmable logic in the kernel safely, so networking/security/observability move from userspace proxies and iptables into the datapath — faster and more flexible.</p>
+<div class='tip'><b>Interview tip:</b> Connect to earlier points: iptables kube-proxy doesn't scale (linear rule eval), and IP-based NetworkPolicy is brittle as pods churn. Cilium's eBPF gives O(1) LB, identity-based policy, L7 awareness, and Hubble observability — and is moving toward sidecar-less service mesh. Naming Hubble and identity-based policy signals current knowledge.</div>`
+  },
+  { n:115, tag:'storage',
+    q:'How do you handle stateful workload disaster recovery across regions in Kubernetes?',
+    body:`<p>Stateful DR needs both the data (replicated/backed up off-region) and the ability to reconstitute the workload in another region/cluster.</p>
+<div class='sec'>Data layer</div>
+<div class='cmds'>
+  <div class='cmd'>- App-level replication across regions (DB native: Postgres streaming/logical,
+  Kafka MirrorMaker) -> warm standby, low RPO
+- Volume snapshots replicated cross-region (object storage) -> higher RPO
+- Velero: backs up K8s objects + PV snapshots, restore to another cluster</div>
+</div>
+<div class='sec'>RTO / RPO drive the design</div>
+<div class='cmds'>
+  <div class='cmd'>RPO (data loss tolerance):  continuous replication = near-zero; snapshots = minutes/hrs
+RTO (downtime tolerance):   warm standby = minutes; backup-restore = hours
+# Tighter RPO/RTO = more cost (active-active / continuous replication)</div>
+</div>
+<div class='sec'>Failover orchestration</div>
+<p>Promote the standby (operator or runbook), repoint DNS/global LB to the DR region, and reconcile the workloads there (GitOps applies the same manifests to the DR cluster).</p>
+<div class='warn'><b>Untested DR is no DR:</b> regularly run restore drills (Velero restore, standby promotion) and measure actual RTO/RPO — backups that have never been restored routinely fail when you need them.</div>
+<div class='tip'><b>Interview tip:</b> Lead with RPO/RTO defining the architecture and cost, then map: continuous app-level replication (low RPO/RTO, costly) vs Velero snapshot/restore (cheaper, higher RPO/RTO). Stress tested restore drills and that GitOps makes re-deploying the workload to the DR cluster trivial — data is the hard part, not manifests.</div>`
+  },
+  { n:116, tag:'cluster',
+    q:'How do you debug \'my cluster is slow\' when you don\'t know the layer? Give a systematic approach.',
+    body:`<p>"Cluster is slow" is ambiguous — a systematic top-down sweep localizes it to control plane, node, network, or app.</p>
+<div class='sec'>Narrow the scope first</div>
+<div class='cmds'>
+  <div class='cmd'>- Slow kubectl/deploys?  -> control plane (apiserver/etcd)
+- Slow app responses?    -> app, network, or node resource
+- Specific service or whole cluster? one node or all?
+- When did it start? correlate with a deploy / scale event / upgrade</div>
+</div>
+<div class='sec'>Layer-by-layer checks</div>
+<div class='cmds'>
+  <div class='cmd'>Control plane: apiserver_request_duration, APF throttling, etcd fsync latency
+Nodes:        kubectl top nodes; disk/network saturation; node conditions
+Workloads:    kubectl top pods; CFS throttling; OOMKills; restart counts
+Network:      DNS latency (the 5s tell), NetworkPolicy drops, conntrack table full
+App/deps:     traces for slow hop; downstream DB latency</div>
+</div>
+<div class='sec'>Common culprits</div>
+<p>etcd on slow disk, CPU CFS throttling, DNS (ndots/5s timeouts), conntrack table exhaustion on busy nodes, a chatty controller hammering the API, a noisy neighbor.</p>
+<div class='tip'><b>Interview tip:</b> Show method, not guessing: scope it (control plane vs data plane vs network), correlate with a change, then drill the suspect layer with specific metrics. Naming the usual suspects — etcd disk latency, CFS throttling, DNS 5s timeouts, conntrack exhaustion, APF throttling — proves you've actually chased these down.</div>`
+  },
+  { n:117, tag:'pods',
+    q:'What is a Job and CronJob, and how do you make batch workloads reliable on Kubernetes?',
+    body:`<p>Jobs run pods to completion; CronJobs schedule Jobs. Reliability comes from tuning retries, parallelism, deadlines, and concurrency.</p>
+<div class='sec'>Job knobs</div>
+<div class='cmds'>
+  <div class='cmd'>spec:
+  completions: 5           # run to 5 successful pods
+  parallelism: 2           # 2 at a time
+  backoffLimit: 4          # retries before marking failed
+  activeDeadlineSeconds: 600   # hard time cap
+  ttlSecondsAfterFinished: 3600 # auto-clean finished jobs</div>
+</div>
+<div class='sec'>CronJob concurrency</div>
+<div class='cmds'>
+  <div class='cmd'>concurrencyPolicy: Forbid     # don't start a new run if the last is still going
+                              # (Allow / Forbid / Replace)
+startingDeadlineSeconds: 100  # skip missed runs older than this
+successfulJobsHistoryLimit: 3</div>
+</div>
+<div class='sec'>Reliability concerns</div>
+<p>Make jobs idempotent (they can re-run on retry/restart), set deadlines so a hung job doesn't run forever, use <code>ttlSecondsAfterFinished</code> to avoid pile-up, and handle the at-least-once nature (a job pod can run more than once).</p>
+<div class='warn'><b>Gotcha:</b> Default <code>concurrencyPolicy: Allow</code> can overlap runs if a job runs longer than its schedule interval — pile-ups and double-processing. Use <code>Forbid</code> or <code>Replace</code> for non-idempotent work, and design jobs to be idempotent regardless.</div>
+<div class='tip'><b>Interview tip:</b> Emphasize idempotency (Kubernetes gives at-least-once, a pod may re-run), <code>concurrencyPolicy</code> to prevent overlap, and <code>activeDeadlineSeconds</code>/<code>ttlSecondsAfterFinished</code> for hygiene. For complex DAGs of jobs, mention Argo Workflows. These details separate "I wrote a CronJob" from "I run reliable batch."</div>`
+  },
+  { n:118, tag:'scheduling',
+    q:'How do descheduler and rebalancing work? Why doesn\'t Kubernetes rebalance pods on its own?',
+    body:`<p>The scheduler places pods once and never moves them — so over time the cluster drifts out of balance. The Descheduler evicts pods so they get rescheduled better.</p>
+<div class='sec'>Why K8s doesn't rebalance</div>
+<div class='cmds'>
+  <div class='cmd'># Scheduling is a one-time decision at pod creation.
+# After that, nodes get added/drained, pods come/go, requests change ->
+# the original placement becomes suboptimal, but nothing moves pods automatically.</div>
+</div>
+<div class='sec'>The Descheduler</div>
+<div class='cmds'>
+  <div class='cmd'># Runs as a Job/CronJob; evicts pods matching strategies, e.g.:
+- RemoveDuplicates              : spread replicas off the same node
+- LowNodeUtilization            : drain under-used nodes' candidates to rebalance
+- RemovePodsViolatingTopologySpread / InterPodAntiAffinity (rule drift)
+- RemovePodsViolatingNodeTaints</div>
+</div>
+<p>Evicted pods are recreated by their controllers and rescheduled per current state. It respects PDBs and won't evict un-replicated pods.</p>
+<div class='warn'><b>Caution:</b> The descheduler causes churn (evictions = brief disruption). Tune it and rely on PDBs so it doesn't disrupt availability. Karpenter's consolidation does similar rebalancing for cost by repacking nodes.</div>
+<div class='tip'><b>Interview tip:</b> The key concept: scheduling is one-shot, so the cluster needs an external rebalancer (Descheduler, or Karpenter consolidation) to correct drift after nodes/pods change. Mentioning that eviction churn must be bounded by PDBs shows you'd deploy it safely, not blindly.</div>`
+  },
+  { n:119, tag:'cluster',
+    q:'How do you manage CRDs and operators at scale? What are the upgrade and versioning pitfalls?',
+    body:`<p>CRDs extend the API; operators act on them. At scale, CRD versioning and operator upgrades become a real source of outages if mishandled.</p>
+<div class='sec'>CRD versioning</div>
+<div class='cmds'>
+  <div class='cmd'>- CRDs support multiple versions (v1alpha1, v1beta1, v1) with a conversion webhook
+- Stored version + served versions; migrating stored objects needs care
+- Schema validation (OpenAPI) gates what users can submit</div>
+</div>
+<div class='sec'>Upgrade pitfalls</div>
+<div class='cmds'>
+  <div class='cmd'>- Helm does NOT upgrade CRDs by default (only installs on first install)
+  -> CRD changes get silently skipped; operator expects new schema -> breaks
+- A breaking CRD schema change can invalidate existing CRs
+- Conversion webhook down -> CRs unreadable -> operator + deletes stuck (finalizers!)
+- Operator RBAC drift after upgrade</div>
+</div>
+<div class='sec'>Safe practice</div>
+<p>Version CRDs additively, test conversion webhooks, manage CRD upgrades explicitly (not via Helm's skip), and stage operator upgrades in nonprod. Watch for the finalizer-stuck-Terminating failure mode when a conversion webhook or operator is unhealthy.</p>
+<div class='tip'><b>Interview tip:</b> The two pitfalls interviewers love: (1) Helm skips CRD upgrades, so schema changes get missed, and (2) a down conversion webhook makes CRs unreadable and blocks deletion (ties back to finalizers/stuck-Terminating). Treating CRDs as a versioned API with backward-compatible evolution is the senior framing.</div>`
+  },
+  { n:120, tag:'cluster',
+    q:'You inherit an undocumented production cluster. How do you assess its health, risk, and cost?',
+    body:`<p>A structured audit across reliability, security, and cost gives you a prioritized risk picture fast — a realistic senior/staff scenario.</p>
+<div class='sec'>1. Inventory + reliability</div>
+<div class='cmds'>
+  <div class='cmd'>- Versions: kubelet/control-plane version, is it EOL? upcoming forced upgrade?
+- Workloads without requests/limits, PDBs, multiple replicas, anti-affinity
+- Single points of failure: single-replica critical services, one-zone deploys
+- Backups: is etcd backed up? are stateful PVs backed up? ever restored?</div>
+</div>
+<div class='sec'>2. Security posture</div>
+<div class='cmds'>
+  <div class='cmd'>- kube-bench (CIS), kube-hunter; Trivy scan running images
+- RBAC sprawl: who has cluster-admin? kubectl auth can-i audits
+- privileged pods, hostPath/hostNetwork, no NetworkPolicies, secrets in env/git
+- Pod Security Admission enforced? image signing/registry allowlist?</div>
+</div>
+<div class='sec'>3. Cost</div>
+<div class='cmds'>
+  <div class='cmd'>- Request-vs-usage gap (over-provisioned requests = wasted nodes)
+- Idle/under-utilized nodes; oversized node pools; no autoscaling
+- Orphaned PVs/LBs; right-sizing via VPA recommendations / Kubecost</div>
+</div>
+<div class='sec'>Then prioritize</div>
+<p>Rank by risk x effort: backups + EOL version + cluster-admin sprawl are usually top. Document findings, quick wins first, build a remediation roadmap.</p>
+<div class='tip'><b>Interview tip:</b> Structure beats trivia here — assess across reliability, security, cost, then prioritize by risk. Name concrete tools (kube-bench, Trivy, Kubecost, VPA) and the highest-impact gaps (no backups, EOL version, over-broad RBAC, no NetworkPolicies, request bloat). This is exactly the platform-ownership framing senior interviews probe for.</div>`
   }
 ];
 
@@ -597,7 +2318,7 @@ function badge(tag) {
 }
 
 function render(qs) {
-  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 35 questions`;
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 120 questions`;
   document.getElementById('q-list').innerHTML = qs.map(q => `
     <div class="q-card" id="card-${q.n}">
       <div class="q-header" onclick="toggle(${q.n})">
