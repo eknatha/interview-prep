@@ -1,4 +1,5 @@
-<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#534AB7;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">45 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<meta charset="utf-8">
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#534AB7;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">120 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 .wrap { padding: 1rem 0 2rem; font-family: var(--font-sans); }
@@ -164,7 +165,7 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
 </div>
 
 <div class="filters">
-  <div class="chip active" onclick="setFilter('all',this)">All (45)</div>
+  <div class="chip active" onclick="setFilter('all',this)">All (120)</div>
   <div class="chip" onclick="setFilter('fundamentals',this)">Fundamentals</div>
   <div class="chip" onclick="setFilter('dns',this)">DNS</div>
   <div class="chip" onclick="setFilter('tcp',this)">TCP/UDP</div>
@@ -177,9 +178,9 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-n n-purple">45</div><div class="stat-l">Total questions</div></div>
-  <div class="stat"><div class="stat-n n-teal">25</div><div class="stat-l">Core concepts</div></div>
-  <div class="stat"><div class="stat-n n-amber">20</div><div class="stat-l">Production scenarios</div></div>
+  <div class="stat"><div class="stat-n n-purple">120</div><div class="stat-l">Total questions</div></div>
+  <div class="stat"><div class="stat-n n-teal">65</div><div class="stat-l">Core concepts</div></div>
+  <div class="stat"><div class="stat-n n-amber">55</div><div class="stat-l">Production scenarios</div></div>
   <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
 </div>
 
@@ -686,7 +687,1366 @@ const QS = [
   <div class='cmd'>gcloud trace list --project=&lt;project&gt;   # distributed traces for call chain latency</div>
 </div>
 <p>The breakdown: DNS lookup slow → resolver issue. TCP connect slow → routing, firewall, server overload. TLS slow → cert negotiation, OCSP. TTFB (Time To First Byte) slow → server processing, database queries, upstream dependencies. Transfer slow → throughput/MTU issue. Each phase pinpoints the layer. Escalate with data: "P99 latency is 2s, TTFB accounts for 1.8s, traced to the database query in service X taking 1.6s on cache miss."</div>
-<div class='tip'><b>Platform Engineer framing:</b> Don't just describe commands — describe how you'd present findings to the team, how you'd avoid recurrence (add this metric to dashboards, add SLO on this endpoint, add a test that catches this regression). That's the difference between a Senior who fixes issues and a Principal who prevents them.</div>`}
+<div class='tip'><b>Platform Engineer framing:</b> Don't just describe commands — describe how you'd present findings to the team, how you'd avoid recurrence (add this metric to dashboards, add SLO on this endpoint, add a test that catches this regression). That's the difference between a Senior who fixes issues and a Principal who prevents them.</div>`},
+{n:46,tag:'fundamentals',q:'What is MTU, MSS, and Path MTU Discovery — and how does an MTU mismatch cause a \'black hole\'?',body:`<p>MTU is the largest L2 frame payload a link carries (typically 1500 bytes on Ethernet). MSS is the largest TCP <i>segment</i> the data payload can be. PMTUD finds the smallest MTU along a path.</p>
+<div class='sec'>The relationship</div>
+<div class='cmds'>
+  <div class='cmd'>MSS = MTU - IP header (20) - TCP header (20) = 1500 - 40 = 1460 (typical)
+# Overlay/VPN/tunnels REDUCE effective MTU (VXLAN ~50 bytes, IPsec more)</div>
+</div>
+<div class='sec'>The PMTUD black hole</div>
+<p>When a packet exceeds a link's MTU and has the Don't-Fragment bit set, the router drops it and sends back an ICMP "fragmentation needed" (Type 3 Code 4). If a firewall <b>blocks that ICMP</b>, the sender never learns to shrink — large packets vanish silently. Small packets (handshake, pings) work; large transfers (a big POST, a TLS cert) hang. That asymmetry is the fingerprint.</p>
+<div class='cmds'>
+  <div class='cmd'>ping -M do -s 1472 &lt;host&gt;     # 1472 + 28 = 1500; bump down until it passes
+tracepath &lt;host&gt;               # shows PMTU along the path
+ip link show eth0              # check the interface MTU</div>
+</div>
+<div class='warn'><b>Production gotcha:</b> Classic in overlay networks (Kubernetes CNI, VXLAN) and VPNs. Symptoms: SSH connects but hangs on output, TLS handshake stalls, some HTTP works and some doesn't. Fix: allow ICMP type 3, lower the MTU, or clamp MSS.</div>
+<div class='tip'><b>Interview tip:</b> The senior fix is <b>MSS clamping</b> (<code>iptables ... --clamp-mss-to-pmtu</code> or router config) so TCP negotiates a safe segment size up front instead of relying on ICMP that firewalls often drop. Mentioning the "small works, large hangs" tell shows you've debugged this for real.</div>`},
+{n:47,tag:'fundamentals',q:'Explain NAT, SNAT, DNAT, and PAT. Where does each happen in cloud networking?',body:`<p>NAT rewrites IP addresses (and ports) as packets cross a boundary. The variants differ by which side and what gets rewritten.</p>
+<div class='sec'>The variants</div>
+<div class='cmds'>
+  <div class='cmd'>SNAT (Source NAT)      : rewrite the SOURCE addr — outbound (private -> public)
+DNAT (Destination NAT) : rewrite the DEST addr — inbound (public -> private backend)
+PAT  (Port Address Tr.): many private IPs share one public IP via unique source ports
+                         (a.k.a. "NAT overload" / masquerade)</div>
+</div>
+<div class='sec'>Where in the cloud</div>
+<div class='cmds'>
+  <div class='cmd'>NAT Gateway     : SNAT/PAT for private subnets reaching the internet (outbound)
+Load balancer   : DNAT inbound traffic to backend pool members
+Internet GW     : 1:1 NAT for public IPs (EIP <-> private IP)
+K8s kube-proxy  : DNAT Service VIP -> pod IP; SNAT for node-to-pod return paths</div>
+</div>
+<div class='warn'><b>Gotcha:</b> SNAT/PAT hides the original client source IP from the backend — you see the NAT/LB IP instead. Preserve the real client IP via X-Forwarded-For (L7), PROXY protocol (L4), or <code>externalTrafficPolicy: Local</code> in Kubernetes.</div>
+<div class='tip'><b>Interview tip:</b> A cloud NAT Gateway does SNAT+PAT so many private instances egress through a few public IPs — and at scale you can exhaust <b>source ports per destination</b> (~64k per dest IP:port tuple), causing connection failures. Knowing the source-IP-preservation problem and SNAT port exhaustion signals real cloud-network experience.</div>`},
+{n:48,tag:'fundamentals',q:'How does ARP work, and what problems do gratuitous ARP and ARP caching cause in production?',body:`<p>ARP maps an IP to a MAC address within a layer-2 broadcast domain — the glue between L3 routing and L2 delivery.</p>
+<div class='sec'>The flow</div>
+<div class='cmds'>
+  <div class='cmd'>Host wants to send to 10.0.0.5 on its subnet:
+1. Broadcast: "who has 10.0.0.5? tell 10.0.0.1"  (ARP request)
+2. 10.0.0.5 replies with its MAC                 (ARP reply)
+3. Sender caches IP->MAC in its ARP table (with a timeout)
+ip neigh show          # view the ARP/neighbor cache</div>
+</div>
+<div class='sec'>Gratuitous ARP (failover)</div>
+<p>An unsolicited ARP announcing "this IP is now at MY MAC" — used in VIP failover (keepalived, VRRP, cloud floating IPs) so switches and peers update their tables and traffic moves to the new active node.</p>
+<div class='warn'><b>Production problems:</b> Stale ARP caches after a failover (peers keep sending to the dead node's MAC until the entry ages out) cause a brief outage. ARP spoofing is a security risk (attacker claims a gateway's IP). Duplicate IPs cause ARP flapping. On large flat L2 segments, ARP broadcast traffic itself becomes noise.</p>
+<div class='tip'><b>Interview tip:</b> Tie gratuitous ARP to VIP failover — it's how keepalived/VRRP redirects a floating IP. The classic incident is a failover where traffic doesn't move because a peer or switch cached the old MAC; gratuitous ARP (or a lower ARP timeout) is what fixes the convergence. Cloud platforms abstract this with API-driven IP reassignment instead of L2 ARP.</div>`},
+{n:49,tag:'fundamentals',q:'Map L2/L3/L7 concepts to cloud load balancers. What operates at each layer and why does it matter?',body:`<p>Cloud networking maps directly onto OSI layers; knowing the layer of each component tells you what it can and can't see.</p>
+<div class='sec'>The mapping</div>
+<div class='cmds'>
+  <div class='cmd'>L2 (frames/MAC)  : VLANs, the VPC's underlying switching (mostly abstracted in cloud)
+L3 (IP/routing)  : VPC route tables, subnets, NAT GW, Network LB (NLB) — IP-level
+L4 (TCP/UDP)     : Network/L4 LB — balances by IP:port, no app awareness, fast
+L7 (HTTP/app)    : Application LB (ALB) — sees URLs, headers, cookies, host</div>
+</div>
+<div class='sec'>Why the layer matters</div>
+<div class='cmds'>
+  <div class='cmd'>L4 LB : ultra-fast, protocol-agnostic, preserves source IP easily, can't route by path
+        -> use for TCP/UDP, gRPC raw, extreme throughput, static IP needs
+L7 LB : path/host routing, TLS termination, header manipulation, WAF integration
+        -> use for HTTP(S) microservices, content-based routing</div>
+</div>
+<div class='warn'><b>Gotcha:</b> An L4 LB can't do path-based routing or read headers — it only sees IP:port. An L7 LB terminates the connection (two TCP sessions: client<->LB and LB<->backend), which changes source IP visibility and TLS handling. Pick the layer to match what you need to route on.</div>
+<div class='tip'><b>Interview tip:</b> The crisp framing: choose the lowest layer that meets your routing needs. L4 for raw speed/protocol-agnostic/source-IP preservation; L7 when you must route on HTTP attributes or terminate TLS centrally. Naming AWS NLB (L4) vs ALB (L7), or GCP's equivalents, grounds it in real cloud products.</div>`},
+{n:50,tag:'fundamentals',q:'Compare IPv4 vs IPv6 in practice. What is dual-stack and the Happy Eyeballs algorithm?',body:`<p>IPv6 solves IPv4 address exhaustion with a vastly larger space and removes the need for NAT, but adoption is gradual via dual-stack.</p>
+<div class='sec'>Key practical differences</div>
+<div class='cmds'>
+  <div class='cmd'>IPv4 : 32-bit (~4.3B addrs), needs NAT, ARP for L2 resolution
+IPv6 : 128-bit (huge), no NAT needed (global addrs), uses NDP not ARP,
+       SLAAC autoconfig, link-local addresses (fe80::/10)</div>
+</div>
+<div class='sec'>Dual-stack + Happy Eyeballs</div>
+<p>Dual-stack hosts have both IPv4 and IPv6. <b>Happy Eyeballs</b> (RFC 8305) is the client algorithm that races both: it fires the AAAA (IPv6) and A (IPv4) lookups, attempts connections in parallel with a slight head start for IPv6, and uses whichever connects first — so a broken IPv6 path doesn't stall the user.</p>
+<div class='cmds'>
+  <div class='cmd'># Without Happy Eyeballs, a broken IPv6 route = long timeout before IPv4 fallback.
+# With it, the client falls back near-instantly -> resilient UX during v6 issues.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Misconfigured IPv6 (AAAA record exists but the path is broken) causes intermittent slowness on dual-stack clients that <i>lack</i> Happy Eyeballs, or where the fallback timer is long. Test both stacks; don't publish a AAAA record until the v6 path actually works end to end.</div>
+<div class='tip'><b>Interview tip:</b> Happy Eyeballs is the detail that signals depth — it's why "my IPv6 is broken but the internet still works." In cloud, dual-stack VPCs help with IPv4 exhaustion (a real cost/scarcity issue); mention that IPv6 eliminates NAT, simplifying some architectures while complicating firewall rules.</div>`},
+{n:51,tag:'fundamentals',q:'What is connection tracking (conntrack) and how does table exhaustion take down a busy host?',body:`<p>Conntrack is the kernel's stateful table of every connection passing through a NAT/firewall host, so return traffic is matched and NAT is consistent. It's finite.</p>
+<div class='sec'>Why it exists</div>
+<div class='cmds'>
+  <div class='cmd'># For stateful firewalling + NAT, the kernel remembers each flow:
+#   (src ip:port, dst ip:port, proto, state)
+conntrack -L | wc -l                      # current entries
+cat /proc/sys/net/netfilter/nf_conntrack_max     # the cap
+cat /proc/sys/net/netfilter/nf_conntrack_count    # current count</div>
+</div>
+<div class='sec'>Exhaustion failure</div>
+<p>When the table fills, the kernel drops new connections and logs <code>nf_conntrack: table full, dropping packet</code>. Symptoms: sudden connection failures/timeouts on a busy gateway, NAT instance, or Kubernetes node — even though CPU/mem look fine.</p>
+<div class='cmds'>
+  <div class='cmd'>dmesg | grep conntrack                   # "table full" messages
+# Mitigate: raise nf_conntrack_max, tune timeouts (esp. TIME_WAIT/UDP),
+# or bypass conntrack (NOTRACK) for high-volume flows that don't need it</div>
+</div>
+<div class='warn'><b>Production gotcha:</b> A Kubernetes node doing lots of SNAT, or a NAT gateway under load, silently drops connections at the conntrack ceiling. UDP floods and short-lived connections fill it fast. The error is in <code>dmesg</code>, not your app logs — so it looks like a mysterious network blip.</div>
+<div class='tip'><b>Interview tip:</b> This is a favorite "intermittent failures under load" root cause. The tells: failures correlate with connection volume, CPU is fine, and <code>dmesg</code> shows table-full. Fixes: raise the max, shorten timeouts, or use <code>NOTRACK</code>. eBPF datapaths (Cilium) can reduce conntrack pressure by handling some flows without it.</div>`},
+{n:52,tag:'security',q:'Stateful vs stateless firewall — explain via AWS Security Groups vs Network ACLs.',body:`<p>The stateful/stateless distinction determines whether you must explicitly allow return traffic — and it's exactly the SG-vs-NACL difference in AWS.</p>
+<div class='sec'>Stateful (Security Groups)</div>
+<div class='cmds'>
+  <div class='cmd'>- Tracks connections: if you ALLOW outbound, the RETURN traffic is auto-allowed
+- Only need rules in the direction you initiate
+- Allow-only (no explicit deny); evaluated as a whole
+- Attached to ENIs/instances</div>
+</div>
+<div class='sec'>Stateless (Network ACLs)</div>
+<div class='cmds'>
+  <div class='cmd'>- No connection memory: must ALLOW both inbound AND the return path explicitly
+- Must open ephemeral port range (1024-65535) for return traffic!
+- Has explicit allow AND deny; numbered, evaluated in order
+- Attached to subnets</div>
+</div>
+<div class='warn'><b>Classic mistake:</b> Adding a NACL inbound allow but forgetting the outbound ephemeral-port range for replies (or vice versa) — traffic goes one way and the response is dropped. With Security Groups you never hit this because the return is stateful. The #1 NACL bug is the missing ephemeral return range.</div>
+<div class='tip'><b>Interview tip:</b> Crisp summary: Security Group = stateful (return traffic implicit), NACL = stateless (must allow return + ephemeral ports explicitly). SGs are allow-only at the instance; NACLs add deny rules at the subnet for broad blocks (e.g. blacklisting an IP). Use SGs for app rules, NACLs for coarse subnet-level guardrails.</div>`},
+{n:53,tag:'dns',q:'Walk through recursive DNS resolution end to end, from a cold cache to an answer.',body:`<p>Recursive resolution is how a name becomes an IP when nothing is cached, walking the DNS hierarchy from root to authoritative.</p>
+<div class='sec'>The walk (cold cache, resolving www.example.com)</div>
+<div class='cmds'>
+  <div class='cmd'>1. Stub resolver (client) -> recursive resolver (e.g. 8.8.8.8 / corporate)
+2. Recursive -> ROOT servers: "who handles .com?"      -> referral to TLD servers
+3. Recursive -> .com TLD servers: "who handles example.com?" -> referral to authoritative NS
+4. Recursive -> example.com authoritative NS: "A record for www?" -> the IP
+5. Recursive caches each answer per its TTL, returns IP to the client</div>
+</div>
+<div class='sec'>Iterative vs recursive</div>
+<p>The <i>recursive</i> resolver does the legwork on the client's behalf; each server it queries answers <i>iteratively</i> (gives a referral, not the final answer) until the authoritative server returns the record.</p>
+<div class='cmds'>
+  <div class='cmd'>dig +trace www.example.com     # shows the full root -> TLD -> authoritative walk
+dig www.example.com @8.8.8.8   # ask a specific recursive resolver</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The key terms: stub resolver (client), recursive resolver (does the walk + caches), root -> TLD -> authoritative hierarchy, and TTL-based caching at each hop. <code>dig +trace</code> is the tool that makes the walk visible — knowing it signals you've actually debugged resolution, not just memorized the steps.</div>`},
+{n:54,tag:'dns',q:'Explain the main DNS record types and the CNAME-at-apex problem (and its fixes).',body:`<p>Each record type serves a purpose; the apex-CNAME restriction trips up nearly everyone pointing a root domain at a cloud endpoint.</p>
+<div class='sec'>Common records</div>
+<div class='cmds'>
+  <div class='cmd'>A     : name -> IPv4         AAAA : name -> IPv6
+CNAME : name -> another name (alias)   MX : mail servers
+TXT   : arbitrary text (SPF, DKIM, domain verification)
+NS    : delegates a zone to nameservers   SOA : zone authority/metadata
+SRV   : service location (host+port)   PTR : reverse (IP -> name)</div>
+</div>
+<div class='sec'>The CNAME-at-apex problem</div>
+<p>You cannot put a CNAME on the zone apex (<code>example.com</code> itself) — the DNS spec forbids a CNAME coexisting with the required SOA/NS records at the apex. So you can't <code>example.com CNAME my-lb.cloud.com</code>.</p>
+<div class='cmds'>
+  <div class='cmd'># Fixes for pointing the apex at a cloud LB whose IP changes:
+- Route 53 ALIAS / Azure A-alias / Cloud DNS: provider-specific apex "alias" records
+- ANAME / flattened CNAME (some DNS providers resolve it server-side to an A record)
+- (Avoid) hardcoding the LB's IP in an A record — it can change</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Hardcoding an A record to a cloud load balancer's current IP breaks when the provider rotates that IP. Always use the provider's ALIAS/ANAME at the apex so it tracks the endpoint automatically.</div>
+<div class='tip'><b>Interview tip:</b> Knowing why apex CNAMEs are illegal (apex must hold SOA/NS, CNAME can't coexist) and the cloud-specific ALIAS fix (Route 53 alias, etc.) is a very common real-world DNS task. Subdomains (<code>www</code>) can use CNAME freely — it's only the apex that's special.</div>`},
+{n:55,tag:'dns',q:'How is DNS used for load balancing and failover? What are the limits of DNS-based LB?',body:`<p>DNS can distribute traffic by returning different/multiple answers, but it's a coarse tool limited by caching.</p>
+<div class='sec'>Techniques</div>
+<div class='cmds'>
+  <div class='cmd'>Round-robin DNS : return multiple A records, clients pick (rough spread)
+Weighted        : send X% to one set of IPs, Y% to another (canary/migration)
+Latency/Geo     : return the nearest region's endpoint (GeoDNS / latency routing)
+Failover        : health-check endpoints; stop returning the unhealthy one</div>
+</div>
+<div class='sec'>The fundamental limits</div>
+<div class='cmds'>
+  <div class='cmd'>- TTL caching: clients/resolvers cache answers; a failover only takes effect
+  after the TTL expires (and some ignore low TTLs) -> slow, uneven cutover
+- No real-time load awareness: DNS can't see backend load/health per request
+- Client behavior varies: some pin the first IP, ignoring round-robin</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Setting a 60s TTL doesn't guarantee 60s failover — misbehaving resolvers and OS/browser caches can hold answers far longer. DNS failover is best-effort and slow; never rely on it alone for fast HA.</div>
+<div class='tip'><b>Interview tip:</b> Position DNS LB as coarse, global traffic steering (region selection, failover, weighted migrations) layered <i>above</i> a real LB (L4/L7) that does precise, health-aware balancing within a region. The TTL/caching limitation is the key insight — that's why DNS failover is measured in minutes, and why you pair GeoDNS with anycast or in-region LBs for fast local failover.</div>`},
+{n:56,tag:'dns',q:'What is split-horizon DNS and when do you need it?',body:`<p>Split-horizon (split-brain) DNS returns different answers for the same name depending on <i>who is asking</i> — typically internal vs external clients.</p>
+<div class='sec'>How it works</div>
+<div class='cmds'>
+  <div class='cmd'>api.example.com:
+  - internal clients (VPC/corp)  -> 10.0.5.20  (private IP, direct path)
+  - external clients (internet)  -> 203.0.113.10 (public LB)
+# Same hostname, different view based on source/resolver</div>
+</div>
+<div class='sec'>When you need it</div>
+<div class='cmds'>
+  <div class='cmd'>- Internal services reachable privately (no hairpin through the public internet)
+- Same app name works inside and outside the network seamlessly
+- Cloud: a private hosted zone (Route 53 private zone / Cloud DNS private)
+  overrides the public zone for VPC-internal resolvers</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Forgetting split-horizon makes internal clients route to the public IP and "hairpin" out to the internet and back — extra latency, NAT/data-transfer cost, and sometimes a security-group/path failure. Conversely, a private zone that shadows a public name can confuse debugging ("works from my laptop, fails from the pod").</div>
+<div class='tip'><b>Interview tip:</b> In cloud, this is the <b>private hosted zone</b> attached to a VPC — internal resolvers get private IPs, the public zone serves everyone else. It avoids hairpinning internal traffic out to the public LB. Mention that mismatched split-horizon views are a common cause of "resolves differently depending on where I run it."</div>`},
+{n:57,tag:'dns',q:'Explain DNS caching layers and negative caching. Why is a stale or cached failure so persistent?',body:`<p>DNS answers are cached at many layers, each with its own TTL handling — which is why both good and bad answers can stick around far longer than expected.</p>
+<div class='sec'>The caching layers</div>
+<div class='cmds'>
+  <div class='cmd'>Application/runtime : e.g. JVM caches DNS (historically forever!), connection pools
+OS resolver cache   : systemd-resolved / nscd / Windows DNS Client
+Recursive resolver  : the big shared cache (8.8.8.8, corporate, NodeLocal DNSCache)
+Authoritative TTL   : the value the zone owner sets per record</div>
+</div>
+<div class='sec'>Negative caching (caching the failure)</div>
+<p>NXDOMAIN and SERVFAIL responses are cached too, governed by the SOA's minimum TTL. So after you create a record, a prior "does not exist" answer can linger — the record exists but clients still get NXDOMAIN until the negative cache expires.</p>
+<div class='warn'><b>JVM gotcha:</b> Older JVMs cache successful lookups <i>forever</i> (<code>networkaddress.cache.ttl=-1</code>) — so a failover that changes an IP never takes effect for that JVM until restart. Set a finite <code>networkaddress.cache.ttl</code>. Connection pools that resolve once at startup have the same problem.</p>
+<div class='tip'><b>Interview tip:</b> Two senior points: (1) negative caching means "I just created the record but it still says NXDOMAIN" is expected until the SOA negative TTL expires; (2) application-level DNS caching (especially the JVM) defeats DNS-based failover — the app keeps hitting the dead IP. The fix is finite caching TTLs and re-resolving on connection errors.</div>`},
+{n:58,tag:'troubleshoot',q:'\'DNS works for some names but not others.\' Walk through how you isolate the cause.',body:`<p>Selective DNS failure points to a specific zone, resolver, or record rather than total DNS breakage. Bisect systematically.</p>
+<div class='sec'>1. Compare a working vs failing name against the same resolver</div>
+<div class='cmds'>
+  <div class='cmd'>dig good.example.com       # works
+dig bad.example.com        # fails — note the status (NXDOMAIN? SERVFAIL? timeout?)
+# NXDOMAIN = record truly missing;  SERVFAIL = resolver/authoritative error;
+# timeout = network/resolver reachability</div>
+</div>
+<div class='sec'>2. Bypass caches / try different resolvers</div>
+<div class='cmds'>
+  <div class='cmd'>dig bad.example.com @8.8.8.8      # public resolver
+dig bad.example.com @&lt;internal-resolver&gt;
+dig +trace bad.example.com        # find WHERE the delegation/answer breaks</div>
+</div>
+<div class='sec'>3. Common selective-failure causes</div>
+<div class='cmds'>
+  <div class='cmd'>- Split-horizon: internal zone missing the record the public zone has (or vice versa)
+- One authoritative NS out of several is broken -> intermittent SERVFAIL
+- search-domain / ndots: short name expands wrong (works as FQDN, fails as short)
+- DNSSEC validation failure on one zone -> SERVFAIL only for that zone
+- A specific subdomain delegated to a down nameserver</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Lead with reading the response <i>status</i> — NXDOMAIN vs SERVFAIL vs timeout each points somewhere different. Then bisect by resolver (internal vs public) and use <code>dig +trace</code> to localize a broken delegation. Selective failure almost always means one zone/resolver/record, not "DNS is down" — saying that shows structured thinking.</div>`},
+{n:59,tag:'dns',q:'What is DNSSEC and what does a SERVFAIL caused by validation failure look like?',body:`<p>DNSSEC cryptographically signs DNS records so resolvers can verify answers weren't forged (cache poisoning / spoofing). The cost is operational fragility.</p>
+<div class='sec'>How it works</div>
+<div class='cmds'>
+  <div class='cmd'>- Each zone signs its records (RRSIG); publishes public key (DNSKEY)
+- A chain of trust: parent zone holds a DS record hashing the child's key
+- Validating resolver walks root -> TLD -> zone, checking signatures
+- Tampered/unsigned-but-expected answer -> validation FAILS</div>
+</div>
+<div class='sec'>The failure mode</div>
+<p>A DNSSEC validation failure returns <b>SERVFAIL</b> to validating resolvers (not NXDOMAIN) — the name may resolve fine on non-validating resolvers, so it's intermittent depending on which resolver a client uses.</p>
+<div class='cmds'>
+  <div class='cmd'>dig +dnssec example.com           # shows RRSIG records if signed
+dig +cd example.com               # "checking disabled" — bypasses validation;
+                                  # if +cd WORKS but normal FAILS -> DNSSEC issue</div>
+</div>
+<div class='warn'><b>Operational risk:</b> Expired signatures (RRSIG has a validity window — forget to re-sign and the whole zone goes SERVFAIL), a broken chain of trust (DS record not updated after a key rollover), or a registrar that mishandles DS records. DNSSEC outages take a domain fully dark for validating clients.</div>
+<div class='tip'><b>Interview tip:</b> The diagnostic gem: DNSSEC failures = SERVFAIL on validating resolvers, and <code>dig +cd</code> (checking disabled) succeeding while a normal query fails confirms it. Stress the operational fragility — expired RRSIGs and botched key rollovers cause real outages — which is why some orgs weigh DNSSEC's benefit against its blast radius.</div>`},
+{n:60,tag:'dns',q:'Compare DNS over UDP/TCP, DNS over TLS (DoT), and DNS over HTTPS (DoH). Operational impact?',body:`<p>Classic DNS is plaintext UDP (with TCP fallback); DoT and DoH add encryption, which changes privacy, security, and your ability to observe/control DNS.</p>
+<div class='sec'>The transports</div>
+<div class='cmds'>
+  <div class='cmd'>UDP/53  : default; fast, but truncated large answers fall back to TCP/53
+TCP/53  : used for big responses (DNSSEC, zone transfers) + when UDP truncates
+DoT     : DNS over TLS on port 853 — encrypted, on a dedicated port (visible as DNS)
+DoH     : DNS over HTTPS on 443 — encrypted AND blended with web traffic (hard to see)</div>
+</div>
+<div class='sec'>Operational impact</div>
+<div class='cmds'>
+  <div class='cmd'>+ Privacy/integrity: queries can't be sniffed or trivially tampered
+- Visibility loss: DoH on 443 bypasses your DNS-based monitoring/filtering
+- Browsers shipping DoH can ignore your corporate/NodeLocal resolver entirely
+- Harder to enforce split-horizon / internal resolution if clients use external DoH</div>
+</div>
+<div class='warn'><b>Gotcha:</b> A browser or app silently using public DoH can break internal name resolution (it skips your private resolver/split-horizon) and evade security DNS filtering — "works on my phone's data, fails on corp wifi" or vice versa. Enterprises often disable client DoH or point it at an internal DoH endpoint.</div>
+<div class='tip'><b>Interview tip:</b> The trade-off is privacy vs control/observability: DoT is encrypted but still identifiable on 853 (you can manage it); DoH on 443 is deliberately indistinguishable from HTTPS, which is great for user privacy but breaks enterprise DNS visibility, filtering, and split-horizon. Knowing why DoH specifically complicates ops is the senior point.</div>`},
+{n:61,tag:'tcp',q:'Walk through the TCP three-way handshake and connection teardown. What are TIME_WAIT and CLOSE_WAIT?',body:`<p>TCP establishes a connection in three steps and tears it down in four. The lingering states (TIME_WAIT, CLOSE_WAIT) are common sources of confusion and production issues.</p>
+<div class='sec'>Handshake + teardown</div>
+<div class='cmds'>
+  <div class='cmd'>OPEN:  SYN ->  | <- SYN-ACK | ACK ->          (3-way)
+CLOSE: FIN -> | <- ACK | <- FIN | ACK ->        (4-way, each side closes)</div>
+</div>
+<div class='sec'>TIME_WAIT (the active closer)</div>
+<p>The side that closes first sits in TIME_WAIT for ~2*MSL (often 60s) to absorb stray delayed packets and ensure the final ACK arrived. Many TIME_WAIT sockets is <b>normal</b> on a busy client/proxy, but can exhaust local ports if it initiates huge numbers of short connections.</p>
+<div class='sec'>CLOSE_WAIT (the bug signal)</div>
+<div class='cmds'>
+  <div class='cmd'># CLOSE_WAIT = the OTHER side sent FIN, but YOUR app hasn't called close().
+# Piling-up CLOSE_WAIT sockets = an APPLICATION BUG (leaked sockets / fds).
+ss -tan state close-wait | wc -l     # if this grows, your app isn't closing conns</div>
+</div>
+<div class='warn'><b>Key distinction:</b> Lots of TIME_WAIT is usually fine (it's the kernel doing its job); lots of CLOSE_WAIT is almost always your application failing to close sockets — leading to file-descriptor exhaustion and eventual "too many open files".</div>
+<div class='tip'><b>Interview tip:</b> Nail the distinction: TIME_WAIT is on the active closer and self-clears (tune with reuse, not the dangerous <code>tcp_tw_recycle</code>); CLOSE_WAIT growth means the app isn't closing connections — a code bug, not a tuning knob. Saying that confidently separates people who've debugged this from those who haven't.</div>`},
+{n:62,tag:'tcp',q:'What is ephemeral port exhaustion and how do you diagnose and fix it?',body:`<p>Every outbound connection consumes a local source port from the ephemeral range. A host making many connections to the same destination can run out.</p>
+<div class='sec'>The mechanism</div>
+<div class='cmds'>
+  <div class='cmd'># A connection is uniquely keyed by the 4-tuple:
+#   (src IP, src PORT, dst IP, dst PORT)
+# To ONE dst IP:port, you have only ~28k-64k source ports available.
+cat /proc/sys/net/ipv4/ip_local_port_range   # the ephemeral range</div>
+</div>
+<div class='sec'>Symptoms + diagnosis</div>
+<div class='cmds'>
+  <div class='cmd'>- "Cannot assign requested address" (EADDRNOTAVAIL) on connect()
+- Bursts of failures when connecting to one backend/DB/proxy
+ss -s                            # summary of socket states
+ss -tan | grep TIME-WAIT | wc -l # often TIME_WAIT eating the ports</div>
+</div>
+<div class='sec'>Fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- Connection POOLING / keep-alive (reuse connections — the real fix)
+- Widen ip_local_port_range
+- net.ipv4.tcp_tw_reuse=1 (safely reuse TIME_WAIT for new OUTbound conns)
+- Spread load across more destination IPs/ports (more 4-tuples)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> The limit is <b>per destination</b> 4-tuple, so a service hammering a single DB or downstream IP exhausts ports long before the host is "busy." Don't reach for the deprecated/dangerous <code>tcp_tw_recycle</code> (removed in modern kernels, breaks behind NAT).</div>
+<div class='tip'><b>Interview tip:</b> The headline fix is connection pooling — reuse instead of churn. The 4-tuple insight (per-destination limit) explains why "the host isn't even busy" yet connections fail. Cite <code>tcp_tw_reuse</code> (safe, outbound) and explicitly warn against <code>tcp_tw_recycle</code> — that distinction is a senior tell.</div>`},
+{n:63,tag:'tcp',q:'Explain TCP keep-alive vs HTTP keep-alive, and how load balancer idle timeouts cause errors.',body:`<p>Two different "keep-alive" mechanisms at different layers — confusing them leads to mysterious connection-reset errors behind load balancers.</p>
+<div class='sec'>The two keep-alives</div>
+<div class='cmds'>
+  <div class='cmd'>TCP keep-alive : kernel probes to detect a DEAD peer on an idle connection
+                 (default ~2hrs — too slow to be useful by default)
+HTTP keep-alive: REUSE one TCP connection for multiple HTTP requests
+                 (avoids handshake per request) — an app/L7 concept</div>
+</div>
+<div class='sec'>The LB idle-timeout trap</div>
+<div class='cmds'>
+  <div class='cmd'># LB silently drops a connection idle longer than its idle timeout (e.g. 60s).
+# Client thinks the (pooled, kept-alive) connection is still good, reuses it,
+# and gets a RST / "connection reset by peer" or 502 on the next request.</div>
+</div>
+<p>This hits long-lived pools, databases behind an LB, and idle HTTP keep-alive connections.</p>
+<div class='warn'><b>The fix — order the timeouts:</b> client/app idle timeout &lt; LB idle timeout &lt; backend idle timeout. If the client's keep-alive idle is shorter than the LB's, the client recycles the connection before the LB kills it, avoiding the reset. Also enable TCP keep-alive on long-lived/pooled connections so dead ones are detected.</div>
+<div class='tip'><b>Interview tip:</b> The senior insight is the <b>timeout ordering</b>: most "random 502/connection reset behind the ALB" issues come from the app's connection-pool idle timeout being longer than the LB's idle timeout. Set the client idle below the LB idle. This is one of the most common real cloud bugs.</div>`},
+{n:64,tag:'tcp',q:'What is head-of-line blocking? How do HTTP/1.1, HTTP/2, and HTTP/3 (QUIC) address it?',body:`<p>Head-of-line (HOL) blocking is when one stuck item delays everything queued behind it. It appears at both the HTTP and TCP layers, and each protocol generation tackles a different layer.</p>
+<div class='sec'>HTTP/1.1 — application-layer HOL</div>
+<p>One request per connection at a time; a slow response blocks reuse. Browsers work around it by opening ~6 parallel connections per host (wasteful).</p>
+<div class='sec'>HTTP/2 — multiplexing (fixes app-layer, not TCP)</div>
+<div class='cmds'>
+  <div class='cmd'># Many streams multiplexed over ONE TCP connection -> no app-layer HOL.
+# BUT all streams share one TCP byte-stream: a single lost packet stalls
+# ALL streams until retransmit -> TCP-layer HOL blocking remains.</div>
+</div>
+<div class='sec'>HTTP/3 — QUIC over UDP (fixes TCP-layer too)</div>
+<div class='cmds'>
+  <div class='cmd'># QUIC runs over UDP with independent streams: a lost packet only stalls
+# ITS stream, not the others. Also: 0/1-RTT handshakes, connection migration
+# (survives IP changes), TLS 1.3 built in.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> HTTP/2's win is real for high-latency/many-object pages, but on a lossy network its single TCP connection can be <i>worse</i> than HTTP/1.1's parallel connections because one loss stalls every stream. That's exactly the gap HTTP/3 closes by moving to per-stream delivery over UDP.</div>
+<div class='tip'><b>Interview tip:</b> The clean progression: HTTP/1.1 = app HOL (one-at-a-time), HTTP/2 = multiplex over one TCP (fixes app HOL, keeps TCP HOL), HTTP/3/QUIC = independent streams over UDP (fixes TCP HOL + faster handshakes + connection migration). Knowing that HTTP/2 still suffers TCP-layer HOL is the detail interviewers probe.</div>`},
+{n:65,tag:'tcp',q:'Explain TCP congestion control and what BBR changes versus loss-based algorithms like CUBIC.',body:`<p>Congestion control governs how fast TCP sends to avoid overwhelming the network. The big shift is from loss-based to model-based algorithms.</p>
+<div class='sec'>Loss-based (Reno/CUBIC — long the default)</div>
+<div class='cmds'>
+  <div class='cmd'># Ramp up until packet LOSS, then back off (loss = congestion signal).
+# Slow start (exponential) -> congestion avoidance (linear) -> loss -> halve.
+# Problem: treats ALL loss as congestion, and fills buffers (bufferbloat).</div>
+</div>
+<div class='sec'>BBR (model-based)</div>
+<div class='cmds'>
+  <div class='cmd'># Models the path's bottleneck BANDWIDTH and round-trip propagation time,
+# paces sending to that estimate instead of waiting for loss.
+# -> high throughput on lossy/long-haul links, less bufferbloat/latency.
+sysctl net.ipv4.tcp_congestion_control     # see/set the algorithm</div>
+</div>
+<div class='sec'>Why it matters</div>
+<p>On long-haul or lossy paths (mobile, cross-region, satellite), loss-based CUBIC under-performs because random (non-congestion) loss makes it back off needlessly. BBR keeps throughput high and latency low, which is why CDNs and cloud providers adopted it.</p>
+<div class='tip'><b>Interview tip:</b> The crisp contrast: CUBIC infers congestion from loss (and bloats buffers); BBR builds a bandwidth/RTT model and paces to it, winning on high-BDP and lossy links. Mention bufferbloat and that enabling BBR is a common, low-risk throughput/latency win for cross-region or edge traffic — a practical optimization, not just theory.</div>`},
+{n:66,tag:'tcp',q:'What are the SYN backlog and accept queue, and how do SYN cookies defend against SYN floods?',body:`<p>Inbound TCP connections pass through two kernel queues. Understanding them explains both SYN-flood attacks and "connection dropped under load" issues.</p>
+<div class='sec'>The two queues</div>
+<div class='cmds'>
+  <div class='cmd'>SYN queue (incomplete): half-open conns awaiting the final ACK (after SYN-ACK)
+                         sized by net.ipv4.tcp_max_syn_backlog
+Accept queue (complete): fully established, waiting for the app to accept()
+                         sized by min(somaxconn, app's listen() backlog)</div>
+</div>
+<div class='sec'>SYN flood + SYN cookies</div>
+<div class='cmds'>
+  <div class='cmd'># Attack: flood SYNs, never send the final ACK -> SYN queue fills ->
+#         legit connections dropped.
+# Defense: net.ipv4.tcp_syncookies=1 -> when the SYN queue is full, the kernel
+#   encodes connection state into the SYN-ACK sequence number instead of
+#   storing it. Validates the returned ACK -> no queue state needed.</div>
+</div>
+<div class='warn'><b>Accept-queue overflow:</b> If the app accept()s too slowly (event-loop blocked, thread starvation), the accept queue fills and the kernel drops/resets new connections even though SYNs succeed. <code>ss -ltn</code> shows Recv-Q (current) vs Send-Q (max) on listening sockets — a full Recv-Q means the app isn't accepting fast enough.</div>
+<div class='tip'><b>Interview tip:</b> Two takeaways: SYN cookies defend the SYN queue against floods without storing per-connection state (at the cost of some TCP options); and a backed-up <b>accept queue</b> (slow app, low <code>somaxconn</code>/listen backlog) drops connections under load. Reading <code>ss -ltn</code> Recv-Q/Send-Q on a listener is the diagnostic.</div>`},
+{n:67,tag:'routing',q:'How does a host decide where to send a packet? Explain the routing table and longest-prefix match.',body:`<p>Every packet's next hop is chosen by consulting the routing table and picking the most specific matching route — longest-prefix match.</p>
+<div class='sec'>The routing table</div>
+<div class='cmds'>
+  <div class='cmd'>ip route                       # show the routing table
+ip route get 8.8.8.8           # show exactly which route a dest would use
+# Example:
+# default via 10.0.0.1 dev eth0          (0.0.0.0/0 — catch-all)
+# 10.0.0.0/24 dev eth0 proto kernel      (directly connected subnet)
+# 10.0.5.0/24 via 10.0.0.9 dev eth0      (more specific route)</div>
+</div>
+<div class='sec'>Longest-prefix match</div>
+<p>If multiple routes match a destination, the one with the <b>longest prefix</b> (most specific, largest /N) wins. A packet to <code>10.0.5.20</code> matches both <code>10.0.0.0/24</code>... no — it matches <code>10.0.5.0/24</code> (more specific) over the <code>default</code> route. The default route (<code>/0</code>) is the last resort.</p>
+<div class='warn'><b>Gotcha:</b> Adding a more-specific route silently overrides a broader one — a stray <code>/32</code> or a VPN pushing routes can hijack traffic you expected to go elsewhere. <code>ip route get &lt;dst&gt;</code> is the definitive answer to "which path will this actually take," rather than eyeballing the table.</div>
+<div class='tip'><b>Interview tip:</b> The two facts: longest-prefix-match (most specific wins) and the default route as catch-all. The killer tool is <code>ip route get &lt;ip&gt;</code> — it resolves the exact route + source IP + interface the kernel will use, ending arguments about "why is traffic going out the wrong interface." Great for debugging asymmetric routing and VPN route leaks.</div>`},
+{n:68,tag:'routing',q:'Explain CIDR and subnetting. How do you size and avoid overlap in VPC design?',body:`<p>CIDR notation (<code>/N</code>) defines how many bits are the network prefix; the rest are host addresses. Subnet planning is a day-0 decision that's painful to undo.</p>
+<div class='sec'>CIDR math</div>
+<div class='cmds'>
+  <div class='cmd'>/24 = 256 addresses (254 usable)      /16 = 65,536
+/28 = 16 addresses (small subnet)     /8  = 16,777,216
+# usable = 2^(32-N) minus reserved (network, broadcast, + cloud reserves a few)
+# AWS reserves 5 IPs per subnet (.0 network, .1 router, .2 DNS, .3 future, .255 bcast)</div>
+</div>
+<div class='sec'>VPC sizing principles</div>
+<div class='cmds'>
+  <div class='cmd'>- Pick a large VPC CIDR (e.g. 10.0.0.0/16) with room to grow
+- Carve subnets per AZ + tier (public/private/data) — leave gaps for expansion
+- NEVER overlap CIDRs between VPCs/on-prem you intend to peer/VPN
+  (overlapping ranges can't be routed/peered without NAT gymnastics)</div>
+</div>
+<div class='warn'><b>The cardinal sin:</b> Using the same range (e.g. everyone defaults to 10.0.0.0/16) across VPCs or with on-prem. You can't VPC-peer or VPN overlapping CIDRs — routing is ambiguous. Plan a global IP address scheme up front; resizing or re-IPing later is a major project.</div>
+<div class='tip'><b>Interview tip:</b> Two senior points: (1) plan non-overlapping CIDRs across all VPCs/on-prem from the start because peering/VPN require unique ranges; (2) cloud reserves addresses per subnet (AWS: 5), and Kubernetes pod CIDRs consume real VPC IPs — so size generously. Mention that overlap forces ugly NAT workarounds, which is why address planning is a foundational architecture task.</div>`},
+{n:69,tag:'routing',q:'What is asymmetric routing and why does it break stateful firewalls and load balancers?',body:`<p>Asymmetric routing is when the request and its reply take different network paths. It's fine for plain routing but breaks anything that tracks connection state.</p>
+<div class='sec'>The problem</div>
+<div class='cmds'>
+  <div class='cmd'># Request:  client -> path A -> firewall A -> server
+# Reply:    server -> path B -> firewall B -> client
+# Firewall B never saw the SYN, so the reply looks like an unsolicited packet
+#   -> dropped by the stateful firewall (no matching conntrack entry).</div>
+</div>
+<div class='sec'>Where it bites</div>
+<div class='cmds'>
+  <div class='cmd'>- Multiple egress paths / multi-homed hosts / dual NAT gateways
+- Stateful firewalls or LBs in each path that must see BOTH directions
+- Linux rp_filter (reverse-path filtering) dropping packets arriving on an
+  interface the route table wouldn't have used to reach the source</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Stateless routing tolerates asymmetry; stateful devices (firewalls, NAT, L4 LBs, conntrack) require seeing both directions on the same device. Symptoms: connections that establish but hang, or work intermittently depending on path. <code>rp_filter</code> can silently drop the asymmetric replies on multi-NIC hosts.</div>
+<div class='tip'><b>Interview tip:</b> The crux: state requires symmetry. Fix by forcing both directions through the same stateful device (policy/source-based routing, sticky paths), syncing firewall state, or relaxing <code>rp_filter</code> to <code>loose</code> mode on multi-homed hosts. Recognizing that "it establishes then hangs with multiple gateways" smells like asymmetric routing is a strong signal.</div>`},
+{n:70,tag:'routing',q:'What is BGP, and how do BGP issues cause large internet/cloud outages?',body:`<p>BGP is the protocol that routes between autonomous systems (the internet's backbone routing). It's trust-based, which makes misconfigurations and hijacks high-impact.</p>
+<div class='sec'>What BGP does</div>
+<div class='cmds'>
+  <div class='cmd'>- Autonomous Systems (ASes) advertise which IP prefixes they can reach
+- Neighbors choose best paths by policy + AS-path length
+- It's the glue between ISPs, clouds, and large networks
+- Largely trust-based historically: you believe what peers advertise</div>
+</div>
+<div class='sec'>How it causes outages</div>
+<div class='cmds'>
+  <div class='cmd'>- Route leak / fat-finger: an AS wrongly advertises prefixes it shouldn't
+  -> traffic blackholes or detours globally (e.g. major provider self-outages)
+- BGP hijack: a malicious/erroneous AS claims someone else's prefixes
+  -> traffic redirected/intercepted
+- Withdrawing your own routes by mistake -> your services vanish from the internet</div>
+</div>
+<div class='sec'>Mitigation: RPKI</div>
+<p><b>RPKI</b> (Resource Public Key Infrastructure) cryptographically validates that an AS is authorized to announce a prefix (Route Origin Validation), reducing accidental leaks and hijacks. Adoption is growing but partial.</p>
+<div class='tip'><b>Interview tip:</b> You won't run BGP as an app engineer, but understanding that a BGP misconfiguration can withdraw a provider's own routes (causing a global self-outage) or let someone hijack prefixes explains real headline incidents. Naming <b>RPKI / Route Origin Validation</b> as the defense shows you understand internet-scale routing risk — relevant when reasoning about provider dependencies and DR.</div>`},
+{n:71,tag:'cloud',q:'Compare VPC peering, Transit Gateway, VPN, and Direct Connect. When use each?',body:`<p>These connect networks together; they differ in topology, scale, bandwidth, and whether traffic crosses the public internet.</p>
+<div class='sec'>The options</div>
+<div class='cmds'>
+  <div class='cmd'>VPC Peering     : 1:1 private link between two VPCs; NOT transitive; simple/cheap
+                  -> mesh of peerings gets unmanageable at scale (N^2)
+Transit Gateway : hub-and-spoke router connecting MANY VPCs + on-prem; transitive
+                  -> the scalable answer for many-VPC/multi-account networks
+Site-to-Site VPN: encrypted tunnel over the PUBLIC internet to on-prem
+                  -> quick, cheap, but internet-variable latency + bandwidth caps
+Direct Connect  : DEDICATED private physical link to the cloud
+                  -> consistent low latency, high bandwidth, no public internet</div>
+</div>
+<div class='sec'>Choosing</div>
+<div class='cmds'>
+  <div class='cmd'>Few VPCs, simple        -> VPC peering
+Many VPCs / hub-spoke   -> Transit Gateway
+On-prem, cheap/fast set  -> VPN
+On-prem, performance/SLA -> Direct Connect (often + VPN as encrypted backup)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> VPC peering is <b>non-transitive</b> — if A peers B and B peers C, A still can't reach C. People build sprawling peering meshes then hit this; Transit Gateway exists precisely to provide transitive hub-and-spoke routing. And remember: overlapping CIDRs can't peer at all.</div>
+<div class='tip'><b>Interview tip:</b> The two senior points: peering is non-transitive (so it doesn't scale past a handful of VPCs — use Transit Gateway as the hub), and VPN vs Direct Connect is the internet-vs-dedicated trade-off (cost/speed-to-deploy vs consistent performance, often combined with VPN as encrypted backup over Direct Connect).</div>`},
+{n:72,tag:'routing',q:'What is policy-based / source-based routing and when do you need it?',body:`<p>Normal routing decides by <i>destination</i> only. Policy-based routing (PBR) lets you route by source, mark, port, or other attributes using multiple routing tables.</p>
+<div class='sec'>The mechanism (Linux)</div>
+<div class='cmds'>
+  <div class='cmd'>ip rule add from 10.0.5.0/24 table 100   # traffic FROM this source uses table 100
+ip route add default via 10.0.5.1 table 100
+ip rule list                              # show policy rules (consulted in order)
+# Selectors: from (source), fwmark, iif, dport, etc. -> pick a routing table</div>
+</div>
+<div class='sec'>When you need it</div>
+<div class='cmds'>
+  <div class='cmd'>- Multi-homed host: replies must egress the SAME interface they arrived on
+  (fixes the asymmetric-routing/rp_filter drop problem)
+- Send specific subnets/apps over a VPN or a specific gateway
+- Separate management vs data-plane traffic onto different links
+- Multiple ISPs/egress paths with per-source policy</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Without source-based routing on a dual-NIC host, replies to traffic that arrived on eth1 may try to leave via eth0's default route — asymmetric routing, and <code>rp_filter</code> then drops them. PBR pins the reply to the correct interface/table.</div>
+<div class='tip'><b>Interview tip:</b> The canonical use is the multi-homed / dual-gateway host where you must reply out the interface a request came in on — exactly the fix for the asymmetric-routing problem from the routing section. <code>ip rule</code> + a dedicated routing table per source is the implementation. Recognizing when destination-only routing isn't enough is the signal.</div>`},
+{n:73,tag:'troubleshoot',q:'How do you distinguish packet loss, latency, and jitter — and what does mtr tell you?',body:`<p>These three degrade connections differently, and conflating them sends you down the wrong debugging path. <code>mtr</code> exposes all three per hop.</p>
+<div class='sec'>The three</div>
+<div class='cmds'>
+  <div class='cmd'>Latency : time for a packet to travel one way / round trip (RTT)
+Packet loss : % of packets that never arrive (triggers TCP retransmits -> slow)
+Jitter  : VARIATION in latency between packets (kills VoIP, video, real-time)</div>
+</div>
+<div class='sec'>mtr — traceroute + ping per hop, continuously</div>
+<div class='cmds'>
+  <div class='cmd'>mtr -rwzbc 100 &lt;host&gt;      # 100 cycles, report mode, per-hop loss% + latency
+# Read it: loss that STARTS at a hop and CONTINUES to the end = real loss there.
+# Loss at ONE middle hop that DOESN'T continue = that router de-prioritizing ICMP
+#   (cosmetic, not real loss) — a classic misread.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> A single hop showing loss while later hops show none is almost always ICMP rate-limiting on that router, NOT a real problem — many people chase this phantom. Real loss <b>persists</b> from the offending hop through to the destination. Also: high RTT to a far region is physics (distance), not necessarily a fault.</div>
+<div class='tip'><b>Interview tip:</b> Show you can read <code>mtr</code> correctly: loss must persist to the final hop to be real; transient mid-path loss is usually ICMP deprioritization. Match the symptom to the metric — retransmits/throughput issues = loss; slow-but-steady = latency; choppy real-time = jitter. That diagnostic precision is exactly what's being tested.</div>`},
+{n:74,tag:'routing',q:'What is hairpinning / NAT loopback and why does an internal service fail to reach itself by public name?',body:`<p>Hairpinning is when traffic from inside a network goes out to a public endpoint and must "turn around" to come back to a host on the same network. Many setups don't support it.</p>
+<div class='sec'>The scenario</div>
+<div class='cmds'>
+  <div class='cmd'># Internal client resolves api.example.com -> the PUBLIC LB IP
+# Packet goes to the gateway/LB and must hairpin back to an internal backend
+#   on the same network it came from.
+# Many NAT gateways / LBs don't allow this loopback -> connection fails/times out.</div>
+</div>
+<div class='sec'>Why it fails + fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- NAT device won't route a packet back out the interface it arrived on
+- Source/dest on the same subnet confuses the NAT/security path
+FIXES:
+- Split-horizon DNS: internal clients resolve to the PRIVATE IP (no hairpin)
+- An internal load balancer for internal traffic
+- Enable NAT loopback/hairpinning on the gateway (if supported)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> The tell is "works from outside, fails from inside" (or from the same host/subnet) when using the public hostname. It's not a DNS or app bug — it's the network refusing the U-turn. This is extremely common with containers calling their own service's public URL.</div>
+<div class='tip'><b>Interview tip:</b> The clean fix ties back to split-horizon DNS — internal clients should resolve the name to the private endpoint so traffic never has to hairpin. Recognizing "external works, internal-to-itself fails" as NAT loopback (not DNS) demonstrates real network debugging, and the private-IP/internal-LB fix is the production-grade answer.</div>`},
+{n:75,tag:'tcp',q:'What does \'connection reset by peer\' (RST) actually mean, and what are the common causes?',body:`<p>An RST is TCP's abrupt "this connection is over now" — unlike a graceful FIN. It signals one side tore down or rejected the connection unexpectedly.</p>
+<div class='sec'>RST vs FIN</div>
+<div class='cmds'>
+  <div class='cmd'>FIN : graceful close ("I'm done sending") — normal teardown
+RST : abort NOW — no graceful close; in-flight data may be lost
+# Seen by the app as ECONNRESET / "connection reset by peer"</div>
+</div>
+<div class='sec'>Common causes</div>
+<div class='cmds'>
+  <div class='cmd'>- Sending to a socket the peer already closed (use-after-close)
+- LB/firewall idle timeout killed the connection; you reused it (the LB trap)
+- Backend crashed / OOMKilled / restarted mid-connection
+- Connecting to a port with nothing listening (RST instead of timeout)
+- A firewall configured to REJECT (RST) rather than DROP (silent)
+- Backpempt: app calling close() with unread data (SO_LINGER) sends RST</div>
+</div>
+<div class='warn'><b>RST vs timeout distinction:</b> An RST is an <i>active</i> rejection (something replied "no") — port closed, app crashed, or firewall REJECT. A <i>timeout</i> is silence — wrong IP, DROP firewall, or network black hole. RST = someone said no; timeout = no one answered. That distinction alone narrows the cause dramatically.</div>
+<div class='tip'><b>Interview tip:</b> Two strong moves: (1) RST = active rejection vs timeout = silence — immediately splits "reachable but refusing" from "unreachable"; (2) the most common production RST is the LB idle-timeout + connection-pool reuse pattern from the keep-alive question. Capturing with <code>tcpdump</code> to see who sent the RST (and when) pinpoints it.</div>`},
+{n:76,tag:'http',q:'Walk through the full lifecycle of an HTTPS request from URL to rendered response.',body:`<p>A single HTTPS request touches DNS, TCP, TLS, and HTTP. Knowing each stage lets you attribute latency precisely.</p>
+<div class='sec'>The stages</div>
+<div class='cmds'>
+  <div class='cmd'>1. DNS    : resolve hostname -> IP (may be cached at several layers)
+2. TCP    : 3-way handshake to IP:443 (1 RTT)
+3. TLS    : handshake — negotiate version/cipher, validate cert, key exchange
+            (TLS 1.2 = 2 RTT, TLS 1.3 = 1 RTT, 0-RTT on resume)
+4. HTTP   : send request; server processes; sends response
+5. Transfer + render</div>
+</div>
+<div class='sec'>Attributing latency with curl</div>
+<div class='cmds'>
+  <div class='cmd'>curl -w "dns:%{time_namelookup} conn:%{time_connect} \\
+tls:%{time_appconnect} ttfb:%{time_starttransfer} total:%{time_total}\\n" \\
+  -o /dev/null -s https://example.com</div>
+</div>
+<p>This breaks the request into DNS, TCP connect, TLS, time-to-first-byte, and total — so you know <i>which</i> stage is slow.</p>
+<div class='warn'><b>Reading it:</b> High <code>time_namelookup</code> = DNS; gap between connect and appconnect = TLS; high <code>time_starttransfer</code> after TLS = slow server (TTFB); high total but fast TTFB = large body / slow transfer. Each points to a different fix.</div>
+<div class='tip'><b>Interview tip:</b> The <code>curl -w</code> timing breakdown is the single most useful HTTP-debugging trick — it turns "the site is slow" into "DNS is slow" or "TLS is slow" or "the server's TTFB is slow." Citing the per-phase timing variables shows you debug latency empirically, not by guessing.</div>`},
+{n:77,tag:'http',q:'Explain the TLS 1.3 handshake and how it improves on TLS 1.2. What is 0-RTT and its risk?',body:`<p>TLS 1.3 streamlined the handshake for speed and removed legacy insecure options, cutting a round trip and enabling session resumption with zero round trips.</p>
+<div class='sec'>1.2 vs 1.3 handshake</div>
+<div class='cmds'>
+  <div class='cmd'>TLS 1.2 : 2 round trips (ClientHello/ServerHello, then key exchange) before data
+TLS 1.3 : 1 round trip — client sends key share in ClientHello; server responds
+          with everything needed -> app data after 1 RTT
+          Also: removed old ciphers/RSA key exchange, forward secrecy mandatory</div>
+</div>
+<div class='sec'>0-RTT resumption</div>
+<div class='cmds'>
+  <div class='cmd'># On a RESUMED connection, the client can send app data in the FIRST flight
+# (0 round trips) using a pre-shared key from the prior session.
+# Great for latency — but...</div>
+</div>
+<div class='warn'><b>0-RTT replay risk:</b> 0-RTT early data can be <b>replayed</b> by an attacker (it's sent before the handshake completes, so there's no freshness guarantee). Only use 0-RTT for idempotent, non-state-changing requests (e.g. a GET) — never for a POST that transfers money. Many servers restrict 0-RTT to safe methods for this reason.</div>
+<div class='tip'><b>Interview tip:</b> Two points score well: TLS 1.3 cuts the handshake to 1 RTT (and 0-RTT on resume) while mandating forward secrecy and dropping weak ciphers; and 0-RTT's replay vulnerability means it's only safe for idempotent requests. Knowing the security caveat, not just the speed win, is the senior signal.</div>`},
+{n:78,tag:'http',q:'How does TLS certificate validation work, and what is the \'missing intermediate certificate\' trap?',body:`<p>A client validates a server's certificate by building a chain of trust from the server's cert up to a trusted root CA. A broken chain causes confusing "works in browser, fails elsewhere" errors.</p>
+<div class='sec'>The chain of trust</div>
+<div class='cmds'>
+  <div class='cmd'>Server (leaf) cert  -> signed by -> Intermediate CA -> signed by -> Root CA
+# Client trusts the Root (in its trust store); must be able to build the full
+# chain leaf -> intermediate(s) -> root to validate.</div>
+</div>
+<div class='sec'>The missing-intermediate trap</div>
+<div class='cmds'>
+  <div class='cmd'># The SERVER must send leaf + intermediate(s). If it sends only the leaf:
+# - Browsers often still work (they cache/fetch intermediates, AIA chasing)
+# - curl, Java, Go, mobile apps FAIL: "unable to get local issuer certificate"
+openssl s_client -connect host:443 -showcerts   # inspect the chain the server sends</div>
+</div>
+<div class='warn'><b>Classic gotcha:</b> "It works in my browser but my service/curl/Java client gets a cert error." The server is sending an incomplete chain (missing intermediate); browsers paper over it via AIA fetching or cached intermediates, but strict clients don't. Fix: configure the server to present the full chain (fullchain.pem), not just the leaf.</div>
+<div class='tip'><b>Interview tip:</b> The tell "browser works, programmatic client fails" almost always = missing intermediate cert. <code>openssl s_client -showcerts</code> reveals exactly what the server sends. The fix is serving the full chain. This is one of the most common real TLS misconfigurations and recognizing the asymmetry instantly is a strong signal.</div>`},
+{n:79,tag:'http',q:'Explain the difference between 502, 503, and 504 errors. How do you debug each?',body:`<p>These 5xx errors come from a gateway/proxy/LB and each points to a distinct backend condition — knowing which narrows the cause immediately.</p>
+<div class='sec'>The three</div>
+<div class='cmds'>
+  <div class='cmd'>502 Bad Gateway     : proxy got an INVALID/garbage response from the backend
+                      (backend crashed mid-response, protocol mismatch, RST)
+503 Service Unavailable : no healthy backend to send to (all failing health checks,
+                      overloaded, or scaled to zero)
+504 Gateway Timeout : backend accepted but didn't respond in time
+                      (slow backend, deadlock, downstream dependency hang)</div>
+</div>
+<div class='sec'>Debugging each</div>
+<div class='cmds'>
+  <div class='cmd'>502 -> check backend logs for crashes/RST; protocol/keep-alive mismatch; OOMKills
+503 -> check health checks + backend pool: are ANY targets healthy? scaled down?
+504 -> check backend latency + its downstream calls (DB, API); raise/align timeouts
+        or fix the slow dependency (don't just bump the timeout)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> A 504 often masks a downstream problem — the backend is waiting on a slow DB/API. Bumping the gateway timeout hides the symptom; find the actual slow dependency. A 502 frequently traces to the LB-idle-timeout/keep-alive reset pattern (backend closed the pooled connection).</div>
+<div class='tip'><b>Interview tip:</b> The crisp mapping: 502 = bad/garbage response (backend broke), 503 = no healthy backend (capacity/health), 504 = backend too slow (timeout). Tie 504 to chasing the downstream dependency rather than raising timeouts, and 502 to the connection-reset/keep-alive pattern — that connects this to the TCP section and shows systems thinking.</div>`},
+{n:80,tag:'http',q:'Explain HTTP idempotency and safe methods. How do idempotency keys make retries safe?',body:`<p>Idempotency — the same request applied multiple times has the same effect as once — is the foundation of safe retries in distributed systems.</p>
+<div class='sec'>Method semantics</div>
+<div class='cmds'>
+  <div class='cmd'>Safe (no side effects)     : GET, HEAD, OPTIONS
+Idempotent (repeat = same)  : GET, PUT, DELETE  (PUT sets a value; repeating = same)
+NOT idempotent              : POST (each call may create a new resource)</div>
+</div>
+<div class='sec'>Why it matters for retries</div>
+<div class='cmds'>
+  <div class='cmd'># A timeout is ambiguous: did the request succeed and the response get lost,
+# or did it fail? Safe to retry an idempotent op; retrying a POST might
+# double-charge / double-create.</div>
+</div>
+<div class='sec'>Idempotency keys</div>
+<div class='cmds'>
+  <div class='cmd'># Client sends a unique key with a POST:  Idempotency-Key: &lt;uuid&gt;
+# Server records the key + result; a retry with the SAME key returns the
+# stored result instead of re-executing -> POST becomes safe to retry.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Blind retries (LB/client auto-retry, mesh retry policies) on non-idempotent endpoints cause duplicates — double payments, duplicate orders. Retries are only safe on idempotent operations or POSTs protected by idempotency keys. This is why payment APIs require an idempotency key.</div>
+<div class='tip'><b>Interview tip:</b> The senior framing: a timeout is ambiguous, so retries are mandatory for reliability but dangerous on non-idempotent ops. The fix is idempotency keys (server dedupes by key) — exactly how Stripe et al. make POST retries safe. Mention that mesh/LB auto-retry policies must be scoped to idempotent methods, or they create duplicates under load.</div>`},
+{n:81,tag:'security',q:'Explain cookies, SameSite, and CORS. What problems does each solve?',body:`<p>These browser mechanisms govern how credentials and cross-origin requests behave — central to web security and a frequent source of "works locally, breaks in prod" bugs.</p>
+<div class='sec'>Cookie attributes</div>
+<div class='cmds'>
+  <div class='cmd'>Secure   : only sent over HTTPS
+HttpOnly : not readable by JavaScript (mitigates XSS token theft)
+SameSite : Strict / Lax / None — controls cross-site sending (CSRF defense)
+           None requires Secure; Lax is the modern default</div>
+</div>
+<div class='sec'>SameSite (CSRF defense)</div>
+<p><code>SameSite=Lax</code> (default) means cookies aren't sent on cross-site subrequests (e.g. a forged POST from another site), blunting CSRF. <code>None</code> allows cross-site (needed for third-party/embedded contexts) but must be <code>Secure</code>.</p>
+<div class='sec'>CORS (Cross-Origin Resource Sharing)</div>
+<div class='cmds'>
+  <div class='cmd'># Browser enforces Same-Origin Policy; CORS is how a server OPTS IN to
+# cross-origin JS requests via response headers:
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Credentials: true   # to send cookies cross-origin
+# Preflight: browser sends OPTIONS first for non-simple requests</div>
+</div>
+<div class='warn'><b>Gotcha:</b> CORS is enforced by the <b>browser</b>, not the server — a CORS error means the server didn't return the right allow headers, not that the request was blocked server-side (curl/Postman ignore CORS, which is why "it works in Postman but fails in the browser"). And <code>Allow-Origin: *</code> can't be combined with credentialed requests.</div>
+<div class='tip'><b>Interview tip:</b> Clarify that CORS is a browser-side relaxation of the same-origin policy (server opts in via headers; the preflight OPTIONS catches people out), and SameSite cookies are the modern CSRF defense. The "works in Postman, fails in browser" tell for CORS, and HttpOnly+Secure+SameSite as the cookie hardening trio, are the practical points.</div>`},
+{n:82,tag:'http',q:'How does HTTP caching work? Explain Cache-Control, ETag, and the validation flow.',body:`<p>HTTP caching avoids re-fetching unchanged content, using freshness directives and validators. Misconfiguring it causes either stale content or no caching at all.</p>
+<div class='sec'>Freshness (Cache-Control)</div>
+<div class='cmds'>
+  <div class='cmd'>Cache-Control: max-age=3600          # fresh for 1 hour, serve from cache
+Cache-Control: no-cache              # MUST revalidate before using (not "don't cache")
+Cache-Control: no-store              # truly don't cache (sensitive data)
+Cache-Control: private / public      # browser-only vs shared (CDN) caches
+Cache-Control: immutable             # never revalidate (fingerprinted assets)</div>
+</div>
+<div class='sec'>Validation (ETag / Last-Modified)</div>
+<div class='cmds'>
+  <div class='cmd'># When stale, the client revalidates instead of re-downloading:
+Response:  ETag: "abc123"
+Next req:  If-None-Match: "abc123"
+Server:    304 Not Modified  (no body — cheap!)  OR  200 + new body</div>
+</div>
+<div class='warn'><b>Common confusion:</b> <code>no-cache</code> does NOT mean "don't cache" — it means "cache but always revalidate." Use <code>no-store</code> for truly sensitive data. The classic strategy: long <code>max-age + immutable</code> for fingerprinted static assets (<code>app.a1b2c3.js</code>), and <code>no-cache</code> for HTML that references them.</div>
+<div class='tip'><b>Interview tip:</b> Two points: the freshness-then-validation model (max-age serves from cache; on expiry, ETag/304 avoids re-downloading unchanged bodies), and the <code>no-cache</code> vs <code>no-store</code> distinction that trips everyone up. The fingerprinted-assets-immutable + no-cache-HTML pattern is the production caching strategy worth naming.</div>`},
+{n:83,tag:'security',q:'What is mutual TLS (mTLS) and where do you use it in production architectures?',body:`<p>In standard TLS only the server proves its identity. mTLS adds client authentication — both sides present and verify certificates — establishing strong two-way identity.</p>
+<div class='sec'>How it differs from one-way TLS</div>
+<div class='cmds'>
+  <div class='cmd'>One-way TLS : server presents cert; client verifies it (typical web HTTPS)
+mTLS        : server AND client present certs; each verifies the other
+              -> the connection itself authenticates both parties</div>
+</div>
+<div class='sec'>Where it's used</div>
+<div class='cmds'>
+  <div class='cmd'>- Service-to-service auth in a mesh (Istio/Linkerd auto-mTLS, SPIFFE identity)
+- Zero-trust internal networks: identity per workload, not network location
+- Machine-to-machine / API clients where a shared secret is too weak
+- IoT/device auth; high-security B2B APIs</div>
+</div>
+<div class='sec'>Operational cost</div>
+<p>You need a certificate authority and, crucially, <b>rotation/lifecycle</b> — short-lived certs auto-issued and rotated (a mesh handles this; doing it by hand is painful).</p>
+<div class='warn'><b>Gotcha:</b> The hard part of mTLS is certificate lifecycle, not the protocol — expired client certs cause outages, and manual rotation doesn't scale. This is why service meshes (which issue short-lived per-workload certs automatically) are the usual delivery vehicle for mTLS.</div>
+<div class='tip'><b>Interview tip:</b> Frame mTLS as the core of zero-trust service identity — authenticate the workload via cert, not the network it sits on. The senior nuance is that the protocol is easy but cert lifecycle/rotation is the operational challenge, which is exactly why meshes (with SPIFFE identities + auto-rotation) exist. Ties directly to the service-mesh and zero-trust topics.</div>`},
+{n:84,tag:'security',q:'What does a WAF do, and what are its limits? How does it relate to L7 DDoS protection?',body:`<p>A Web Application Firewall inspects HTTP(S) requests at L7 to block application-layer attacks — but it's a filter, not a substitute for secure code.</p>
+<div class='sec'>What a WAF blocks</div>
+<div class='cmds'>
+  <div class='cmd'>- Common injection patterns: SQLi, XSS, command injection (OWASP Top 10)
+- Known bad bots / scanners; suspicious request shapes
+- Rate-based rules; geo/IP reputation blocking
+- Virtual patching: block a CVE's exploit pattern before you can patch the app</div>
+</div>
+<div class='sec'>Limits</div>
+<div class='cmds'>
+  <div class='cmd'>- Signature/rule-based -> bypassable with novel/encoded payloads
+- False positives block legitimate traffic (tuning burden)
+- Can't fix the underlying vulnerability — it's defense in depth, not a fix
+- Sees only what it can decrypt (must terminate or inspect TLS)</div>
+</div>
+<div class='sec'>Relation to L7 DDoS</div>
+<p>WAFs often pair with L7 DDoS protection (rate limiting, bot management, challenge pages) since application-layer floods (expensive queries, login bursts) look like valid HTTP and can't be stopped by L3/4 volumetric defenses alone.</p>
+<div class='tip'><b>Interview tip:</b> Position the WAF as defense-in-depth / virtual patching, not a security fix — secure code still matters, and rule-based WAFs are bypassable and noisy. The strong nuance: L7 DDoS (app-layer floods of valid-looking requests) needs WAF/rate-limiting/bot management, distinct from L3/4 volumetric DDoS handled upstream by the network/CDN — connecting to the next question.</div>`},
+{n:85,tag:'security',q:'Explain L3/L4 vs L7 DDoS attacks and the layered defenses against each.',body:`<p>DDoS attacks target different layers, and the defenses differ accordingly — volumetric flooding versus application exhaustion.</p>
+<div class='sec'>L3/L4 (volumetric / protocol)</div>
+<div class='cmds'>
+  <div class='cmd'>- UDP/ICMP floods, amplification (DNS/NTP reflection), SYN floods
+- Goal: saturate bandwidth or exhaust connection state
+- Defense: upstream scrubbing/CDN absorbs volume, SYN cookies, anycast to
+  spread load across many POPs, provider-level DDoS protection</div>
+</div>
+<div class='sec'>L7 (application)</div>
+<div class='cmds'>
+  <div class='cmd'>- HTTP floods, slowloris (slow requests holding connections), hitting
+  expensive endpoints (search, login, report generation)
+- Looks like valid traffic -> can't filter by volume alone
+- Defense: rate limiting, bot detection/challenges (CAPTCHA/JS), WAF rules,
+  caching/CDN to absorb, autoscaling as a buffer (with cost guardrails)</div>
+</div>
+<div class='sec'>Why anycast helps</div>
+<p>Anycast advertises the same IP from many locations; volumetric attack traffic is distributed across global POPs instead of hammering one site, and a CDN absorbs/scrubs it close to the source.</p>
+<div class='warn'><b>Gotcha:</b> Autoscaling to absorb an L7 flood can rescue availability but blow up your bill (a "denial of wallet" attack). Pair autoscaling with rate limits and cost guardrails so an attack doesn't simply convert downtime into a huge invoice.</div>
+<div class='tip'><b>Interview tip:</b> The clean split: L3/4 = volume (absorb/scrub upstream with anycast + CDN + provider DDoS), L7 = valid-looking app requests (rate limit, bot management, WAF, caching). Naming anycast for distributing volumetric load and the "denial of wallet" autoscaling risk are both senior-level observations.</div>`},
+{n:86,tag:'cloud',q:'What cloud-native network security controls would you layer for a defense-in-depth posture?',body:`<p>Cloud network security is layered — no single control suffices. You stack controls from the edge down to the workload.</p>
+<div class='sec'>The layers (edge to workload)</div>
+<div class='cmds'>
+  <div class='cmd'>Edge      : CDN + DDoS protection + WAF (absorb/scrub/filter at the perimeter)
+Network    : VPC segmentation (public/private/data subnets), NACLs (subnet guardrails)
+Instance   : Security Groups (stateful, least-privilege per service)
+Egress     : controlled outbound (NAT GW + egress filtering / no open 0.0.0.0/0 out)
+Private     : VPC endpoints / PrivateLink so traffic to cloud services stays private
+Workload    : mTLS / service mesh, NetworkPolicies (K8s), identity-based auth</div>
+</div>
+<div class='sec'>Key principles</div>
+<div class='cmds'>
+  <div class='cmd'>- Least privilege both INBOUND and OUTBOUND (egress filtering stops exfil/beaconing)
+- Private by default: no public IPs unless required; use private endpoints
+- Segment so a breach in one tier can't reach the data tier
+- Identity-based (zero-trust) over network-location trust</div>
+</div>
+<div class='warn'><b>Commonly missed:</b> Egress control. Most teams lock down inbound but leave outbound wide open (0.0.0.0/0) — which is exactly what malware uses to beacon out and exfiltrate. Default-deny egress with an allowlist is a high-value, often-skipped control.</div>
+<div class='tip'><b>Interview tip:</b> Structure the answer edge-to-workload (CDN/WAF -> VPC segmentation -> SG/NACL -> egress control -> private endpoints -> mTLS/NetworkPolicy) and stress two things teams skip: egress filtering (stops exfiltration/beaconing) and private endpoints (PrivateLink keeps cloud-service traffic off the public internet). Defense-in-depth + least-privilege-both-directions is the framing.</div>`},
+{n:87,tag:'security',q:'Explain zero-trust networking versus the traditional perimeter model.',body:`<p>The perimeter model trusts anything inside the network; zero-trust trusts nothing by default and verifies every request regardless of location.</p>
+<div class='sec'>Perimeter ('castle and moat')</div>
+<div class='cmds'>
+  <div class='cmd'># Hard outer wall (firewall/VPN); once inside, broad implicit trust.
+# Problem: a single breach -> lateral movement across the flat internal network.
+# VPN access = "you're inside" = trusted -> over-broad access.</div>
+</div>
+<div class='sec'>Zero-trust ('never trust, always verify')</div>
+<div class='cmds'>
+  <div class='cmd'>- Identity-based: authenticate + authorize EVERY request (user AND workload)
+- Network location grants NO trust (inside == outside)
+- Least-privilege, per-resource access; continuous verification
+- Micro-segmentation: limit blast radius if one workload is compromised
+- mTLS for service identity; short-lived credentials</div>
+</div>
+<div class='sec'>In practice</div>
+<p>Identity-aware proxies (BeyondCorp-style) replace VPNs for user access; service mesh mTLS + NetworkPolicies enforce workload-to-workload zero-trust; secrets are short-lived and identity-bound.</p>
+<div class='tip'><b>Interview tip:</b> The headline contrast: perimeter trusts location (and a breach moves laterally freely); zero-trust trusts verified identity per request, so a compromised workload can't roam. Concretely: replace VPN-grants-everything with identity-aware access, and enforce service identity via mTLS + micro-segmentation. This ties together mTLS, NetworkPolicy, and least-privilege egress from earlier answers.</div>`},
+{n:88,tag:'http',q:'What is a reverse proxy vs a forward proxy vs an API gateway? Give concrete uses.',body:`<p>All sit between clients and servers, but they face different directions and serve different roles.</p>
+<div class='sec'>The three</div>
+<div class='cmds'>
+  <div class='cmd'>Forward proxy : sits in front of CLIENTS, proxies their outbound requests
+                (corporate egress proxy, content filtering, caching, anonymity)
+Reverse proxy : sits in front of SERVERS, fronts inbound requests to backends
+                (NGINX/Envoy: TLS termination, LB, caching, routing)
+API gateway   : a specialized reverse proxy for APIs — adds auth, rate limiting,
+                request transformation, versioning, metering, aggregation</div>
+</div>
+<div class='sec'>Concrete uses</div>
+<div class='cmds'>
+  <div class='cmd'>Forward : employees -> egress proxy -> internet (filter/log/cache outbound)
+Reverse : internet -> NGINX -> app servers (terminate TLS, route /api vs /static)
+Gateway : clients -> Kong/Apigee/cloud API GW -> microservices
+          (JWT validation, per-key rate limits, usage plans, canary routing)</div>
+</div>
+<div class='warn'><b>Distinction:</b> Forward proxy protects/serves the <i>client</i> side (who's making requests); reverse proxy protects/serves the <i>server</i> side (what's receiving them). An API gateway is a reverse proxy with API-management features bolted on — don't conflate it with a plain LB.</div>
+<div class='tip'><b>Interview tip:</b> The crisp mental model: forward proxy faces clients (egress control), reverse proxy faces servers (ingress: TLS/LB/routing), API gateway = reverse proxy + API concerns (auth, rate limit, metering, transformation). Knowing where the gateway adds value over a plain LB (auth, rate limiting, per-consumer plans) shows platform-level thinking.</div>`},
+{n:89,tag:'security',q:'How do you securely expose an internal service to the public internet?',body:`<p>Exposing an internal service safely is about minimizing the attack surface and adding layers between the internet and the workload.</p>
+<div class='sec'>The layered exposure</div>
+<div class='cmds'>
+  <div class='cmd'>Internet
+  -> CDN/edge (DDoS protection, WAF, caching)
+  -> Public load balancer (TLS termination, single managed entry point)
+  -> private subnet backends (NO public IPs on the actual workloads)
+# Only the LB is internet-facing; backends live in private subnets.</div>
+</div>
+<div class='sec'>Controls to apply</div>
+<div class='cmds'>
+  <div class='cmd'>- Terminate TLS at the edge/LB; valid certs; modern TLS only
+- WAF + rate limiting in front; bot protection if needed
+- Security Groups: backends accept ONLY from the LB's SG (not 0.0.0.0/0)
+- AuthN/AuthZ at the gateway (don't rely on "internal = trusted")
+- Least-privilege egress from the backends; private endpoints for cloud deps
+- Logging/monitoring on the edge for abuse detection</div>
+</div>
+<div class='warn'><b>Anti-pattern:</b> Slapping a public IP directly on the workload, or opening the backend's security group to <code>0.0.0.0/0</code>. The workload should only be reachable <i>through</i> the LB, whose SG is the only allowed source — so even if someone learns the backend IP, they can't reach it directly.</div>
+<div class='tip'><b>Interview tip:</b> The pattern: CDN/WAF -> public LB (TLS) -> private backends, with backend SGs that trust only the LB's SG, plus gateway auth (no implicit internal trust). The key control is that workloads have no public IP and only accept traffic from the LB — single, hardened, observable entry point. This is the production-grade exposure answer.</div>`},
+{n:90,tag:'http',q:'Compare gRPC and REST over HTTP. What networking issues does gRPC introduce with load balancers?',body:`<p>gRPC uses HTTP/2 with binary Protobuf for efficient, strongly-typed RPC; REST is typically JSON over HTTP/1.1. The performance win comes with load-balancing gotchas.</p>
+<div class='sec'>gRPC vs REST</div>
+<div class='cmds'>
+  <div class='cmd'>gRPC : HTTP/2, binary Protobuf, streaming (bi-directional), strict contracts,
+       low overhead, great for internal service-to-service
+REST : HTTP/1.1 + JSON, human-readable, ubiquitous tooling/caching,
+       great for public APIs and browser clients</div>
+</div>
+<div class='sec'>The load-balancing problem</div>
+<div class='cmds'>
+  <div class='cmd'># gRPC multiplexes many calls over ONE long-lived HTTP/2 connection.
+# An L4 (connection-level) LB pins that connection to ONE backend ->
+# all requests hit one pod; new/scaled pods get no traffic. Uneven load.</div>
+</div>
+<div class='sec'>Fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- L7 LB that balances per-REQUEST (Envoy, gRPC-aware ingress, service mesh)
+- Client-side LB: resolve all endpoints (headless service) + round_robin policy
+- Connection max-age to force periodic re-resolution/rebalancing</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Scaling up a gRPC service often doesn't relieve load — existing HTTP/2 connections never move to the new pods. You must force request-level balancing or connection recycling; adding replicas alone does nothing.</div>
+<div class='tip'><b>Interview tip:</b> The headline gRPC networking issue: per-connection (L4) balancing breaks HTTP/2 multiplexing, so you need request-level L7 balancing, client-side LB, or connection max-age. This is the same multiplexing problem as the HTTP/2 HOL discussion and ties to load-balancer behavior — connecting the protocol and LB sections shows depth.</div>`},
+{n:91,tag:'loadbalancing',q:'Compare L4 and L7 load balancing in depth. What can each see and not see?',body:`<p>The layer a load balancer operates at determines what information it can route on and what it costs in performance and visibility.</p>
+<div class='sec'>L4 load balancer</div>
+<div class='cmds'>
+  <div class='cmd'>- Operates on IP:port (TCP/UDP); doesn't parse the payload
+- Can balance by connection/4-tuple; very fast, low overhead, high throughput
+- Preserves source IP more easily; protocol-agnostic (any TCP/UDP app)
+- CANNOT: route by URL/header/cookie, terminate TLS, inspect HTTP</div>
+</div>
+<div class='sec'>L7 load balancer</div>
+<div class='cmds'>
+  <div class='cmd'>- Parses HTTP: routes by path/host/header/method; terminates TLS
+- Can do content-based routing, header rewrite, WAF, sticky by cookie
+- Two connections (client<->LB, LB<->backend) -> source IP needs X-Forwarded-For
+- More CPU/latency per request; the app-aware choice</div>
+</div>
+<div class='sec'>Choosing</div>
+<p>L4 for raw TCP/UDP, extreme throughput, non-HTTP protocols, static-IP needs. L7 when you must route on HTTP attributes, centralize TLS, or apply app-layer policy.</p>
+<div class='warn'><b>Gotcha:</b> Because an L7 LB terminates the connection, the backend sees the LB's IP, not the client's — you must propagate the real client via <code>X-Forwarded-For</code> (and trust it carefully). An L4 LB in passthrough preserves source IP but can't do any HTTP-level routing.</div>
+<div class='tip'><b>Interview tip:</b> The principle: pick the lowest layer that satisfies your routing needs. L4 = fast, protocol-agnostic, source-IP-friendly, no app awareness; L7 = app-aware routing + TLS termination at a CPU/latency cost and source-IP indirection. Real examples (AWS NLB vs ALB) anchor it.</div>`},
+{n:92,tag:'loadbalancing',q:'Explain load balancing algorithms (round-robin, least-conn, consistent hashing). When use each?',body:`<p>The algorithm decides which backend gets each request; the right choice depends on request uniformity and whether you need stickiness.</p>
+<div class='sec'>The algorithms</div>
+<div class='cmds'>
+  <div class='cmd'>Round-robin     : rotate evenly; great when requests + backends are uniform
+Least-connections: send to the backend with fewest active conns;
+                  better for variable/long-lived request durations
+Weighted        : bias toward bigger/faster backends (heterogeneous fleet, canary)
+IP hash / consistent hashing : map a key (client IP, session) to a backend
+                  deterministically -> stickiness + cache locality</div>
+</div>
+<div class='sec'>Consistent hashing — why special</div>
+<div class='cmds'>
+  <div class='cmd'># Plain "hash mod N" reshuffles EVERYTHING when N changes (add/remove a backend).
+# Consistent hashing remaps only ~1/N of keys on a change -> minimal disruption.
+# Used for cache affinity, sharding, sticky routing that survives scaling.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Least-connections beats round-robin when request costs vary widely (round-robin can pile expensive requests on one node). But avoid stickiness/hashing unless you need it — it undermines even distribution and can hot-spot one backend (a heavy client pinned to one node).</div>
+<div class='tip'><b>Interview tip:</b> Match algorithm to workload: round-robin for uniform short requests, least-conn for variable/long-lived ones, consistent hashing when you need stickiness or cache locality with minimal reshuffling on scale events. Explaining why consistent hashing (only 1/N keys move) beats hash-mod-N on resize is the standout detail.</div>`},
+{n:93,tag:'loadbalancing',q:'How do health checks work, and how can a misconfigured health check cause a cascading outage?',body:`<p>Load balancers route only to backends passing health checks. The check's design is safety-critical — a bad one can take down a healthy fleet.</p>
+<div class='sec'>Active vs passive</div>
+<div class='cmds'>
+  <div class='cmd'>Active  : LB periodically probes /health on each backend
+Passive : LB observes real traffic (consecutive errors -> mark unhealthy)
+Key knobs: interval, timeout, healthy/unhealthy thresholds, the probe path</div>
+</div>
+<div class='sec'>Shallow vs deep checks</div>
+<div class='cmds'>
+  <div class='cmd'>Shallow (/healthz returns 200): is the process up? — safe, isolated
+Deep (/health checks DB + deps): is everything OK? — DANGEROUS as an LB check</div>
+</div>
+<div class='sec'>The cascade</div>
+<p>If the health check is <b>deep</b> (verifies a shared dependency like the DB) and that dependency blips, <i>every</i> backend fails its check simultaneously, the LB marks the entire fleet unhealthy and has nowhere to route — turning a brief dependency hiccup into a total outage.</p>
+<div class='warn'><b>Rule:</b> LB health checks should be shallow ("is this instance serving?"), NOT deep ("is the database up?"). A shared-dependency check shared across all instances is a single point of failure that fails them all at once. Keep dependency checks for readiness/alerting, not for the load balancer's route decision.</div>
+<div class='tip'><b>Interview tip:</b> This mirrors the Kubernetes liveness-probe trap: a health check that depends on a shared downstream takes out the whole fleet when that downstream blips. Keep LB checks shallow and instance-local; surface dependency health via separate signals. Also mention thresholds — too-aggressive checks flap healthy nodes out under transient load.</div>`},
+{n:94,tag:'loadbalancing',q:'What is session affinity (sticky sessions) and why is it considered an anti-pattern?',body:`<p>Session affinity pins a client to the same backend across requests (via cookie or IP hash). It's sometimes necessary but undermines the benefits of load balancing.</p>
+<div class='sec'>How it's done</div>
+<div class='cmds'>
+  <div class='cmd'>Cookie-based : LB sets a cookie naming the backend; routes that client back to it
+IP-based     : hash source IP -> same backend (breaks behind NAT/shared IPs)</div>
+</div>
+<div class='sec'>Why it's an anti-pattern</div>
+<div class='cmds'>
+  <div class='cmd'>- Uneven load: long-lived sticky sessions hot-spot some backends
+- Scaling is blunted: new backends get only NEW sessions, not existing load
+- Resilience hit: a backend dying drops all its sticky sessions' state
+- Deploys/rollouts disrupt pinned users</div>
+</div>
+<div class='sec'>The better pattern</div>
+<p>Make backends <b>stateless</b> — externalize session state to a shared store (Redis/Memcached) or use signed stateless tokens (JWT). Then any backend can serve any request; no stickiness needed.</p>
+<div class='warn'><b>Gotcha:</b> IP-hash affinity breaks badly behind NAT/CGNAT — many users share one source IP and all pin to one backend (hot spot), while a single user behind round-robin NAT may bounce backends. Cookie affinity is more reliable but still carries the load-skew and resilience costs.</div>
+<div class='tip'><b>Interview tip:</b> The senior answer: stickiness is a crutch for stateful backends — fix the root cause by externalizing state (Redis/JWT) so the tier is stateless and any node serves any request. If you must use affinity (e.g. legacy app, WebSocket), prefer cookie-based over IP-based and acknowledge the load-skew/resilience trade-offs.</div>`},
+{n:95,tag:'loadbalancing',q:'How do you load balance WebSockets and other long-lived connections?',body:`<p>WebSockets are long-lived, stateful, full-duplex connections — they break assumptions that load balancers make about short request/response cycles.</p>
+<div class='sec'>The challenges</div>
+<div class='cmds'>
+  <div class='cmd'>- Connections persist for minutes/hours -> load set at connect time, never rebalances
+- A backend deploy/restart drops all its live sockets (clients must reconnect)
+- LB idle timeouts can kill a quiet-but-active socket -> need keep-alive/ping-pong
+- Scaling up doesn't move existing connections to new nodes</div>
+</div>
+<div class='sec'>Handling them</div>
+<div class='cmds'>
+  <div class='cmd'>- Ensure the LB supports WS upgrade (HTTP/1.1 Upgrade) and long idle timeouts
+- App-level ping/pong heartbeats to keep the connection alive < LB idle timeout
+- Least-connections balancing (not round-robin) since connections are long-lived
+- Graceful drain on deploy: stop new connections, let existing ones finish/migrate
+- Externalize state + use a pub/sub backplane (Redis) so any node can serve any client</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Because connections are assigned at connect time and never move, a rolling deploy or scale-up leaves load badly skewed (old nodes full, new nodes empty) until clients reconnect. Plan reconnection (client backoff + jitter) so a mass reconnect after a deploy doesn't thundering-herd one node.</div>
+<div class='tip'><b>Interview tip:</b> Key points: enable WS upgrade + long/aligned idle timeouts, heartbeat to beat the idle timeout, least-conn over round-robin, connection draining on deploy, and a pub/sub backplane for cross-node fan-out. The reconnect-thundering-herd risk (and client jitter to avoid it) is the detail that shows you've run real-time systems at scale.</div>`},
+{n:96,tag:'loadbalancing',q:'What is connection draining (graceful deregistration) and why is it essential for zero-downtime deploys?',body:`<p>Connection draining lets a backend finish in-flight requests before it's removed from the pool, preventing dropped requests during deploys and scale-down.</p>
+<div class='sec'>The problem without it</div>
+<div class='cmds'>
+  <div class='cmd'># Deregister a backend instantly -> in-flight requests are cut off mid-response
+# -> users see errors/resets during every deploy or scale-in event.</div>
+</div>
+<div class='sec'>How draining works</div>
+<div class='cmds'>
+  <div class='cmd'>1. Mark the target "draining" -> LB stops sending NEW requests to it
+2. Existing in-flight requests are allowed to COMPLETE (up to a drain timeout)
+3. After they finish (or timeout), the target is fully deregistered/terminated</div>
+</div>
+<div class='sec'>Ties to the platform</div>
+<p>This is the LB side of graceful shutdown: it must pair with the app handling SIGTERM (stop accepting, finish in-flight) and, in Kubernetes, a <code>preStop</code> delay so endpoint removal propagates before the process exits.</p>
+<div class='warn'><b>Gotcha:</b> The drain timeout must exceed your longest legitimate request, or long requests still get cut. And there's a race: the LB must remove the target from rotation <i>before</i> the process stops — without a small delay (preStop sleep / deregistration delay), the LB may still send a request to a shutting-down instance.</div>
+<div class='tip'><b>Interview tip:</b> Connect it to the full zero-downtime chain: LB connection draining + app SIGTERM handling + (in K8s) preStop delay so deregistration propagates first. The two gotchas — drain timeout sized to longest request, and the dereg-before-stop race — are exactly what separates "I clicked deploy" from "I designed for zero downtime."</div>`},
+{n:97,tag:'cloud',q:'Explain VPC anatomy: subnets, route tables, internet gateway, and NAT gateway.',body:`<p>A VPC is your isolated virtual network in the cloud. A handful of components determine what's public, what's private, and how traffic flows.</p>
+<div class='sec'>The components</div>
+<div class='cmds'>
+  <div class='cmd'>VPC          : the isolated network + its CIDR (e.g. 10.0.0.0/16)
+Subnet       : a CIDR slice, tied to one AZ; "public" or "private" by ROUTING
+Route table  : per-subnet rules deciding where traffic goes
+Internet GW  : enables bidirectional internet for PUBLIC subnets
+NAT Gateway  : lets PRIVATE subnets egress to the internet (outbound only)</div>
+</div>
+<div class='sec'>What makes a subnet public vs private</div>
+<div class='cmds'>
+  <div class='cmd'># It's the ROUTE TABLE, not a flag:
+Public subnet  : route 0.0.0.0/0 -> Internet Gateway  (+ instances have public IPs)
+Private subnet : route 0.0.0.0/0 -> NAT Gateway        (outbound only, no inbound)
+# Typical 3-tier: public (LB) / private (app) / private (data)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> A subnet is "public" only because its route table points 0.0.0.0/0 at the Internet Gateway AND the instance has a public IP — both are required. A common mistake: instance in a "public" subnet but no public IP (or vice versa), so connectivity silently fails. The NAT Gateway is one-directional: private instances reach out, but the internet can't reach in.</div>
+<div class='tip'><b>Interview tip:</b> The insight that impresses: public-vs-private is defined by the route table (IGW vs NAT GW), not an attribute. Describe the standard 3-tier layout (public LB tier, private app tier, private data tier) and that NAT GW is egress-only. Mention NAT GW cost/data-transfer charges as a FinOps consideration — a frequent surprise on cloud bills.</div>`},
+{n:98,tag:'cloud',q:'What are VPC endpoints / PrivateLink and why use them instead of going over the internet?',body:`<p>VPC endpoints let your resources reach cloud services (and third-party/partner services) privately, without traversing the public internet or a NAT gateway.</p>
+<div class='sec'>The two types (AWS terms)</div>
+<div class='cmds'>
+  <div class='cmd'>Gateway endpoint   : for S3 / DynamoDB — a route-table entry, no cost, stays on-net
+Interface endpoint : an ENI with a private IP in your subnet (PrivateLink) for most
+                    services + your own/partner services exposed privately</div>
+</div>
+<div class='sec'>Why use them</div>
+<div class='cmds'>
+  <div class='cmd'>- Security: traffic to the cloud service never leaves the private network
+- No NAT GW needed for that traffic -> avoids NAT data-processing cost
+- Avoids the public internet entirely (compliance, reduced exposure)
+- Can reach services even in fully private (no-IGW) subnets</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Without endpoints, a private instance calling the cloud's API/S3 goes out through the NAT Gateway to the public endpoint — incurring NAT data-processing charges and leaving your network. For high-volume S3/API traffic this is both a cost and a security/compliance concern. Gateway endpoints (S3/DynamoDB) are free; use them.</div>
+<div class='tip'><b>Interview tip:</b> The two wins are security (traffic stays private, never hits the internet) and cost (bypass the NAT Gateway's per-GB charge for cloud-service traffic). Knowing gateway endpoints (S3/DynamoDB, free) vs interface endpoints/PrivateLink (ENI-based, for most services and exposing your own services to other VPCs) is a strong cloud-networking detail.</div>`},
+{n:99,tag:'loadbalancing',q:'How do load balancing, autoscaling, and health checks work together — including the warm-up problem?',body:`<p>These three form the elasticity loop: health checks gate the pool, autoscaling adjusts capacity, and the LB distributes — but timing issues like cold starts can cause failures.</p>
+<div class='sec'>The loop</div>
+<div class='cmds'>
+  <div class='cmd'>1. Metric (CPU/RPS/latency) crosses threshold -> autoscaler adds instances
+2. New instance boots, passes health check -> LB adds it to the pool
+3. LB routes traffic; load drops -> autoscaler scales in (with draining)</div>
+</div>
+<div class='sec'>The warm-up / cold-start problem</div>
+<div class='cmds'>
+  <div class='cmd'># A new instance passes a shallow health check but isn't truly "warm":
+# - JIT not compiled, caches cold, connection pools empty
+# -> first requests are slow or error; sending full traffic immediately hurts.</div>
+</div>
+<div class='sec'>Mitigations</div>
+<div class='cmds'>
+  <div class='cmd'>- Slow-start / warm-up mode: ramp traffic to a new target gradually
+- Readiness reflects real readiness (warm caches/pools) before taking full load
+- Pre-scale ahead of predictable spikes; keep warm headroom
+- Scale on a leading metric (RPS/queue depth) not lagging CPU</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Reactive CPU-based autoscaling lags — by the time CPU spikes, you're already overloaded, and cold new instances make it worse before better. A traffic surge can outrun boot+warm time, causing a brief brownout. Scale on leading indicators and use slow-start so new nodes ramp in.</div>
+<div class='tip'><b>Interview tip:</b> The standout is the warm-up problem: a node can be "healthy" yet cold, so flooding it with traffic causes errors — use LB slow-start/warm-up and readiness that reflects true warmth. Also note reactive CPU scaling lags; scale on leading signals (RPS/queue) and keep headroom. This shows you've operated elastic systems through real traffic spikes.</div>`},
+{n:100,tag:'cloud',q:'What is anycast and how do CDNs and global load balancers use it?',body:`<p>Anycast advertises the <i>same</i> IP address from many locations; the network routes each client to the topologically nearest one. It's the backbone of global CDNs and DNS.</p>
+<div class='sec'>How it works</div>
+<div class='cmds'>
+  <div class='cmd'># Many POPs advertise the same IP via BGP from different locations.
+# Each client's packets are routed (by BGP) to the NEAREST advertising POP.
+# One IP, many physical endpoints -> automatic geographic proximity routing.</div>
+</div>
+<div class='sec'>Where it's used</div>
+<div class='cmds'>
+  <div class='cmd'>- CDNs: serve content from the closest edge (low latency)
+- Public DNS (8.8.8.8, 1.1.1.1): same IP answered by the nearest datacenter
+- Global load balancers / DDoS absorption: spread load across POPs worldwide
+- Automatic failover: a dead POP withdraws its BGP route -> clients reroute</div>
+</div>
+<div class='sec'>Anycast vs GeoDNS</div>
+<p>GeoDNS returns different IPs based on the resolver's location (DNS-layer, subject to caching/TTL). Anycast uses one IP and lets routing pick the POP (network-layer, faster failover, no DNS caching issues).</p>
+<div class='warn'><b>Gotcha:</b> Anycast routing can shift mid-session if BGP paths change (a POP withdrawing or a route flap), which is fine for stateless request/response (HTTP, DNS) but problematic for long-lived stateful connections that assume a fixed endpoint. It's ideal for short, stateless interactions.</div>
+<div class='tip'><b>Interview tip:</b> Explain anycast as "one IP, nearest POP via BGP" and contrast with GeoDNS (DNS-layer, TTL-bound) — anycast gives faster, caching-free proximity routing and failover (dead POP withdraws its route). It underpins CDNs, public DNS, and volumetric DDoS absorption. The stateful-connection caveat is the nuance that signals depth.</div>`},
+{n:101,tag:'cloud',q:'How do you design multi-region networking for low latency and failover?',body:`<p>Multi-region serves users from the nearest region and survives a regional failure, but introduces cross-region latency and data-consistency challenges.</p>
+<div class='sec'>Traffic steering to the right region</div>
+<div class='cmds'>
+  <div class='cmd'>- GeoDNS / latency-based routing OR anycast global LB -> nearest healthy region
+- Health checks per region -> stop routing to a failed/degraded region
+- CDN at the edge to serve cacheable content close to users</div>
+</div>
+<div class='sec'>The hard part: data</div>
+<div class='cmds'>
+  <div class='cmd'>Active-passive : one primary region writes; others standby (async replicate)
+               -> simpler; failover promotes a standby (RTO/RPO trade-off)
+Active-active  : all regions serve writes -> needs conflict resolution / global DB
+               -> low latency everywhere, hard consistency + replication lag</div>
+</div>
+<div class='sec'>Cross-region connectivity</div>
+<p>Connect regions privately (cloud backbone / inter-region peering / Transit Gateway peering) rather than over the public internet for security and consistent latency on replication traffic.</p>
+<div class='warn'><b>Gotcha:</b> Cross-region latency is physics (e.g. tens of ms between continents) — you can't replicate it away. Synchronous cross-region writes add that latency to every request; most designs use async replication and accept some RPO, or keep writes in a home region. Don't pretend multi-region is free of consistency trade-offs.</div>
+<div class='tip'><b>Interview tip:</b> Lead with the split: routing (GeoDNS/anycast + per-region health) is the easy half; <b>data</b> (active-passive vs active-active, replication lag, conflict resolution) is the hard half driven by RPO/RTO. Acknowledge cross-region latency as a physical constraint and connect regions over the private backbone. This honest, trade-off-aware framing is what senior interviews reward.</div>`},
+{n:102,tag:'cloud',q:'Explain the shared responsibility model for networking in the cloud. What\'s yours vs the provider\'s?',body:`<p>Cloud security and networking responsibilities are split: the provider secures the infrastructure; you secure what you build on it. Networking spans both sides.</p>
+<div class='sec'>Provider's responsibility ('of the cloud')</div>
+<div class='cmds'>
+  <div class='cmd'>- Physical network, hardware, hypervisor, backbone between regions/AZs
+- The VPC isolation primitive, the LB/NAT GW service availability
+- DDoS protection of the underlying infrastructure
+- Patching the managed network services themselves</div>
+</div>
+<div class='sec'>Your responsibility ('in the cloud')</div>
+<div class='cmds'>
+  <div class='cmd'>- VPC/subnet design, route tables, public-vs-private placement
+- Security Groups / NACLs / firewall rules (least privilege)
+- TLS config, certs, what you expose publicly
+- Egress controls, NetworkPolicies, application-layer security
+- Correct use of private endpoints, encryption in transit</div>
+</div>
+<div class='warn'><b>Gotcha:</b> The provider gives you secure <i>primitives</i>, but a wide-open Security Group, a public S3 bucket, or 0.0.0.0/0 egress is entirely <b>your</b> fault — most cloud breaches are customer misconfiguration, not provider failure. "It's in the cloud" doesn't mean "it's secured for me."</div>
+<div class='tip'><b>Interview tip:</b> The crisp line: provider secures the network fabric and service availability; you secure configuration — VPC design, SG/NACL rules, exposure, TLS, egress. Stressing that the vast majority of cloud incidents are customer misconfiguration (open SGs, public buckets) shows mature ownership and sets up why guardrails/policy-as-code matter.</div>`},
+{n:103,tag:'cloud',q:'How does service discovery work in dynamic environments, and what role does DNS play?',body:`<p>In dynamic environments (autoscaling, containers) instances come and go with changing IPs, so clients can't hardcode addresses — service discovery provides current, healthy endpoints.</p>
+<div class='sec'>Patterns</div>
+<div class='cmds'>
+  <div class='cmd'>Client-side  : client queries a registry (Consul, Eureka) -> picks an instance itself
+Server-side  : client hits a stable endpoint (LB/VIP) that knows the backends
+DNS-based    : a stable name resolves to current healthy IPs (K8s Services,
+             Cloud Map, Consul DNS) -> the most common, transparent approach</div>
+</div>
+<div class='sec'>DNS's role + its caveats</div>
+<div class='cmds'>
+  <div class='cmd'># Kubernetes: svc.ns.svc.cluster.local -> current ready pod IPs (via EndpointSlices)
+# Service mesh: control plane tracks endpoints, sidecars route to healthy ones
+# CAVEAT: DNS TTL/caching means clients may use stale IPs after a change
+#   -> low TTLs + re-resolution on connection failure</div>
+</div>
+<div class='warn'><b>Gotcha:</b> DNS-based discovery inherits DNS caching problems — a client (or JVM!) caching a resolved IP keeps hitting a dead instance after it's replaced. Health-aware discovery (mesh/registry) + finite TTLs + re-resolve-on-error avoid routing to gone endpoints. Pure round-robin DNS also lacks real-time health/load awareness.</div>
+<div class='tip'><b>Interview tip:</b> Frame the three patterns (client-side registry, server-side LB/VIP, DNS-based) and note DNS is the most transparent but inherits caching/health-awareness limits — which is why meshes and registries add real-time health. The JVM/connection-pool stale-IP caching problem (from the DNS section) is the concrete failure mode to cite.</div>`},
+{n:104,tag:'cloud',q:'How do you reduce cloud data transfer (egress) costs through network design?',body:`<p>Data transfer is a major, often-surprising cloud cost. Smart network design keeps traffic on cheaper paths and avoids needless egress.</p>
+<div class='sec'>The cost hierarchy (roughly cheapest -> most expensive)</div>
+<div class='cmds'>
+  <div class='cmd'>Same AZ (private IPs)         : usually free / cheapest
+Cross-AZ (same region)        : a per-GB charge (often overlooked at scale)
+Cross-region                  : more expensive
+Egress to the internet        : the most expensive (and NAT GW adds processing $)</div>
+</div>
+<div class='sec'>Design levers</div>
+<div class='cmds'>
+  <div class='cmd'>- Keep chatty services in the SAME AZ (AZ-aware routing / topology-aware hints)
+- VPC endpoints/PrivateLink for S3/API traffic -> skip NAT GW egress charges
+- CDN to serve cacheable content (offload origin egress)
+- Compress + batch; avoid pulling large data across regions repeatedly
+- Co-locate compute with the data it processes</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Cross-AZ traffic is NOT free — a microservices mesh chatting across AZs, or a DB replica read across AZs, racks up per-GB charges that hide in the bill. NAT Gateway data processing for traffic that could have used a (free) gateway endpoint is another silent cost. These dominate bills more than people expect.</div>
+<div class='tip'><b>Interview tip:</b> The cost hierarchy (same-AZ cheap -> cross-AZ -> cross-region -> internet egress) plus concrete levers (AZ-affinity for chatty services, VPC endpoints to dodge NAT charges, CDN offload) is a strong FinOps-meets-networking answer. Calling out that cross-AZ chatter and NAT data-processing are the hidden line items shows real cost ownership.</div>`},
+{n:105,tag:'loadbalancing',q:'How do you implement rate limiting? Compare token bucket and leaky bucket, and where to enforce it.',body:`<p>Rate limiting protects services from overload and abuse. The algorithm shapes how bursts are handled, and the enforcement point determines coverage.</p>
+<div class='sec'>Token bucket vs leaky bucket</div>
+<div class='cmds'>
+  <div class='cmd'>Token bucket : tokens refill at a steady rate; each request spends one.
+             Allows BURSTS up to the bucket size, then throttles to the refill rate.
+Leaky bucket : requests queue and drain at a FIXED rate (smooths output).
+             No bursts — steady outflow regardless of input spikes.</div>
+</div>
+<div class='sec'>Where to enforce</div>
+<div class='cmds'>
+  <div class='cmd'>Edge/CDN/WAF : stop abuse before it costs you compute (best for DDoS/abuse)
+API gateway  : per-API-key / per-tenant quotas + usage plans
+Service mesh  : per-service limits between internal services
+Application   : fine-grained, business-logic-aware limits (per-user action)</div>
+</div>
+<div class='sec'>Distributed challenge</div>
+<p>Across many instances you need <b>shared</b> counters (e.g. Redis) so the limit is global, not per-instance — otherwise N instances each allow the full rate (N x the intended limit).</p>
+<div class='warn'><b>Gotcha:</b> Per-instance in-memory rate limits don't enforce a global limit — 10 instances each allowing 100 rps = 1000 rps total. Use a shared store (Redis) or a coordinated edge limiter. Also: return <code>429</code> with <code>Retry-After</code> so clients back off correctly instead of hammering.</div>
+<div class='tip'><b>Interview tip:</b> Token bucket = allows bursts (most common for APIs), leaky bucket = smooths to a constant rate. Enforce as early as possible (edge/gateway) to protect compute, with shared-state counters for a true global limit across instances. Returning 429 + Retry-After and the per-instance-counter pitfall are the practical details interviewers look for.</div>`},
+{n:106,tag:'troubleshoot',q:'A service is unreachable. Walk through a systematic layer-by-layer debugging approach.',body:`<p>"Can't reach the service" is ambiguous — work up the stack (or down) methodically rather than guessing. Each layer has a definitive test.</p>
+<div class='sec'>Layer-by-layer</div>
+<div class='cmds'>
+  <div class='cmd'>1. DNS   : does the name resolve, and to the RIGHT IP?    dig &lt;name&gt;
+2. L3    : is the host reachable?                          ping &lt;ip&gt; (if ICMP allowed)
+3. Route : which path does it take?                        ip route get &lt;ip&gt;; traceroute
+4. L4    : is the PORT open / accepting?                   nc -vz &lt;ip&gt; &lt;port&gt;; curl
+5. L7    : does the app respond correctly?                 curl -v https://&lt;host&gt;/path</div>
+</div>
+<div class='sec'>Interpreting results</div>
+<div class='cmds'>
+  <div class='cmd'>- DNS wrong IP        -> stale record / split-horizon / cache
+- ping ok, port closed -> firewall/SG, app not listening, wrong port
+- connection REFUSED   -> reached host, nothing listening (RST) — app/port issue
+- connection TIMEOUT   -> firewall DROP, wrong route, security group, black hole
+- TLS error            -> cert/chain problem (openssl s_client)</div>
+</div>
+<div class='warn'><b>Refused vs timeout is the key fork:</b> REFUSED means you reached the host and it actively said no (port closed / app down) — an app/port problem. TIMEOUT means silence (firewall DROP, wrong route, security group blocking) — a network/filtering problem. This single distinction halves your search space immediately.</div>
+<div class='tip'><b>Interview tip:</b> Show a repeatable method (DNS -> L3 -> route -> L4 -> L7) and lead with the refused-vs-timeout fork — it's the fastest way to split "app problem" from "network problem." Naming the one tool per layer (<code>dig</code>, <code>ip route get</code>, <code>nc -vz</code>, <code>curl -v</code>, <code>openssl s_client</code>) demonstrates hands-on fluency.</div>`},
+{n:107,tag:'troubleshoot',q:'How do you use tcpdump effectively to debug a network issue? Give a real workflow.',body:`<p>tcpdump captures packets to see what's <i>actually</i> on the wire — ground truth when logs and assumptions disagree. The skill is targeted capture + reading the result.</p>
+<div class='sec'>Targeted capture</div>
+<div class='cmds'>
+  <div class='cmd'>tcpdump -i any -n host 10.0.0.5 and port 443     # filter to the flow you care about
+tcpdump -i eth0 -nn 'tcp[tcpflags] & (tcp-syn|tcp-rst) != 0'   # just SYN/RST
+tcpdump -i any -w capture.pcap host 10.0.0.5     # write to file -> open in Wireshark
+tcpdump -A -s0 port 80                           # print ASCII payload (HTTP)</div>
+</div>
+<div class='sec'>A real workflow (intermittent failure)</div>
+<div class='cmds'>
+  <div class='cmd'>1. Reproduce while capturing on BOTH ends (client + server) with a tight filter
+2. Look for: SYN with no SYN-ACK (firewall/route?), SYN-ACK no ACK (asymmetric?),
+   RST (who sent it, when?), retransmits (loss?), no packets at all (DNS/route?)
+3. Correlate timestamps with the app error to pin the exact failing exchange</div>
+</div>
+<div class='warn'><b>Reading tips:</b> SYN but no SYN-ACK = traffic not reaching/accepted (firewall, wrong port, no listener). SYN-ACK but client never ACKs = return-path/asymmetric routing. Unexpected RST = find which side sent it. Lots of retransmits = packet loss. <i>No</i> packets leaving = it's DNS or routing, not the network path. Capture on both ends to see which side is missing what.</div>
+<div class='tip'><b>Interview tip:</b> Emphasize <b>targeted</b> filters (host + port) — never capture everything on a busy host. The diagnostic logic (SYN/SYN-ACK/ACK/RST/retransmit patterns) is what turns a capture into an answer, and capturing on both ends localizes one-way drops. Mention writing a pcap for Wireshark for deeper analysis. This is a strong "I actually debug networks" signal.</div>`},
+{n:108,tag:'troubleshoot',q:'Intermittent connection timeouts under load, but fine when idle. What are the likely causes?',body:`<p>"Fine when idle, fails under load" points to a resource that's exhausted only at scale — a finite limit, not a path problem.</p>
+<div class='sec'>Prime suspects (load-dependent limits)</div>
+<div class='cmds'>
+  <div class='cmd'>- conntrack table full (NAT/gateway/node) -> dmesg "table full, dropping packet"
+- Ephemeral port exhaustion (many conns to one dest 4-tuple) -> EADDRNOTAVAIL
+- Connection pool exhausted (app waits for a free conn -> timeout)
+- Accept queue / backlog overflow (somaxconn) -> dropped SYNs under burst
+- File descriptor limit hit (ulimit -n) -> "too many open files"
+- NAT gateway / LB connection or bandwidth limits
+- DB max_connections reached -> app blocks waiting</div>
+</div>
+<div class='sec'>How to confirm</div>
+<div class='cmds'>
+  <div class='cmd'>ss -s ; conntrack -C ; dmesg | grep -Ei 'conntrack|table full'
+ss -ltn        # listener Recv-Q full = accept queue overflow
+cat /proc/sys/fs/file-nr ; ulimit -n          # fd usage vs limit
+# Correlate failure rate with concurrency/RPS -> confirms a saturation limit</div>
+</div>
+<div class='warn'><b>Key signal:</b> Failures scaling with load + healthy CPU/memory = a <i>countable resource limit</i> (ports, conntrack, fds, pool, accept queue, DB conns), not bandwidth or a broken path. The error is usually in <code>dmesg</code> or socket stats, not the app log.</div>
+<div class='tip'><b>Interview tip:</b> The framing that scores: "fine idle, fails under load" = some finite resource exhausts at concurrency. Enumerate the usual suspects (conntrack, ephemeral ports, connection pool, accept queue/somaxconn, fd limit, DB connections) and how to confirm each. Connection pooling + raising the right limit is the fix — guessing "the network is slow" is the wrong instinct here.</div>`},
+{n:109,tag:'troubleshoot',q:'What does \'netstat -s\' / \'ss\' tell you, and which counters reveal network problems?',body:`<p>Kernel network counters (<code>netstat -s</code>, <code>nstat</code>, <code>ss</code>) expose problems invisible in app logs — retransmits, drops, queue overflows.</p>
+<div class='sec'>High-value counters</div>
+<div class='cmds'>
+  <div class='cmd'>netstat -s | grep -i retransmit     # TCP retransmits -> packet loss / congestion
+netstat -s | grep -i "listen queue" # SYNs dropped (listen overflow) -> backlog too small
+netstat -s | grep -i "buffer"        # out-of-memory pruning -> socket buffer pressure
+nstat -az | grep -i TcpExt           # rich TCP extension counters (resets, drops)
+ss -tin                              # per-socket: rtt, cwnd, retrans, pacing</div>
+</div>
+<div class='sec'>What they reveal</div>
+<div class='cmds'>
+  <div class='cmd'>Rising retransmits        -> loss or congestion on the path
+ListenOverflows/Drops     -> accept queue too small / app accepting too slowly
+SYN cookies sent          -> SYN queue overflow (load or SYN flood)
+PruneCalled / collapsed   -> socket memory pressure (tune rmem/wmem)
+TimeWait reuse/overflow   -> port pressure</div>
+</div>
+<div class='warn'><b>Gotcha:</b> These are cumulative since boot — take two snapshots and diff to see the <i>rate</i>, not the lifetime total. A big absolute retransmit number on a host up for a year may be nothing; a fast-climbing delta during an incident is the signal. <code>nstat</code> resets counters per run, which makes deltas easy.</div>
+<div class='tip'><b>Interview tip:</b> Name the counters that matter — retransmits (loss), listen overflows (accept-queue/backlog), SYN cookies (SYN-queue pressure), buffer pruning (socket mem) — and stress reading the <i>delta</i> over time, not the total. <code>ss -tin</code> for per-socket RTT/cwnd/retrans is the modern, granular view. This shows you debug from kernel evidence, not vibes.</div>`},
+{n:110,tag:'troubleshoot',q:'Users in one region report slowness while others are fine. How do you investigate?',body:`<p>Region-specific slowness localizes the problem to a path, POP, region, or routing decision affecting only those users — bisect by geography and layer.</p>
+<div class='sec'>Narrow it down</div>
+<div class='cmds'>
+  <div class='cmd'>- Is it ALL users in that region or a subset (one ISP)? -> path vs regional issue
+- Test from that region: mtr/traceroute to the endpoint (where does latency/loss start?)
+- Compare DNS answers from that region (GeoDNS sending them to a far/unhealthy POP?)
+- CDN: are they hitting a degraded/cold edge POP? check cache hit ratio + POP health
+- Is the regional backend/replica itself degraded (DB read replica, cross-region hop)?</div>
+</div>
+<div class='sec'>Common region-specific causes</div>
+<div class='cmds'>
+  <div class='cmd'>- GeoDNS/anycast routing them to the wrong (distant or unhealthy) region/POP
+- A bad transit/peering path for that region's ISP (mtr shows loss at a hop)
+- CDN edge issue in that geography; cold cache after a purge
+- Cross-region dependency: that region's app calling a DB/service far away
+- Regional cloud incident (check the provider status page)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Don't assume it's your app — region-specific slowness is frequently <i>path</i> (ISP/transit/peering) or <i>routing</i> (GeoDNS/anycast steering to the wrong place), which <code>mtr</code> from the affected region reveals. Synthetic monitoring from multiple geographies catches this before users report it.</div>
+<div class='tip'><b>Interview tip:</b> Structure it: confirm scope (whole region vs one ISP), then test from that geography with <code>mtr</code>/traceroute and compare GeoDNS/CDN routing. The senior insight is that the cause is often <i>outside your stack</i> — transit/peering paths or routing decisions — so multi-region synthetic monitoring and reading mtr from the affected region are how you prove it.</div>`},
+{n:111,tag:'troubleshoot',q:'How do you debug a TLS/SSL handshake failure? What tools and what do the errors mean?',body:`<p>TLS failures throw varied, cryptic errors. <code>openssl s_client</code> is the universal probe to see exactly what the server presents and where the handshake breaks.</p>
+<div class='sec'>The probe</div>
+<div class='cmds'>
+  <div class='cmd'>openssl s_client -connect host:443 -servername host   # SNI matters!
+openssl s_client -connect host:443 -showcerts          # full chain server sends
+openssl s_client -connect host:443 -tls1_2             # force a version to test support
+curl -vI https://host                                  # curl's TLS verbose output</div>
+</div>
+<div class='sec'>Common errors -> meaning</div>
+<div class='cmds'>
+  <div class='cmd'>"unable to get local issuer certificate" -> missing INTERMEDIATE cert (server side)
+"certificate has expired"                 -> expired cert (renew/automate!)
+"hostname mismatch" / SNI                 -> cert CN/SAN doesn't match the name
+                                            or no SNI sent (wrong vhost/cert returned)
+"no shared cipher" / protocol             -> client/server TLS version/cipher mismatch
+"self signed certificate"                 -> untrusted CA / cert not in trust store</div>
+</div>
+<div class='warn'><b>SNI gotcha:</b> Omitting <code>-servername</code> makes the server return its default cert, not the one for your hostname — leading to a false "wrong cert" diagnosis. Always pass SNI. And "works in browser, fails in client" is the missing-intermediate signature (browsers paper over it; strict clients don't).</div>
+<div class='tip'><b>Interview tip:</b> <code>openssl s_client</code> (with <code>-servername</code> for SNI and <code>-showcerts</code> for the chain) is the answer — it shows the negotiated version, cipher, full chain, and exact failure. Mapping the top errors (missing intermediate, expired, hostname/SNI mismatch, no shared cipher) to causes, plus automating renewal to prevent expiry, demonstrates real TLS operations experience.</div>`},
+{n:112,tag:'security',q:'What is SSRF and how does the cloud metadata endpoint make it dangerous? How is it mitigated?',body:`<p>Server-Side Request Forgery tricks a server into making requests on an attacker's behalf — and in the cloud it can reach the instance metadata endpoint to steal credentials.</p>
+<div class='sec'>The attack</div>
+<div class='cmds'>
+  <div class='cmd'># App fetches a user-supplied URL (e.g. "fetch this image/webhook").
+# Attacker supplies an INTERNAL target instead:
+http://169.254.169.254/latest/meta-data/iam/security-credentials/&lt;role&gt;
+# The server fetches it from INSIDE the trust boundary and returns/leaks
+# the instance's temporary IAM credentials -> cloud account compromise.</div>
+</div>
+<div class='sec'>Why metadata is the prize</div>
+<p>The link-local metadata service (<code>169.254.169.254</code>) hands out the instance's role credentials to anything that can reach it locally — exactly what SSRF gives an attacker a path to.</p>
+<div class='sec'>Mitigations</div>
+<div class='cmds'>
+  <div class='cmd'>- IMDSv2: require a session token + hop limit (blocks simple SSRF GETs) — enforce it
+- Validate/allowlist outbound URLs; block link-local + private ranges (RFC1918, 169.254)
+- Egress controls / no direct metadata access from app containers
+- Least-privilege instance roles (limit blast radius if creds leak)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> The classic cloud breach chain is SSRF -> metadata -> IAM creds -> lateral movement. <b>IMDSv2</b> (token + low hop limit) defeats the naive version and should be <i>enforced</i> (not just available) — leaving IMDSv1 enabled keeps the door open. Block 169.254.0.0/16 and private ranges from any user-influenced fetch.</div>
+<div class='tip'><b>Interview tip:</b> Connect SSRF to the cloud metadata endpoint as the high-value target (leaks IAM creds) — that chain is behind several famous breaches. Enforcing IMDSv2 (not just enabling it), URL allowlisting that blocks link-local/private ranges, and least-privilege roles are the layered defenses. Knowing 169.254.169.254 by heart signals real cloud-security awareness.</div>`},
+{n:113,tag:'troubleshoot',q:'How do you debug \'connection refused\' vs \'connection timeout\' vs \'no route to host\'?',body:`<p>These three connection errors each point to a distinct layer — distinguishing them instantly narrows the cause.</p>
+<div class='sec'>The three errors</div>
+<div class='cmds'>
+  <div class='cmd'>Connection REFUSED  : reached the host, but nothing listening on that port
+                    (the host actively sent a TCP RST) -> ECONNREFUSED
+Connection TIMEOUT  : silence — no response at all within the timeout
+                    -> firewall DROP, wrong route, black hole, host down
+No route to host     : the kernel has no route to the destination at all
+                    (or an ICMP host-unreachable came back) -> EHOSTUNREACH</div>
+</div>
+<div class='sec'>What each means + next step</div>
+<div class='cmds'>
+  <div class='cmd'>REFUSED -> network path is FINE; app isn't listening / crashed / wrong port
+         -> check the service is up + bound to the right addr:port (ss -ltn)
+TIMEOUT -> something SILENTLY drops packets: firewall/SG DROP rule, wrong
+         route, or the host is down -> check SG/NACL, ip route get, security groups
+NO ROUTE -> routing/interface problem: missing route, interface down, bad gateway
+         -> ip route get &lt;dst&gt;; ip addr; check subnet/route table</div>
+</div>
+<div class='warn'><b>Key insight:</b> REFUSED is GOOD news for the network — you reached the host and it answered (just nothing on that port), so it's an app/port issue. TIMEOUT means you never got an answer — a filtering or routing problem. NO ROUTE is local routing. Reading the exact error word saves enormous time.</div>
+<div class='tip'><b>Interview tip:</b> Memorize the mapping: REFUSED = reached host, no listener (app/port); TIMEOUT = silent drop (firewall/route/down); NO ROUTE = local routing/interface. The senior move is recognizing REFUSED actually <i>confirms</i> network reachability, redirecting you to the app — while TIMEOUT sends you to firewalls/security groups. This precision is exactly what's being tested.</div>`},
+{n:114,tag:'security',q:'How do you implement micro-segmentation and egress filtering, and why does egress matter so much?',body:`<p>Micro-segmentation limits east-west (service-to-service) traffic to only what's needed; egress filtering controls outbound traffic — together they contain a breach.</p>
+<div class='sec'>Micro-segmentation (east-west)</div>
+<div class='cmds'>
+  <div class='cmd'>- Default-deny between services; explicitly allow only required flows
+- Kubernetes: NetworkPolicies (or Cilium identity-based / L7 policies)
+- Cloud: tight Security Groups referencing other SGs (not CIDRs), per-tier
+- Goal: a compromised service can't freely reach the rest of the network</div>
+</div>
+<div class='sec'>Egress filtering (outbound)</div>
+<div class='cmds'>
+  <div class='cmd'>- Default-deny egress; allowlist only required destinations (APIs, registries)
+- Block arbitrary outbound to the internet (0.0.0.0/0)
+- Force traffic through an egress proxy/firewall for logging + allowlisting</div>
+</div>
+<div class='sec'>Why egress matters so much</div>
+<p>Most teams lock down <i>inbound</i> and ignore <i>outbound</i> — but outbound is how compromised workloads <b>beacon to C2 servers and exfiltrate data</b>. Default-deny egress with an allowlist directly stops the most damaging post-compromise actions.</p>
+<div class='warn'><b>Gotcha:</b> Wide-open egress (the default in most setups) means a breached container can exfiltrate your data and phone home freely. Egress control is one of the highest-value, most-skipped controls — and don't forget to allow DNS (port 53) and required service endpoints, or you'll break the app while locking it down.</div>
+<div class='tip'><b>Interview tip:</b> Frame micro-segmentation + egress filtering as breach containment: segmentation stops lateral movement, egress filtering stops exfiltration/beaconing. Stress that egress is the commonly-neglected half and the highest-leverage control against data theft. Tie to identity-based policy (Cilium) and SG-referencing-SG patterns to show implementation depth — connects to zero-trust.</div>`},
+{n:115,tag:'security',q:'Compare VPN, bastion host, and modern alternatives (SSM/IAP) for secure access to private resources.',body:`<p>Reaching private resources securely has evolved from network-level VPNs and SSH bastions toward identity-based, agent-mediated access with no open inbound ports.</p>
+<div class='sec'>The approaches</div>
+<div class='cmds'>
+  <div class='cmd'>VPN        : extends the private network to the client; broad network access once on
+           -> "you're inside = trusted" — over-broad, lateral-movement risk
+Bastion/jump host : a hardened SSH gateway; you hop through it to private hosts
+           -> single audited entry, but it's an internet-facing box to secure/patch
+Modern (SSM Session Manager / IAP / Teleport) : identity-based, agent/proxy-mediated
+           -> NO inbound ports open, per-session auth + audit, no standing SSH</div>
+</div>
+<div class='sec'>Why the modern approach wins</div>
+<div class='cmds'>
+  <div class='cmd'>- No public SSH port / no bastion to attack (agent dials OUT to the control plane)
+- Per-session, identity-based authorization (IAM/SSO) + full session logging
+- No long-lived SSH keys to manage/leak; ephemeral credentials
+- Fine-grained: who can reach what, when, with recording</div>
+</div>
+<div class='warn'><b>Gotcha:</b> A VPN grants network-level trust — once connected, the user often can reach far more than they need (violating least privilege), and a compromised VPN credential is a broad foothold. Bastions remove that but are still an internet-facing target with SSH keys to manage. Agent-based (SSM/IAP) eliminates both the open port and the standing keys.</div>
+<div class='tip'><b>Interview tip:</b> The trajectory is VPN (network trust) -> bastion (single audited hop) -> identity-based agent access (SSM/IAP/Teleport: no inbound port, per-session IAM auth, full audit, no standing keys). Framing it as zero-trust applied to admin access — least privilege per session instead of network-level trust — is the senior answer and ties to the zero-trust topic.</div>`},
+{n:116,tag:'security',q:'Explain TLS termination, passthrough, and re-encryption at a load balancer. Trade-offs of each?',body:`<p>Where TLS is decrypted relative to the load balancer determines visibility, performance, and internal security.</p>
+<div class='sec'>The three modes</div>
+<div class='cmds'>
+  <div class='cmd'>Termination (offload) : LB decrypts; LB<->backend is PLAINTEXT (HTTP)
+                       -> LB can route/inspect/cache; backend offloaded from TLS
+Passthrough           : LB forwards encrypted bytes; backend terminates TLS
+                       -> end-to-end encryption, but LB can't see/route on HTTP (L4 only)
+Re-encryption (bridging): LB decrypts (to inspect/route) then RE-encrypts to backend
+                       -> L7 features AND encrypted internal hop (best of both, more CPU)</div>
+</div>
+<div class='sec'>Choosing</div>
+<div class='cmds'>
+  <div class='cmd'>Termination   : simple, fast, central cert mgmt; OK if the internal network is trusted
+Passthrough   : compliance/end-to-end requirements, or backend must see the client cert
+Re-encryption : zero-trust internal network + need L7 routing/WAF (common in regulated envs)</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Plain termination leaves LB->backend traffic in cleartext on the internal network — fine only if you truly trust that segment. In a zero-trust model, that internal hop should be encrypted too (re-encryption or mesh mTLS). Passthrough gives end-to-end encryption but forfeits all L7 routing/inspection at the LB (it's L4-only).</div>
+<div class='tip'><b>Interview tip:</b> Map the trade-off to your trust model: termination (fast, central certs, plaintext internal) for trusted networks; re-encryption when you need both L7 features and an encrypted internal hop (zero-trust/regulated); passthrough for true end-to-end or client-cert-to-backend needs. Noting that termination's cleartext internal hop conflicts with zero-trust — and mesh mTLS as the alternative — shows architectural maturity.</div>`},
+{n:117,tag:'troubleshoot',q:'An app\'s connection pool keeps exhausting. How do you diagnose pool vs network vs backend issues?',body:`<p>Pool exhaustion ("timeout acquiring connection") can stem from the pool config, the network, or a slow backend — distinguishing them prevents fixing the wrong layer.</p>
+<div class='sec'>The three root causes</div>
+<div class='cmds'>
+  <div class='cmd'>Pool too small / leaked : connections not returned (leak) or maxPoolSize too low
+                        for the concurrency -> requests queue for a free conn
+Slow backend            : each query/call takes longer -> conns held longer ->
+                        pool drains even at normal request rates
+Network/LB issue        : conns silently dead (LB idle timeout killed them) but
+                        still "in" the pool -> acquiring a dead conn stalls/fails</div>
+</div>
+<div class='sec'>Diagnosis</div>
+<div class='cmds'>
+  <div class='cmd'>- Pool metrics: active vs idle vs waiting, acquire wait time, timeouts
+- Is backend latency up? (slow query log, downstream p99) -> backend cause
+- Are there RSTs/resets on reuse? (the LB idle-timeout pattern) -> network cause
+- Does active-conn count grow without release? -> a LEAK (code not closing)
+ss -tn dst &lt;backend&gt; | wc -l    # actual live conns vs what the pool thinks</div>
+</div>
+<div class='warn'><b>Multiplication trap:</b> If every app instance has a pool of N and you run M instances, the backend sees up to N*M connections — scaling out can exhaust the <i>backend's</i> max_connections even though each pool looks fine. Size pools with the total fan-in to the backend in mind, not per-instance.</div>
+<div class='tip'><b>Interview tip:</b> Separate the three causes (undersized/leaked pool, slow backend holding conns longer, dead conns from LB idle timeout) and use pool metrics + backend latency + reset patterns to tell them apart. The connection-multiplication insight (N pools x M instances -> backend max_connections) is the senior detail — it explains why "we scaled up and the database fell over."</div>`},
+{n:118,tag:'troubleshoot',q:'What is ECMP and how can it cause confusing, inconsistent network behavior?',body:`<p>Equal-Cost Multi-Path routing spreads traffic across multiple equal-cost paths for bandwidth and redundancy — but per-flow hashing can produce puzzling per-connection differences.</p>
+<div class='sec'>How ECMP works</div>
+<div class='cmds'>
+  <div class='cmd'># Multiple equal-cost routes to a destination; the router hashes each FLOW
+# (typically the 5-tuple: src/dst IP, src/dst port, proto) to pick a path.
+# Same flow -> same path (consistent ordering); different flows -> spread.</div>
+</div>
+<div class='sec'>Why it confuses debugging</div>
+<div class='cmds'>
+  <div class='cmd'>- One connection is fine, another to the SAME host is slow/lossy
+  (they hashed onto different paths, one of which is degraded)
+- Intermittent issues that depend on the source port chosen for the flow
+- A capture on one path misses traffic taking another path
+- "It works sometimes" — really "it works on the healthy ECMP path"</div>
+</div>
+<div class='warn'><b>Gotcha:</b> Because ECMP pins a flow to a path by hash, a single bad link/path causes a <i>fraction</i> of connections to fail or slow down while others are perfectly fine — looking random, but it's deterministic per 5-tuple. Re-running with a different source port may hash to a good path and "fix" it, masking the real bad link.</div>
+<div class='tip'><b>Interview tip:</b> Recognize the pattern: per-connection inconsistency to the same destination, where some flows are bad and others fine, often means ECMP hashing onto a degraded path. The tell that it changes with source port (different hash -> different path) confirms it. This is an advanced troubleshooting insight that signals you've debugged real multi-path networks, not just single links.</div>`},
+{n:119,tag:'troubleshoot',q:'How do you design and verify network failover so it actually works when you need it?',body:`<p>Failover that's never tested usually fails when it matters. Designing it means accounting for detection time, convergence, and state — then proving it with drills.</p>
+<div class='sec'>The components of failover time</div>
+<div class='cmds'>
+  <div class='cmd'>Detection  : how fast you notice failure (health-check interval x threshold)
+Convergence: how fast traffic reroutes (DNS TTL, BGP, gratuitous ARP, LB dereg)
+State      : what's lost on cutover (in-flight requests, sessions, sticky state)
+RTO/RPO    : the actual downtime + data-loss you can tolerate</div>
+</div>
+<div class='sec'>Where failover silently doesn't work</div>
+<div class='cmds'>
+  <div class='cmd'>- DNS failover blocked by long client/JVM caching (TTL ignored) -> slow/no cutover
+- Stale ARP/conntrack after VIP move -> peers keep hitting the dead node
+- Standby was never actually in sync / never tested -> promotes to bad state
+- Health check too lax (detects failure minutes late) or too aggressive (false failover)</div>
+</div>
+<div class='sec'>Verify it</div>
+<div class='cmds'>
+  <div class='cmd'>- GAME DAYS: actually kill the primary / a zone and measure real RTO/RPO
+- Chaos testing: inject failures continuously, not once a year
+- Monitor failover events; alert if the standby is unhealthy/out of sync</div>
+</div>
+<div class='warn'><b>Gotcha:</b> The most common failure is assuming a configured failover works — DNS TTL caching, unsynced standbys, and stale ARP/conntrack routinely defeat it. Detection + convergence often add up to far more than the "60s TTL" you assumed. Untested failover is a liability, not a safety net.</div>
+<div class='tip'><b>Interview tip:</b> Break failover into detection + convergence + state, and name the silent killers (DNS/JVM caching defeating TTL, stale ARP/conntrack, unsynced standby). The headline: <b>test it with game days / chaos engineering</b> and measure real RTO/RPO — "we have failover configured" is meaningless until you've pulled the plug and watched it recover. This maturity is exactly what senior/SRE interviews probe.</div>`},
+{n:120,tag:'cloud',q:'Design the network architecture for a highly available 3-tier web application across multiple AZs.',body:`<p>This is a capstone design question. The goal: no single point of failure, secure tiering, and graceful handling of an AZ loss.</p>
+<div class='sec'>The architecture (per region, spanning >=2 AZs)</div>
+<div class='cmds'>
+  <div class='cmd'>Edge   : Route53/GeoDNS + CDN + WAF/DDoS protection
+Tier 1 : PUBLIC subnets (one per AZ) -> internet-facing LB (multi-AZ, L7)
+Tier 2 : PRIVATE subnets (one per AZ) -> app servers in an autoscaling group,
+         spread across AZs; reachable ONLY from the LB's security group
+Tier 3 : PRIVATE/data subnets (one per AZ) -> primary DB + standby in another AZ
+         (synchronous replica), reachable only from the app tier's SG
+Egress : NAT Gateway per AZ (not one shared -> avoid an AZ-failure SPOF)
+Private : VPC endpoints for S3/API traffic (skip NAT, stay private)</div>
+</div>
+<div class='sec'>HA properties</div>
+<div class='cmds'>
+  <div class='cmd'>- Multi-AZ everything: lose an AZ -> LB routes to surviving AZs, DB fails over
+- Autoscaling replaces failed app instances; health checks gate the pool
+- Least-privilege SGs per tier (LB->app->db chain, no public IPs on app/db)
+- Connection draining + graceful shutdown for zero-downtime deploys</div>
+</div>
+<div class='warn'><b>Common SPOF mistakes:</b> a single NAT Gateway (its AZ dies -> all private egress dies — use one per AZ), a single-AZ database with no standby, or all replicas in one AZ. Also: a deep LB health check on a shared DB can fail the whole app tier at once. Spread across AZs and keep checks shallow.</div>
+<div class='tip'><b>Interview tip:</b> Walk it tier by tier (edge -> public LB -> private app ASG -> private multi-AZ DB), stressing multi-AZ at every layer, least-privilege SG chaining (LB->app->DB, no public IPs below the LB), and per-AZ NAT gateways to avoid an egress SPOF. Then state how it survives an AZ loss. Calling out the classic SPOFs (single NAT GW, single-AZ DB) and tying in draining/graceful shutdown shows you can design AND operate it.</div>`}
 ];
 
 let activeFilter = 'all';
@@ -698,7 +2058,7 @@ function badge(tag){
 }
 
 function render(qs){
-  document.getElementById('count-bar').textContent=`Showing ${qs.length} of 45 questions`;
+  document.getElementById('count-bar').textContent=`Showing ${qs.length} of 120 questions`;
   document.getElementById('q-list').innerHTML=qs.map(q=>`
     <div class="q-card" id="card-${q.n}">
       <div class="q-header" onclick="toggle(${q.n})">
