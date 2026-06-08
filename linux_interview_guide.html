@@ -179,7 +179,7 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
 </head>
 <body>
 
-<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#BA7517;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Linux Systems Administration Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">50 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
+<header style="background:#fff;border-bottom:1px solid #e4e4dc;padding:.9rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;"><a href="index.html" class="portal-link" style="font-size:12px;font-weight:600;color:#BA7517;text-decoration:none;border:1px solid #ddd;border-radius:7px;padding:4px 10px;white-space:nowrap;">&#8592; Portal</a><h1 style="font-size:16px;font-weight:700;flex:1;min-width:0;">Linux Systems Administration Interview Guide</h1><span style="font-size:11px;background:#E1F5EE;color:#085041;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;">125 questions</span><button class="dm-btn" id="dm-btn" onclick="toggleDark()">&#9790; Dark</button></header>
 
 <div class="container">
   <div class="search-bar">
@@ -188,7 +188,7 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
   </div>
 
   <div class="filters">
-    <div class="chip active" onclick="setFilter('all',this)">All (50)</div>
+    <div class="chip active" onclick="setFilter('all',this)">All (125)</div>
     <div class="chip" onclick="setFilter('process',this)">Processes</div>
     <div class="chip" onclick="setFilter('filesystem',this)">Filesystem</div>
     <div class="chip" onclick="setFilter('networking',this)">Networking</div>
@@ -202,9 +202,9 @@ body.dark .dm-btn  { border-color: #2e3235; background: var(--dm-surface2); colo
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="stat-n n-purple">50</div><div class="stat-l">Total questions</div></div>
-    <div class="stat"><div class="stat-n n-teal">25</div><div class="stat-l">Core concepts</div></div>
-    <div class="stat"><div class="stat-n n-amber">25</div><div class="stat-l">Production scenarios</div></div>
+    <div class="stat"><div class="stat-n n-purple">125</div><div class="stat-l">Total questions</div></div>
+    <div class="stat"><div class="stat-n n-teal">60</div><div class="stat-l">Core concepts</div></div>
+    <div class="stat"><div class="stat-n n-amber">65</div><div class="stat-l">Production scenarios</div></div>
     <div class="stat"><div class="stat-n n-red" id="viewed-count">0</div><div class="stat-l">Viewed</div></div>
   </div>
 
@@ -1126,7 +1126,1763 @@ const QS = [
 </div>
 <p>Common patterns by symptom: high load + high I/O wait + D-state processes = storage bottleneck (check iostat await). High load + low I/O wait + high %sy = iptables/networking overhead (many rules, high connection rate). High load + low I/O wait + high %us = CPU-bound application (profile with perf). Memory exhausted + swap in use = OOM risk imminent (free up memory or add swap). Filesystem full + lsof shows deleted files = truncate open files. SSH not working but ping works = service issue, firewall, or PAM problem.</p>
 <div class='tip'><b>Principal-level deliverable:</b> After every incident: write a postmortem (5 whys root cause analysis), add the missing alert that would have caught this earlier, and improve the runbook. Convert reactive incidents into proactive prevention. The best Platform Engineers make their own on-call rotation quieter over time — not because they silence alerts, but because they fix the underlying issues permanently.</div>`}
+,
 
+  {n:51,tag:'process',q:'Explain process states (R, S, D, Z, T). Why can\'t you kill a process in D state?',
+  body:`<div class='sec'>The states (column STAT in ps)</div>
+<div class='cmds'>
+  <div class='cmd'>R  Running / runnable (on CPU or in run queue)
+S  Interruptible sleep (waiting for an event, e.g. network, can be woken)
+D  Uninterruptible sleep (in a kernel syscall, usually disk/NFS I/O)
+Z  Zombie (finished, waiting for parent to reap exit status)
+T  Stopped (SIGSTOP / job control, or being traced)
+# suffixes: < high-pri, N low-pri (nice), s session leader, + foreground, l multithreaded</div>
+</div>
+<div class='sec'>Why D can't be killed</div>
+<div class='cmds'>
+  <div class='cmd'># A process in D is blocked inside the kernel and is NOT accepting signals
+#   (not even SIGKILL) until the syscall returns. kill -9 is queued but
+#   won't act until the I/O completes — or never, if the device/NFS hangs.
+ps -eo pid,stat,wchan,cmd | awk '$2 ~ /D/'   # wchan shows what it's waiting on</div>
+</div>
+<div class='warn'><b>Real cause:</b> lots of D-state processes = stuck I/O — a dead NFS mount, a failing disk, or saturated storage. The fix is at the I/O layer (recover the mount/device), not <code>kill -9</code>. Persistent D-state often needs the underlying device fixed or a reboot.</div>
+<div class='tip'><b>Interview tip:</b> The headline: D = uninterruptible kernel sleep, immune to signals including SIGKILL, almost always disk/NFS I/O. Zombies, by contrast, are already dead — you can't kill them; you kill or fix the <i>parent</i> so it reaps them. Reading <code>wchan</code> to see what a D process waits on shows real depth.</div>`},
+
+  {n:52,tag:'process',q:'What is a zombie process and what is an orphan? How do you deal with each?',
+  body:`<div class='sec'>Zombie (defunct)</div>
+<div class='cmds'>
+  <div class='cmd'># Child has exited but the parent hasn't called wait() to read its exit code.
+# The entry stays in the process table (just a PID + exit status) -> &lt;defunct&gt;.
+ps aux | grep -w Z          # or STAT shows Z
+# You CAN'T kill a zombie (already dead). Fix the PARENT:
+#   - signal the parent to reap (SIGCHLD), or
+#   - kill/restart the parent -> children get reparented to init/PID 1, which reaps them.</div>
+</div>
+<div class='sec'>Orphan</div>
+<div class='cmds'>
+  <div class='cmd'># Parent died before the child. The child is "orphaned" and immediately
+#   reparented to PID 1 (init/systemd), which becomes responsible for reaping it.
+# Orphans are normal and harmless — init handles them.</div>
+</div>
+<div class='warn'><b>When zombies pile up:</b> a buggy parent that forks but never <code>wait()</code>s. A few zombies are harmless (tiny), but thousands can exhaust the PID space. In containers, PID 1 is often your app, not init — if it doesn't reap, zombies accumulate. Use an init shim (<code>tini</code>, <code>--init</code>) so PID 1 reaps.</div>
+<div class='tip'><b>Interview tip:</b> Crisp distinction: zombie = child dead, parent didn't reap (fix the parent); orphan = parent dead, child reparented to init (normal). The container angle — PID 1 must reap, use <code>tini</code>/<code>docker --init</code> — is a strong modern signal that separates you from a textbook answer.</div>`},
+
+  {n:53,tag:'process',q:'Explain nice, renice, and ionice. How do you deprioritize a backup job without killing it?',
+  body:`<div class='sec'>CPU priority: nice / renice</div>
+<div class='cmds'>
+  <div class='cmd'>nice -n 19 ./backup.sh        # start with lowest CPU priority (range -20..19)
+renice -n 10 -p 12345        # change priority of a running PID (raise = lower pri)
+renice -n 5 -u alice         # all of a user's processes
+# Only root can LOWER niceness (raise priority, negative values).</div>
+</div>
+<div class='sec'>I/O priority: ionice</div>
+<div class='cmds'>
+  <div class='cmd'>ionice -c 3 -p 12345         # class 3 = idle (only gets disk when nothing else wants it)
+ionice -c 2 -n 7 ./backup.sh # best-effort, lowest priority within it
+# Classes: 1=realtime, 2=best-effort(default), 3=idle</div>
+</div>
+<div class='sec'>Deprioritize a backup safely</div>
+<div class='cmds'>
+  <div class='cmd'># Backups are usually I/O-bound, so ionice matters more than nice:
+ionice -c 3 nice -n 19 ./backup.sh
+# CPU-idle AND disk-idle -> backup runs only with spare capacity, never killed.
+# Or via systemd: CPUWeight=, IOWeight=, or Nice= in the unit.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The key insight: <code>nice</code> is CPU only — for an I/O-heavy job like a backup, <code>ionice -c3</code> (idle I/O class) is what actually keeps it out of the way. Combining both, or using systemd's <code>IOWeight</code>/<code>CPUWeight</code> with cgroups, is the production-grade answer (resource control without killing the job).</div>`},
+
+  {n:54,tag:'process',q:'What are signals? Explain SIGTERM vs SIGKILL vs SIGHUP and graceful shutdown.',
+  body:`<div class='sec'>Common signals</div>
+<div class='cmds'>
+  <div class='cmd'>SIGTERM (15) : polite "please shut down" — catchable, app can clean up. DEFAULT of kill.
+SIGKILL (9)  : forced kill — NOT catchable, NOT ignorable, no cleanup. Last resort.
+SIGINT  (2)  : Ctrl-C (catchable)
+SIGHUP  (1)  : terminal hangup — often repurposed to "reload config" (nginx, etc.)
+SIGSTOP/SIGCONT : pause / resume (SIGSTOP also uncatchable)
+SIGCHLD : sent to parent when a child exits (used for reaping)</div>
+</div>
+<div class='sec'>Graceful shutdown pattern</div>
+<div class='cmds'>
+  <div class='cmd'># Send SIGTERM first, give it time, THEN SIGKILL if still alive:
+kill -TERM 12345; sleep 10; kill -KILL 12345 2>/dev/null
+# This is exactly what systemd (TimeoutStopSec) and Kubernetes
+#   (terminationGracePeriodSeconds) do: SIGTERM -> grace period -> SIGKILL.</div>
+</div>
+<div class='warn'><b>Why -9 is harmful as a default:</b> SIGKILL gives the app zero chance to flush buffers, finish in-flight requests, release locks, or remove pid/lock files — risking corruption and orphaned resources. Always try SIGTERM first.</div>
+<div class='tip'><b>Interview tip:</b> Stress that SIGTERM is catchable (clean shutdown) and SIGKILL/SIGSTOP are not (no cleanup), so the correct pattern is TERM -> wait -> KILL. Tying it to systemd <code>TimeoutStopSec</code> and K8s <code>terminationGracePeriodSeconds</code> shows you understand graceful shutdown the same way orchestrators implement it. SIGHUP-as-reload is a nice bonus fact.</div>`},
+
+  {n:55,tag:'process',q:'How do processes communicate (IPC)? Briefly cover pipes, sockets, shared memory, signals.',
+  body:`<div class='sec'>The mechanisms</div>
+<div class='cmds'>
+  <div class='cmd'>Pipes (|)        : unidirectional byte stream between related processes (shell pipelines)
+Named pipes/FIFO : mkfifo — pipe with a filesystem name, unrelated processes
+Unix sockets     : bidirectional, local-only, fast (no TCP stack) — /var/run/*.sock
+                   (Docker, databases, php-fpm use these)
+TCP/UDP sockets  : network IPC (also works locally via loopback)
+Shared memory    : fastest — processes map the same memory (SysV shm, POSIX, /dev/shm)
+Signals          : tiny async notifications (no data payload beyond the signal number)
+Message queues / semaphores : structured messaging + synchronization</div>
+</div>
+<div class='sec'>Choosing</div>
+<div class='cmds'>
+  <div class='cmd'># Speed vs convenience:
+shared memory  -> fastest, but you manage synchronization yourself
+unix socket    -> fast local, bidirectional, easy (most local services)
+pipe           -> simple stream, related processes
+network socket -> when processes are on different hosts</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Know that Unix domain sockets are the workhorse for local service IPC (Docker daemon, DBs, fpm) — faster than TCP loopback because they skip the network stack. Shared memory is fastest but needs your own locking. Signals carry no data (just a number). Matching mechanism to need (local vs remote, stream vs structured, speed vs simplicity) is what's being tested.</div>`},
+
+  {n:56,tag:'process',q:'How do you debug a process: strace, ltrace, /proc/<pid>, lsof? Give a workflow.',
+  body:`<div class='sec'>Inspect without attaching</div>
+<div class='cmds'>
+  <div class='cmd'>ls -l /proc/12345/fd        # open file descriptors (files, sockets, pipes)
+cat /proc/12345/status      # state, threads, memory, uid
+cat /proc/12345/limits      # ulimits actually in effect
+readlink /proc/12345/cwd /proc/12345/exe   # working dir + binary
+cat /proc/12345/environ | tr '\\0' '\\n'      # its environment</div>
+</div>
+<div class='sec'>Trace activity</div>
+<div class='cmds'>
+  <div class='cmd'>strace -p 12345 -f          # trace syscalls (what files/network it touches)
+strace -e trace=open,connect -p 12345   # filter to specific calls
+ltrace -p 12345             # trace library calls (higher level)
+lsof -p 12345               # everything the process has open
+lsof -i :8080               # who's using a port</div>
+</div>
+<div class='sec'>Workflow for "process is stuck"</div>
+<div class='cmds'>
+  <div class='cmd'>1. ps stat -> R/D/S/Z? (D = stuck I/O)
+2. strace -p PID -> is it blocked on a syscall (read/futex/connect)?
+3. /proc/PID/fd + lsof -> what file/socket is it blocked on?
+4. cat /proc/PID/stack (if permitted) -> kernel stack for D-state</div>
+</div>
+<div class='warn'><b>Caution:</b> <code>strace</code> significantly slows the target (every syscall is trapped) — use briefly on production, and prefer <code>-e trace=</code> filters. For low-overhead production tracing, reach for eBPF tools (bpftrace, <code>perf trace</code>).</div>
+<div class='tip'><b>Interview tip:</b> Show a layered method: cheap first (<code>/proc</code>, <code>lsof</code>, <code>ps</code>), then <code>strace</code> to see the blocking syscall. The standout point is that strace adds heavy overhead, so on production you'd use bpftrace/eBPF instead — that distinguishes someone who's actually traced a live prod process from someone reciting commands.</div>`},
+
+  {n:57,tag:'process',q:'Explain fork, exec, and copy-on-write. Why is fork() cheap on Linux?',
+  body:`<div class='sec'>fork + exec</div>
+<div class='cmds'>
+  <div class='cmd'>fork()  : creates a child that is a COPY of the parent (same code, new PID)
+exec()  : REPLACES the current process image with a new program
+# The classic pattern: shell forks, child execs the command, parent waits().
+# That's how every command you run from a shell starts.</div>
+</div>
+<div class='sec'>Copy-on-write (COW)</div>
+<div class='cmds'>
+  <div class='cmd'># fork() doesn't actually copy the parent's memory up front.
+# Parent + child SHARE the same physical pages, marked read-only.
+# A page is only physically copied when one of them WRITES to it.
+# -> fork is cheap even for large processes; you pay only for what changes.</div>
+</div>
+<div class='sec'>Why it matters</div>
+<p>COW makes forking a multi-GB process fast and memory-light — until it writes. This is why a big app (e.g. Redis) can <code>fork()</code> to snapshot: the child sees a frozen copy, and only changed pages get duplicated. But heavy writes after fork cause a memory spike as pages get copied.</p>
+<div class='tip'><b>Interview tip:</b> The key fact: fork is cheap because of copy-on-write — memory is shared read-only and only duplicated on write. Name the fork+exec pattern (how shells launch programs) and the Redis fork-to-snapshot example. The gotcha worth mentioning: a fork followed by heavy writes triggers mass page-copying and a RAM spike (relevant to Redis BGSAVE OOMs).</div>`},
+
+  {n:58,tag:'process',q:'What is the OOM killer? How does it decide what to kill and how do you influence it?',
+  body:`<div class='sec'>What it does</div>
+<div class='cmds'>
+  <div class='cmd'># When the kernel runs out of memory (and can't reclaim), the OOM killer
+#   picks a process to kill to free RAM and keep the system alive.
+dmesg | grep -i "killed process"        # see what got OOM-killed and why
+grep -i oom /var/log/syslog             # OOM events</div>
+</div>
+<div class='sec'>How it chooses</div>
+<div class='cmds'>
+  <div class='cmd'># Scores each process by oom_score (mostly proportional to memory used),
+#   adjusted by oom_score_adj (-1000 .. +1000). Highest score dies.
+cat /proc/12345/oom_score
+echo -1000 > /proc/12345/oom_score_adj   # -1000 = never kill (protect it)
+echo  500  > /proc/12345/oom_score_adj   # more likely to be the victim</div>
+</div>
+<div class='warn'><b>Gotcha:</b> the OOM killer often kills the <i>biggest</i> process, which may not be the culprit — it can take down your database instead of the leaking worker. In cgroup v2 / containers, memory limits cause a <i>cgroup-local</i> OOM kill (only that container's processes), which is usually what you want.</div>
+<div class='tip'><b>Interview tip:</b> Explain the score is memory-driven and tunable via <code>oom_score_adj</code> (protect critical services with -1000). The senior points: prefer cgroup memory limits so an OOM is contained to the offending container instead of the host picking a random big victim, and disabling overcommit or adding swap changes when/whether OOM triggers. Reading <code>dmesg</code> for the kill is the first debugging step.</div>`},
+
+  {n:59,tag:'filesystem',q:'Explain inodes. What happens when you run out of inodes but still have free space?',
+  body:`<div class='sec'>What an inode is</div>
+<div class='cmds'>
+  <div class='cmd'># An inode stores a file's METADATA (permissions, owner, timestamps, size,
+#   and pointers to data blocks) — but NOT the filename. The directory entry
+#   maps name -> inode number.
+ls -i file        # show inode number
+stat file         # full inode metadata
+df -i             # inode usage per filesystem (vs df -h for space)</div>
+</div>
+<div class='sec'>Out of inodes, space free</div>
+<div class='cmds'>
+  <div class='cmd'># inodes are allocated at mkfs time (fixed count on ext4). Millions of TINY
+#   files exhaust inodes while bytes remain free -> "No space left on device"
+#   even though df -h shows free space. The tell: df -i at 100%.
+# Find the culprit directory (lots of small files):
+for d in /var/*; do echo "$(find "$d" 2>/dev/null | wc -l) $d"; done | sort -rn | head</div>
+</div>
+<div class='warn'><b>Classic cause:</b> a runaway mail/session/cache dir, or millions of tiny log/temp files. The error message ("No space left") is misleading — always check <code>df -i</code>, not just <code>df -h</code>. ext4's inode count is fixed at format time; XFS allocates inodes dynamically and rarely hits this.</div>
+<div class='tip'><b>Interview tip:</b> The signature interview trap: "disk has free space but writes fail with ENOSPC." Answer: inode exhaustion — <code>df -i</code> confirms it. Inodes hold metadata + block pointers, not the name. Mention that ext4 fixes inode count at <code>mkfs</code> while XFS is dynamic — explaining why this bug is an ext4 phenomenon shows filesystem depth.</div>`},
+
+  {n:60,tag:'filesystem',q:'Hard links vs symbolic links: how do they differ and when do you use each?',
+  body:`<div class='sec'>The difference</div>
+<div class='cmds'>
+  <div class='cmd'>ln  target link        # HARD link: another name pointing to the SAME inode
+ln -s target link      # SYMlink: a small file containing a PATH to the target
+# Hard link  -> same inode, same data. Deleting one name leaves the data
+#               until the link count hits 0. Can't cross filesystems or link dirs.
+# Symlink    -> points to a path. If the target is moved/deleted -> dangling link.
+#               Can cross filesystems and point to directories.</div>
+</div>
+<div class='sec'>Observing</div>
+<div class='cmds'>
+  <div class='cmd'>ls -li file            # 2nd column = link count; same inode # = hard linked
+stat file              # "Links:" shows hard-link count
+ls -l symlink          # shows  link -> /path/to/target
+find / -inum 1234567   # find all hard links sharing an inode</div>
+</div>
+<div class='sec'>When to use</div>
+<p>Symlinks for almost everything (cross-fs, point to dirs, human-readable, common in <code>/etc/alternatives</code>, current-release pointers). Hard links for space-efficient deduplication on one filesystem (backup snapshots like rsync <code>--link-dest</code>, where unchanged files share inodes).</p>
+<div class='tip'><b>Interview tip:</b> Core facts: hard link = same inode (data persists until link count 0, same-fs only, not dirs); symlink = a path pointer (can dangle, crosses filesystems, points to dirs). The practical kicker: rsync/backup tools use hard links (<code>--link-dest</code>) for dedup, and deleting a file with multiple hard links doesn't free space until the last one goes.</div>`},
+
+  {n:61,tag:'filesystem',q:'A file was deleted but disk space wasn\'t freed. Why, and how do you recover the space?',
+  body:`<div class='sec'>Why space isn't freed</div>
+<div class='cmds'>
+  <div class='cmd'># On Linux, space is freed only when BOTH are true:
+#   1. all directory entries (names) are removed, AND
+#   2. no process still has the file OPEN.
+# If a process holds the deleted file open, the inode + blocks persist
+#   (you'll see "(deleted)" entries). Classic: a log file rm'd while the
+#   app keeps writing to its open fd -> disk fills, df shows full, du doesn't.</div>
+</div>
+<div class='sec'>Find and fix</div>
+<div class='cmds'>
+  <div class='cmd'>lsof +L1                       # files with link count 0 still held open
+lsof | grep deleted            # show "(deleted)" files + the holding PID
+# Recover space WITHOUT killing the app — truncate via the proc fd:
+: > /proc/&lt;pid&gt;/fd/&lt;fd-number&gt;   # empties the still-open deleted file
+# Or, if acceptable, restart/HUP the process to release the fd.</div>
+</div>
+<div class='warn'><b>The tell:</b> <code>df</code> shows the filesystem full but <code>du</code> of its contents is much smaller — the difference is space held by deleted-but-open files. This is extremely common with rotated logs when logrotate doesn't signal the app to reopen.</div>
+<div class='tip'><b>Interview tip:</b> This is a top-tier troubleshooting question. The mechanism: an open fd to a deleted file keeps its blocks allocated. Diagnose with <code>lsof +L1</code> / <code>lsof | grep deleted</code>; the <code>df</code>-vs-<code>du</code> mismatch is the fingerprint. Recover by truncating the proc fd or restarting the holder — and prevent it with proper logrotate <code>copytruncate</code> or a post-rotate reload signal.</div>`},
+
+  {n:62,tag:'filesystem',q:'Explain mount, /etc/fstab, and bind mounts. How do you safely add a new disk mount?',
+  body:`<div class='sec'>Mounting</div>
+<div class='cmds'>
+  <div class='cmd'>mount /dev/sdb1 /data            # attach a filesystem at a mountpoint
+umount /data                     # detach (fails if busy; lsof /data to find users)
+findmnt                          # tree of all mounts (clearer than mount)
+mount --bind /src /dst           # bind mount: make a dir appear at another path</div>
+</div>
+<div class='sec'>Persistent mounts: /etc/fstab</div>
+<div class='cmds'>
+  <div class='cmd'># &lt;device&gt;  &lt;mountpoint&gt;  &lt;fstype&gt;  &lt;options&gt;  &lt;dump&gt; &lt;pass&gt;
+UUID=abc-123  /data  ext4  defaults,noatime  0  2
+# Use UUID (or LABEL), NOT /dev/sdb1 — device names reorder across reboots!
+blkid /dev/sdb1                  # get the UUID</div>
+</div>
+<div class='sec'>Safely add a disk</div>
+<div class='cmds'>
+  <div class='cmd'>1. mkfs.ext4 /dev/sdb1; blkid to get UUID
+2. Add the UUID line to /etc/fstab
+3. mount -a            # mount everything in fstab NOW — catches typos
+4. Verify: findmnt /data, df -h
+# CRITICAL: test mount -a before rebooting. A bad fstab line can drop the
+#   box to emergency mode on boot. (Use 'nofail' for non-critical mounts.)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Two safety points score here: (1) reference disks by UUID/LABEL, not <code>/dev/sdX</code> (which can reorder), and (2) always run <code>mount -a</code> to validate fstab <i>before</i> rebooting, since a bad entry can hang boot in emergency mode — add <code>nofail</code> for optional mounts. Knowing bind mounts (and that they're how containers share host dirs) is a nice extra.</div>`},
+
+  {n:63,tag:'filesystem',q:'What\'s the difference between ext4, XFS, and Btrfs/ZFS? When would you pick each?',
+  body:`<div class='sec'>The main filesystems</div>
+<div class='cmds'>
+  <div class='cmd'>ext4  : mature, reliable default. Fixed inode count, journaling. Shrinkable.
+        Great general-purpose; the safe boring choice.
+XFS   : high-performance, great for large files + parallel I/O, dynamic inodes.
+        Default on RHEL. Can GROW but NOT shrink. Scales to huge filesystems.
+Btrfs : CoW, snapshots, checksums, built-in RAID, subvolumes. More features,
+        historically less trusted for some RAID modes.
+ZFS   : CoW, snapshots, checksums, compression, RAID-Z, self-healing. Excellent
+        data integrity; heavy RAM use; licensing keeps it out of mainline kernel.</div>
+</div>
+<div class='sec'>Choosing</div>
+<div class='cmds'>
+  <div class='cmd'>General server / root fs   -> ext4 (or XFS on RHEL)
+Big data, large files, DBs -> XFS (parallel I/O, scales)
+Need snapshots/checksums/  -> ZFS (integrity) or Btrfs (in-kernel)
+  data integrity, NAS
+Need to shrink a fs        -> ext4 (XFS can't shrink)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Have a one-line opinion on each: ext4 = safe default, XFS = performance/scale (RHEL default, grow-only), ZFS/Btrfs = snapshots + checksums + integrity (CoW). The most-tested specifics: XFS can grow but not shrink, ext4 has fixed inodes, and CoW filesystems give you snapshots and end-to-end checksums (self-healing) at the cost of complexity/RAM.</div>`},
+
+  {n:64,tag:'filesystem',q:'Explain file permissions deeply: SUID, SGID, sticky bit, and umask.',
+  body:`<div class='sec'>Beyond rwx: special bits</div>
+<div class='cmds'>
+  <div class='cmd'>SUID (4xxx)  : run the file AS THE OWNER (e.g. /usr/bin/passwd runs as root)
+               shows as 's' in owner-exec: -rwsr-xr-x
+SGID (2xxx)  : on a file -> run as the group; on a DIR -> new files inherit
+               the dir's group (great for shared team folders)
+Sticky (1xxx): on a dir -> only the file's owner can delete it (e.g. /tmp)
+               shows as 't': drwxrwxrwt
+chmod u+s / g+s / +t file_or_dir</div>
+</div>
+<div class='sec'>umask</div>
+<div class='cmds'>
+  <div class='cmd'># umask SUBTRACTS permissions from defaults (666 files, 777 dirs):
+umask 022    -> new files 644, new dirs 755   (typical)
+umask 027    -> new files 640, new dirs 750   (more private; group read only)
+umask        # show current</div>
+</div>
+<div class='warn'><b>Security:</b> SUID-root binaries are a major attack surface — a bug in one = root. Audit them: <code>find / -perm -4000 -type f 2&gt;/dev/null</code>. Modern systems replace many SUID binaries with capabilities (finer-grained). Never set SUID on shell scripts.</div>
+<div class='tip'><b>Interview tip:</b> Be precise: SUID = run as owner (the <code>passwd</code> example), SGID on a directory = group inheritance (shared folders), sticky bit = owner-only delete (why anyone can write to <code>/tmp</code> but not delete others' files). umask <i>subtracts</i> from defaults. The security-aware close — audit SUID binaries, prefer capabilities — is what senior interviewers want to hear.</div>`},
+
+  {n:65,tag:'filesystem',q:'How do you find what\'s filling a disk, and handle \'No space left on device\'?',
+  body:`<div class='sec'>Find the big consumers</div>
+<div class='cmds'>
+  <div class='cmd'>df -h                         # which filesystem is full?
+df -i                         # OR is it inodes? (millions of tiny files)
+du -xh /var --max-depth=1 | sort -rh | head   # -x stays on one filesystem
+ncdu /var                     # interactive disk usage explorer (fast)
+find / -xdev -size +500M -exec ls -lh {} \\;   # individual large files</div>
+</div>
+<div class='sec'>The deleted-but-open trap</div>
+<div class='cmds'>
+  <div class='cmd'># If du is much smaller than df-used, space is held by open deleted files:
+lsof +L1                      # or: lsof | grep deleted
+: > /proc/&lt;pid&gt;/fd/&lt;n&gt;        # truncate to reclaim without killing the app</div>
+</div>
+<div class='sec'>Common culprits + quick wins</div>
+<div class='cmds'>
+  <div class='cmd'>journalctl --disk-usage; journalctl --vacuum-size=200M   # systemd journal bloat
+docker system df; docker system prune                    # images/volumes/build cache
+/var/log (rotate), /tmp, old kernels, package caches (apt clean / dnf clean)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Show a decision tree: <code>df -h</code> (space) vs <code>df -i</code> (inodes) vs <code>df</code>-beats-<code>du</code> (deleted-open files) — three different "disk full" root causes. Then locate with <code>du -x</code>/<code>ncdu</code>. Naming the usual offenders (journal, Docker, logs, old kernels) and reclaiming them shows you've actually firefought a full root filesystem.</div>`},
+
+  {n:66,tag:'filesystem',q:'Explain the Linux page cache, dirty pages, and how writes are flushed to disk.',
+  body:`<div class='sec'>Page cache</div>
+<div class='cmds'>
+  <div class='cmd'># Linux caches file data in free RAM (page cache). Reads hit RAM, not disk.
+# This is why 'free -h' shows little "free" but lots of "buff/cache" —
+#   that memory is reclaimable, NOT wasted. available is the number that matters.
+free -h          # look at "available", not "free"</div>
+</div>
+<div class='sec'>Dirty pages + writeback</div>
+<div class='cmds'>
+  <div class='cmd'># A WRITE first goes to the page cache (marked "dirty"), then is flushed
+#   to disk asynchronously by kernel writeback threads -> writes feel fast.
+cat /proc/meminfo | grep -i dirty           # Dirty: pending bytes
+sync                                         # force flush all dirty pages now
+# Tunables: vm.dirty_ratio / vm.dirty_background_ratio control when flush starts.</div>
+</div>
+<div class='warn'><b>Durability gap:</b> because writes are buffered, data in the page cache is lost on power failure unless <code>fsync()</code> has committed it. Databases call <code>fsync</code>/use <code>O_DIRECT</code> for durability. A sudden <code>dirty_ratio</code>-triggered flush can also cause an I/O stall ("write storm").</div>
+<div class='tip'><b>Interview tip:</b> Two things land well: (1) <code>buff/cache</code> in <code>free</code> is reclaimable, so "low free memory" is usually fine — watch <code>available</code> instead; and (2) writes are buffered as dirty pages and flushed asynchronously, which is why <code>fsync</code> exists and why a power loss can lose un-synced data. Mentioning <code>vm.dirty_ratio</code> tuning to avoid write-storm stalls is a strong performance signal.</div>`},
+
+  {n:67,tag:'networking',q:'The modern net-tools vs iproute2: what replaced ifconfig, netstat, route, arp?',
+  body:`<div class='sec'>Old -> new</div>
+<div class='cmds'>
+  <div class='cmd'>ifconfig        -> ip addr / ip link
+route -n        -> ip route
+netstat -tlnp   -> ss -tlnp           (ss is faster, reads /proc directly)
+netstat -i      -> ip -s link
+arp -a          -> ip neigh
+netstat -rn     -> ip route show</div>
+</div>
+<div class='sec'>The everyday commands</div>
+<div class='cmds'>
+  <div class='cmd'>ip a                       # all interfaces + addresses
+ip route get 8.8.8.8       # which route/interface/source IP is used for a dest
+ip -s link show eth0       # interface stats (errors, drops)
+ss -tlnp                   # listening TCP sockets + owning process
+ss -tn state established   # established connections
+ss -s                      # socket summary stats</div>
+</div>
+<div class='warn'><b>Why it matters:</b> <code>net-tools</code> (ifconfig/netstat) is deprecated and often not installed on minimal/container images. <code>ss</code> is dramatically faster than <code>netstat</code> on busy hosts (netstat parses <code>/proc</code> slowly). Knowing iproute2 is now table stakes.</div>
+<div class='tip'><b>Interview tip:</b> Just demonstrate fluency in the modern tools — <code>ip a</code>, <code>ip route get</code>, <code>ss -tlnp</code>, <code>ip neigh</code>. The single best one-liner to know is <code>ip route get &lt;dest&gt;</code>, which shows exactly which route, interface, and source IP the kernel will use — invaluable for routing/asymmetric-path debugging. Note that ifconfig/netstat are deprecated and may be absent on containers.</div>`},
+
+  {n:68,tag:'networking',q:'How do you debug \'can\'t connect to a service\'? Give a layered checklist.',
+  body:`<div class='sec'>Work up the stack</div>
+<div class='cmds'>
+  <div class='cmd'>1. DNS:     getent hosts host   /  dig host        # name resolves? right IP?
+2. Route:   ip route get &lt;ip&gt;                       # is there a path? right iface?
+3. Reach:   ping &lt;ip&gt;                               # L3 up? (ICMP may be blocked)
+4. Port:    nc -vz host 443  /  curl -v telnet://host:443   # is the port open?
+5. Listen:  (on server) ss -tlnp | grep :443        # is anything bound? on 0.0.0.0?
+6. Firewall: iptables/nftables, cloud SG/NACL, host ufw/firewalld
+7. App:     curl -v https://host/health             # does the app actually answer?</div>
+</div>
+<div class='sec'>Read the failure mode</div>
+<div class='cmds'>
+  <div class='cmd'>Connection REFUSED  -> reached host, nothing listening on that port (or RST)
+Connection TIMEOUT  -> firewall dropping / wrong route / host down (no reply)
+No route to host    -> routing/ARP problem, or firewall REJECT with icmp
+Name resolution err -> DNS, before any connection is attempted</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Lead with the layered method (DNS -> route -> reach -> port -> listener -> firewall -> app) and especially the <b>refused vs timeout</b> distinction: refused = got there, nothing listening (fast); timeout = packets dropped silently (firewall/down). A frequent gotcha to mention: the service is listening on <code>127.0.0.1</code> instead of <code>0.0.0.0</code>, so it works locally but refuses remotely.</div>`},
+
+  {n:69,tag:'networking',q:'Explain iptables vs nftables and the netfilter chains. How does a packet traverse them?',
+  body:`<div class='sec'>netfilter chains (the hooks)</div>
+<div class='cmds'>
+  <div class='cmd'>PREROUTING  -> (routing decision) -> INPUT    (packets FOR this host)
+                                   -> FORWARD  (packets THROUGH this host) -> POSTROUTING
+locally generated           -> OUTPUT -> POSTROUTING
+# Tables apply at these hooks: filter (allow/deny), nat (SNAT/DNAT), mangle, raw.</div>
+</div>
+<div class='sec'>iptables example</div>
+<div class='cmds'>
+  <div class='cmd'>iptables -L -n -v --line-numbers       # list filter rules + counters
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -j DROP              # default-deny the rest
+# Rules are evaluated top-to-bottom; FIRST match wins. Order matters!</div>
+</div>
+<div class='sec'>nftables (the replacement)</div>
+<div class='cmds'>
+  <div class='cmd'># nft unifies iptables/ip6tables/arptables/ebtables into one framework,
+#   with sets, maps, and better performance. Modern distros use nft underneath.
+nft list ruleset
+nft add rule inet filter input tcp dport 22 accept</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Draw the path: PREROUTING -> routing -> INPUT (to us) or FORWARD (through us) -> POSTROUTING. Stress first-match-wins and that a misplaced DROP above your ACCEPT silently blocks traffic. Note nftables is the modern replacement (sets/maps, one tool for v4+v6) and that even <code>iptables</code> commands now often drive the nft backend. Knowing where NAT happens (PRE/POSTROUTING) ties into the SNAT/DNAT questions.</div>`},
+
+  {n:70,tag:'networking',q:'How do you capture and analyze traffic with tcpdump? Give a practical workflow.',
+  body:`<div class='sec'>Capture</div>
+<div class='cmds'>
+  <div class='cmd'>tcpdump -i eth0 -nn host 10.0.0.5 and port 443    # filter by host+port (-nn no DNS)
+tcpdump -i any -nn 'tcp[tcpflags] & (tcp-syn|tcp-rst) != 0'  # SYNs and RSTs
+tcpdump -i eth0 -w cap.pcap -C 100 -W 5           # write to file, rotate 100MB x5
+tcpdump -r cap.pcap -nn                            # read back a capture
+# -s0 captures full packets; add -v for more header detail.</div>
+</div>
+<div class='sec'>What the flags tell you</div>
+<div class='cmds'>
+  <div class='cmd'>SYN sent, no SYN-ACK back   -> firewall drop / nothing listening / wrong route
+SYN -> RST                  -> port closed (refused)
+Retransmissions             -> packet loss / congestion
+FIN/RST mid-stream          -> who closed first (server vs client)?</div>
+</div>
+<div class='sec'>Workflow</div>
+<p>Capture on <b>both ends</b> when possible: if the client sends SYN but the server never sees it, the drop is in between (firewall/route); if the server replies but the client doesn't get it, the return path is broken. Move the capture to Wireshark for TCP stream analysis.</p>
+<div class='warn'><b>Caution on prod:</b> capture with tight filters and rotation (<code>-C/-W</code>) — an unfiltered capture on a busy host can fill the disk and add load. Be mindful that payloads may contain sensitive data.</div>
+<div class='tip'><b>Interview tip:</b> The pro move is capturing on both ends to localize where packets vanish (sender-side vs path vs return path). Know the flag-reading shorthand: SYN with no reply = dropped/no listener; SYN->RST = refused; retransmits = loss. Mention tight filters + file rotation so you don't take down a prod box with the capture itself.</div>`},
+
+  {n:71,tag:'networking',q:'Explain network namespaces and veth pairs. How does container networking actually work?',
+  body:`<div class='sec'>Network namespaces</div>
+<div class='cmds'>
+  <div class='cmd'># A netns is an isolated network stack: its own interfaces, routes,
+#   ARP table, iptables, ports. This is the primitive containers use.
+ip netns add blue
+ip netns exec blue ip a        # run a command inside that namespace
+ls /var/run/netns              # named namespaces</div>
+</div>
+<div class='sec'>veth pairs (the cable)</div>
+<div class='cmds'>
+  <div class='cmd'># A veth pair is a virtual cable: two ends; what goes in one comes out the other.
+# One end lives in the container's netns, the other on the host (often on a bridge).
+ip link add veth0 type veth peer name veth1
+ip link set veth1 netns blue   # push one end into the namespace
+# Host end -> docker0/cni bridge -> NAT/routing to the outside.</div>
+</div>
+<div class='sec'>The full container picture</div>
+<div class='cmds'>
+  <div class='cmd'>container netns --(veth)--> host bridge (docker0/cni0) --(iptables NAT)--> eth0 -> world
+# "publish a port" = a DNAT rule mapping host:port -> container IP:port.
+# Kubernetes CNI plugins automate exactly this (plus pod-to-pod routing).</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The insight that impresses: containers aren't magic — they're network namespaces connected by veth pairs to a host bridge, with iptables doing NAT/port-publishing. Being able to say "<code>docker run -p</code> is just a DNAT rule" and "a pod is a netns; CNI wires the veth" shows you understand the plumbing under Docker/Kubernetes, not just the CLI.</div>`},
+
+  {n:72,tag:'networking',q:'What is the difference between a bridge, bond, VLAN, and tunnel interface?',
+  body:`<div class='sec'>The interface types</div>
+<div class='cmds'>
+  <div class='cmd'>Bridge : a virtual L2 switch — connects multiple interfaces/veths into one
+         segment (docker0, br0 for VMs/containers).
+Bond   : aggregates multiple NICs into one for redundancy and/or throughput
+         (a.k.a. link aggregation / LACP). Survives a NIC/cable failure.
+VLAN   : tags frames (802.1Q) to split one physical link into many logical L2
+         segments (eth0.100 = VLAN 100).
+Tunnel : encapsulates packets to traverse another network — VXLAN, GRE, IPsec,
+         WireGuard. Basis of overlay networks.</div>
+</div>
+<div class='sec'>Bonding modes (most asked)</div>
+<div class='cmds'>
+  <div class='cmd'>active-backup : one NIC active, others standby (pure redundancy, no extra bw)
+802.3ad (LACP): switch-negotiated aggregation (redundancy + bandwidth)
+balance-alb/tlb : load-balance without switch config</div>
+</div>
+<div class='sec'>Where each shows up</div>
+<p>Bridges back container/VM networking; bonds give NIC redundancy on servers; VLANs segment a datacenter L2; tunnels (VXLAN) build the overlay fabrics that Kubernetes CNIs and SDNs use to make pods on different nodes look like one L2.</p>
+<div class='tip'><b>Interview tip:</b> One sentence each: bridge = virtual switch (containers/VMs), bond = NIC aggregation for HA/throughput (know active-backup vs LACP), VLAN = logical L2 segmentation via tagging, tunnel/VXLAN = overlay encapsulation. Connecting VXLAN tunnels to Kubernetes overlay networking, and bonds to server NIC redundancy, shows you map these primitives to real infrastructure.</div>`},
+
+  {n:73,tag:'networking',q:'How do you diagnose high latency or packet loss between two hosts?',
+  body:`<div class='sec'>Find where it hurts</div>
+<div class='cmds'>
+  <div class='cmd'>ping -c 100 host          # baseline RTT + loss % (watch for variance/jitter)
+mtr -rwzbc 100 host       # per-hop loss + latency over 100 cycles (THE tool)
+traceroute host           # path; -T for TCP if ICMP is filtered</div>
+</div>
+<div class='sec'>Reading mtr</div>
+<div class='cmds'>
+  <div class='cmd'># Loss that STARTS at a hop and CONTINUES to the end -> real loss at that hop.
+# Loss at ONE middle hop but 0% after it -> that router just deprioritizes ICMP
+#   to its own control plane (NOT a real problem) — a classic misread.
+# So only trust loss that persists to the destination.</div>
+</div>
+<div class='sec'>Local-side checks</div>
+<div class='cmds'>
+  <div class='cmd'>ip -s link show eth0      # interface errors/drops/overruns (bad NIC/cable/driver)
+ethtool -S eth0           # detailed NIC counters
+ss -ti                    # per-socket RTT, retransmits, cwnd (TCP-level loss)
+# Also: MTU/PMTUD black hole (big packets lost), conntrack full, NIC ring buffers.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> <code>mtr</code> is the headline tool, but the senior point is reading it correctly: mid-path ICMP deprioritization looks like loss but isn't — only loss that persists to the final hop is real. Separate latency (distance/queuing) from loss (errors/congestion) from jitter (variance). Checking local NIC error counters and per-socket TCP retransmits (<code>ss -ti</code>) rounds out a complete answer.</div>`},
+
+  {n:74,tag:'networking',q:'Explain ephemeral ports, TIME_WAIT, and \'cannot assign requested address\' under load.',
+  body:`<div class='sec'>Ephemeral ports</div>
+<div class='cmds'>
+  <div class='cmd'># Each OUTBOUND connection uses a local source port from the ephemeral range:
+cat /proc/sys/net/ipv4/ip_local_port_range    # e.g. 32768  60999  (~28k ports)
+# A connection is the 4-tuple: src_ip:src_port -> dst_ip:dst_port.
+# To ONE destination ip:port you're limited by available source ports.</div>
+</div>
+<div class='sec'>TIME_WAIT</div>
+<div class='cmds'>
+  <div class='cmd'># The side that closes first holds the socket in TIME_WAIT (~60s) to absorb
+#   stray packets. Under high churn, thousands of TIME_WAIT sockets tie up
+#   source ports -> new outbound connects fail:
+#   "cannot assign requested address" (EADDRNOTAVAIL).
+ss -tan state time-wait | wc -l</div>
+</div>
+<div class='sec'>Fixes</div>
+<div class='cmds'>
+  <div class='cmd'>- Use connection pooling / keep-alive (fewer, reused connections) — the real fix
+- Widen ip_local_port_range
+- net.ipv4.tcp_tw_reuse=1  (safe: reuse TIME_WAIT for new OUTBOUND conns)
+- Do NOT use tcp_tw_recycle (removed; broke NAT) </div>
+</div>
+<div class='tip'><b>Interview tip:</b> The chain to articulate: high connection churn -> pile of TIME_WAIT on the active closer -> source-port exhaustion -> EADDRNOTAVAIL. The correct primary fix is connection reuse/pooling, not tuning. If asked about sysctls, <code>tcp_tw_reuse</code> is safe but <code>tcp_tw_recycle</code> is a trap (NAT-breaking, removed) — knowing that difference is a strong signal.</div>`},
+
+  {n:75,tag:'networking',q:'What is SSH multiplexing, agent forwarding, and a bastion/jump host? Show a secure setup.',
+  body:`<div class='sec'>Jump host (ProxyJump)</div>
+<div class='cmds'>
+  <div class='cmd'># Reach a private host THROUGH a bastion, without landing keys on the bastion:
+ssh -J bastion.example.com private-host
+# ~/.ssh/config:
+Host private-*
+    ProxyJump bastion.example.com
+    User deploy</div>
+</div>
+<div class='sec'>Multiplexing (reuse one connection)</div>
+<div class='cmds'>
+  <div class='cmd'>Host *
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist 10m
+# Subsequent ssh/scp to the same host reuse the open channel -> instant, no re-auth.</div>
+</div>
+<div class='sec'>Agent forwarding — and why to avoid it</div>
+<div class='cmds'>
+  <div class='cmd'># ssh -A forwards your local agent so the remote can use your keys onward.
+# RISK: root on that remote can hijack your agent socket to impersonate you.
+# Prefer ProxyJump (keys never touch the intermediate host) over -A.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Recommend <b>ProxyJump</b> over agent forwarding for bastions — ProxyJump tunnels through without exposing your keys on the jump box, whereas <code>-A</code> lets a compromised intermediate hijack your agent. Multiplexing (<code>ControlMaster</code>) is the performance win for repeated connections (Ansible uses it). Mentioning the agent-forwarding risk is a security-maturity marker. Modern shops increasingly replace bastions with SSM/IAP (no open SSH port at all).</div>`},
+
+  {n:76,tag:'security',q:'How do you harden SSH on a production server? Give concrete sshd_config settings.',
+  body:`<div class='sec'>Core sshd_config hardening</div>
+<div class='cmds'>
+  <div class='cmd'>PermitRootLogin no                 # no direct root; sudo from a named user
+PasswordAuthentication no          # keys only — kills brute force
+PubkeyAuthentication yes
+KbdInteractiveAuthentication no
+AllowUsers deploy ops              # explicit allowlist (or AllowGroups)
+Port 22                            # (obscurity only; not real security)
+MaxAuthTries 3
+LoginGraceTime 20
+X11Forwarding no
+AllowAgentForwarding no            # unless explicitly needed</div>
+</div>
+<div class='sec'>Layered controls</div>
+<div class='cmds'>
+  <div class='cmd'>- firewall: restrict 22 to known CIDRs / VPN / bastion only
+- fail2ban / sshguard: ban IPs after repeated failures
+- MFA for SSH (e.g. TOTP PAM) for human access
+- short-lived SSH certificates (CA-signed) instead of static authorized_keys
+- centralize + monitor auth logs (failed logins, new keys)</div>
+</div>
+<div class='warn'><b>Always</b> keep an active session open and test the new config from a second terminal (<code>sshd -t</code> to validate syntax) before closing — a bad <code>sshd_config</code> can lock you out.</div>
+<div class='tip'><b>Interview tip:</b> The two highest-impact settings are <code>PasswordAuthentication no</code> (keys only — eliminates brute-force) and <code>PermitRootLogin no</code>. Then layer: firewall to bastion/VPN, fail2ban, MFA. The modern senior answer mentions SSH certificates (CA-signed, short-lived) over static <code>authorized_keys</code> for scalable, revocable access — and always validate with <code>sshd -t</code> before disconnecting.</div>`},
+
+  {n:77,tag:'security',q:'Explain Linux capabilities. Why are they better than SUID-root?',
+  body:`<div class='sec'>The problem with SUID-root</div>
+<div class='cmds'>
+  <div class='cmd'># SUID-root = the binary runs with ALL root powers, even if it only needs one.
+# A bug in it = full root compromise. All-or-nothing privilege.</div>
+</div>
+<div class='sec'>Capabilities = root split into pieces</div>
+<div class='cmds'>
+  <div class='cmd'>CAP_NET_BIND_SERVICE  # bind ports <1024 without being root
+CAP_NET_RAW           # raw sockets (ping, packet capture)
+CAP_SYS_ADMIN         # huge catch-all ("the new root" — avoid granting)
+CAP_CHOWN, CAP_KILL, CAP_SYS_TIME, ...
+# Grant just the capability a program needs, not full root:
+setcap cap_net_bind_service+ep /usr/bin/myserver
+getcap /usr/bin/myserver       # inspect</div>
+</div>
+<div class='sec'>Why better</div>
+<p>Least privilege: a web server that only needs to bind port 80 gets <code>CAP_NET_BIND_SERVICE</code> instead of running as root. A bug then leaks one capability, not the whole system. Containers use this heavily — drop all caps, add back only what's needed.</p>
+<div class='tip'><b>Interview tip:</b> Frame capabilities as "root chopped into ~40 independent privileges" enabling least privilege. The killer example: bind to port 80 with <code>CAP_NET_BIND_SERVICE</code> instead of full root. The container tie-in is gold: <code>--cap-drop=ALL --cap-add=NET_BIND_SERVICE</code>, and that <code>CAP_SYS_ADMIN</code> is effectively root so granting it defeats the purpose.</div>`},
+
+  {n:78,tag:'security',q:'What are SELinux and AppArmor? How do you debug an SELinux denial?',
+  body:`<div class='sec'>What they are (MAC)</div>
+<div class='cmds'>
+  <div class='cmd'># Mandatory Access Control: the kernel enforces policy even root can't override,
+#   confining what a process may access — a strong defense-in-depth layer.
+# SELinux (RHEL/Fedora) : label-based (every file/process has a context/type)
+# AppArmor (Ubuntu/SUSE): path-based profiles per program (simpler model)</div>
+</div>
+<div class='sec'>Debugging SELinux denials</div>
+<div class='cmds'>
+  <div class='cmd'>getenforce                         # Enforcing / Permissive / Disabled
+ausearch -m AVC -ts recent         # the actual denials (AVC messages)
+sealert -a /var/log/audit/audit.log  # human-readable with suggested fixes
+# Common real fix: relabel a file to the right context
+restorecon -Rv /web/html
+chcon -t httpd_sys_content_t /web/file
+setsebool -P httpd_can_network_connect on   # toggle a policy boolean</div>
+</div>
+<div class='warn'><b>Anti-pattern:</b> <code>setenforce 0</code> / disabling SELinux "to make it work" throws away a real security layer. The symptom "works with SELinux off" means a labeling/policy issue — fix the context (<code>restorecon</code>) or the boolean, don't disable it. Use Permissive mode to log-without-blocking while you diagnose.</div>
+<div class='tip'><b>Interview tip:</b> Define MAC as kernel-enforced confinement that even root obeys (vs discretionary owner-set perms). For debugging, the workflow is <code>ausearch</code>/<code>sealert</code> -> usually <code>restorecon</code> (wrong label) or a <code>setsebool</code> toggle. The maturity signal is explicitly NOT disabling SELinux — using Permissive mode to diagnose, then fixing the label/policy properly.</div>`},
+
+  {n:79,tag:'security',q:'How do you manage sudo safely? Explain sudoers, NOPASSWD risks, and auditing.',
+  body:`<div class='sec'>Editing sudoers</div>
+<div class='cmds'>
+  <div class='cmd'>visudo                         # ALWAYS — it syntax-checks before saving
+                               # (a broken sudoers can lock out all admins)
+# Prefer drop-in files over editing the main file:
+visudo -f /etc/sudoers.d/deploy</div>
+</div>
+<div class='sec'>Least-privilege rules</div>
+<div class='cmds'>
+  <div class='cmd'># Grant specific commands, not blanket ALL:
+deploy  ALL=(ALL) /usr/bin/systemctl restart myapp, /usr/bin/journalctl -u myapp
+%ops    ALL=(ALL) ALL          # group-based (manage membership, not rules)
+# NOPASSWD removes the password prompt — convenient but risky:
+deploy  ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart myapp   # scope it tightly!</div>
+</div>
+<div class='warn'><b>Risks:</b> <code>NOPASSWD: ALL</code> means a stolen session = instant root with no second factor. Also beware commands that can spawn shells (editors, <code>less</code>, <code>find -exec</code>, <code>vi</code>) — granting those effectively grants root. Restrict to exact, non-shell-escaping commands.</div>
+<div class='sec'>Auditing</div>
+<div class='cmds'>
+  <div class='cmd'>journalctl _COMM=sudo           # who ran what via sudo
+# sudo logs each invocation; ship these to central logging/SIEM.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Hit three things: always use <code>visudo</code> (syntax check prevents lockout), grant <i>specific commands</i> not <code>ALL</code>, and be wary of <code>NOPASSWD</code> plus shell-escaping commands (an editor or <code>less</code> in a sudo rule = root). Mention auditing sudo usage to central logs. This shows you treat privilege escalation as an attack surface, not a convenience.</div>`},
+
+  {n:80,tag:'security',q:'How do you respond to a suspected compromised Linux server? Walk through the steps.',
+  body:`<div class='sec'>1. Contain (don't tip off the attacker)</div>
+<div class='cmds'>
+  <div class='cmd'># Isolate at the network layer (SG/firewall), DON'T power off
+#   (loses volatile evidence: memory, live connections, running procs).
+# Preserve: snapshot the disk/VM; capture RAM if you can.</div>
+</div>
+<div class='sec'>2. Triage / investigate</div>
+<div class='cmds'>
+  <div class='cmd'>w; last; lastb              # who's/was logged in, failed logins
+ss -tnp                     # active connections + processes (C2 beacon?)
+ps auxf                     # process tree — odd parents, miners
+ls -la /tmp /dev/shm /var/tmp   # common dropper locations
+crontab -l; ls /etc/cron.*; systemctl list-timers   # persistence
+find / -mtime -2 -type f 2>/dev/null   # recently modified files
+grep -r authorized_keys ~ /home /root  # added backdoor keys
+journalctl/auth.log         # but assume local logs may be tampered</div>
+</div>
+<div class='sec'>3. Eradicate + recover</div>
+<div class='cmds'>
+  <div class='cmd'># Don't "clean" a rooted box — rebuild from known-good images/IaC,
+#   rotate ALL credentials/keys/secrets it could have touched, patch the
+#   entry vector, restore data from pre-compromise backups.</div>
+</div>
+<div class='warn'><b>Key principle:</b> a compromised host can't be trusted to report on itself (rootkits hide processes/files). Investigate from outside where possible (network logs, disk image offline), and <b>rebuild rather than clean</b> — you can never be sure you found everything.</div>
+<div class='tip'><b>Interview tip:</b> Structure it: contain (isolate, preserve volatile evidence — don't just power off), investigate (connections, process tree, persistence: cron/timers/authorized_keys, recent file changes), then rebuild-not-clean + rotate all secrets + fix the entry point. The two senior insights: preserve memory/connections before acting, and never trust a rooted box's own logs/tools.</div>`},
+
+  {n:81,tag:'security',q:'Explain disk encryption (LUKS) and file integrity monitoring. When do you need each?',
+  body:`<div class='sec'>LUKS — encryption at rest</div>
+<div class='cmds'>
+  <div class='cmd'>cryptsetup luksFormat /dev/sdb1        # encrypt a block device
+cryptsetup luksOpen /dev/sdb1 secure   # unlock -> /dev/mapper/secure
+mkfs.ext4 /dev/mapper/secure; mount ...
+# Protects data if the DISK is stolen/decommissioned. Does NOT protect a
+#   running system (once unlocked, data is readable to the OS).
+# Key management: passphrase, keyfile, or TPM/network-bound (clevis/tang) for
+#   unattended boot.</div>
+</div>
+<div class='sec'>File Integrity Monitoring (FIM)</div>
+<div class='cmds'>
+  <div class='cmd'># Detect unauthorized changes to critical files (binaries, configs):
+# AIDE / Tripwire build a baseline of hashes, then alert on changes.
+aide --init        # baseline
+aide --check       # compare current vs baseline -> what changed
+# auditd can watch specific paths in real time (watch /etc/passwd, /etc/sudoers).</div>
+</div>
+<div class='sec'>When</div>
+<p>LUKS for laptops, removable media, and compliance (encryption-at-rest mandates) — its real value is at decommission/theft. FIM for detecting intrusion/tampering and meeting compliance (PCI requires it). They cover different threats: confidentiality vs integrity.</p>
+<div class='tip'><b>Interview tip:</b> Be clear about LUKS's threat model: it protects data at rest (stolen/retired disk), NOT a live unlocked system — a common misconception. FIM (AIDE/Tripwire/auditd) detects tampering and is often a compliance requirement (PCI). Mentioning TPM/tang for unattended LUKS unlock, and auditd watches on <code>/etc/passwd</code>/<code>sudoers</code>, shows operational depth.</div>`},
+
+  {n:82,tag:'security',q:'How do you keep a fleet patched and find vulnerabilities? Explain CVEs and patch strategy.',
+  body:`<div class='sec'>Find what's vulnerable</div>
+<div class='cmds'>
+  <div class='cmd'>apt list --upgradable;  dnf updateinfo list security   # pending security updates
+# Scanners map installed packages -> known CVEs:
+#   OpenSCAP, Trivy (also containers), Grype, vendor tools (Insights, etc.)
+# Track severity (CVSS) + whether it's actually exploitable/exposed in your env.</div>
+</div>
+<div class='sec'>Patch strategy</div>
+<div class='cmds'>
+  <div class='cmd'>- Unattended security updates for low-risk patches (unattended-upgrades / dnf-automatic)
+- Staged rollout: canary hosts -> wider fleet, watch for regressions
+- Maintenance windows + reboot orchestration (kernel updates need reboot;
+  or livepatch / kpatch / ksplice for no-reboot kernel patching)
+- Immutable infra: bake patched golden images, redeploy (don't patch in place)</div>
+</div>
+<div class='sec'>Prioritize, don't patch-everything-now</div>
+<p>Rank by CVSS severity × exploitability × exposure (is the vulnerable service even reachable?). A critical CVE in an internet-facing service beats a high CVE in an isolated internal tool. Known-exploited (CISA KEV) jumps the queue.</p>
+<div class='tip'><b>Interview tip:</b> Show a system, not "run apt upgrade": scan (Trivy/OpenSCAP) -> prioritize by severity + exposure + known-exploited -> stage (canary then fleet) -> automate low-risk + maintenance-window the rest. The modern angle is immutable infrastructure (rebuild patched golden images rather than mutate live hosts) and livepatch for no-reboot kernel CVEs. Prioritization beats "patch everything" — that's the senior judgment.</div>`},
+
+  {n:83,tag:'security',q:'Explain PAM (Pluggable Authentication Modules) and a practical use (MFA, limits, lockout).',
+  body:`<div class='sec'>What PAM is</div>
+<div class='cmds'>
+  <div class='cmd'># PAM is the framework that programs (login, sshd, sudo) use to AUTHENTICATE,
+#   without each implementing auth itself. Config lives in /etc/pam.d/&lt;service&gt;.
+# Four management groups:
+auth     -> verify identity (password, key, MFA)
+account  -> is the account allowed/valid/expired?
+password -> password change rules (complexity)
+session  -> set up the session (limits, mounts, logging)</div>
+</div>
+<div class='sec'>Practical examples</div>
+<div class='cmds'>
+  <div class='cmd'># Add TOTP MFA to SSH (pam_google_authenticator) in /etc/pam.d/sshd:
+auth required pam_google_authenticator.so
+# Account lockout after failed attempts (pam_faillock):
+auth required pam_faillock.so deny=5 unlock_time=900
+# Resource limits at login (pam_limits -> /etc/security/limits.conf):
+*  hard  nofile  65535</div>
+</div>
+<div class='warn'><b>Caution:</b> a broken PAM stack can lock everyone out (including root via console). Test changes in a separate session, and know your recovery path (single-user mode / console). Order and <code>required</code> vs <code>sufficient</code> control flow matters.</div>
+<div class='tip'><b>Interview tip:</b> Explain PAM as the pluggable auth layer shared by login/sshd/sudo, with stackable modules (auth/account/password/session). Give a concrete win: <code>pam_google_authenticator</code> for SSH MFA, <code>pam_faillock</code> for lockout, <code>pam_limits</code> for ulimits. The safety note — a bad PAM edit can lock everyone out, so test in a second session — signals you've actually touched it in production.</div>`},
+
+  {n:84,tag:'security',q:'What\'s the principle of least privilege in practice on Linux? Give concrete mechanisms.',
+  body:`<div class='sec'>The principle</div>
+<p>Every user, process, and service should have the <b>minimum</b> access needed — nothing more. It shrinks the blast radius when (not if) something is compromised.</p>
+<div class='sec'>Concrete Linux mechanisms</div>
+<div class='cmds'>
+  <div class='cmd'>Service accounts : run daemons as dedicated non-root users (never root)
+Capabilities     : grant CAP_NET_BIND_SERVICE, not full root
+systemd sandbox  : User=, ProtectSystem=strict, PrivateTmp=, NoNewPrivileges=,
+                   ReadOnlyPaths=, RestrictAddressFamilies=, SystemCallFilter=
+sudo             : specific commands per user/group, not ALL
+MAC              : SELinux/AppArmor confinement per service
+Filesystem       : tight ownership + perms; mount data noexec,nosuid,nodev
+Containers       : --cap-drop=ALL, read-only rootfs, non-root USER, seccomp</div>
+</div>
+<div class='sec'>systemd as a sandbox</div>
+<div class='cmds'>
+  <div class='cmd'>[Service]
+User=myapp
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+SystemCallFilter=@system-service
+# A modern, easy way to confine a service without root or containers.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Don't just define it — list the mechanisms: dedicated service users, capabilities over root, <code>sudo</code> scoped to commands, SELinux/AppArmor, and especially <b>systemd sandboxing</b> directives (<code>NoNewPrivileges</code>, <code>ProtectSystem=strict</code>, <code>PrivateTmp</code>, <code>SystemCallFilter</code>), which let you confine a plain service without containers. Framing it as "shrink the blast radius" ties everything together.</div>`},
+
+  {n:85,tag:'performance',q:'Walk through the USE method for diagnosing a performance problem on Linux.',
+  body:`<div class='sec'>USE = Utilization, Saturation, Errors</div>
+<div class='cmds'>
+  <div class='cmd'># For every resource (CPU, memory, disk, network), check:
+Utilization : how busy is it? (% time in use)
+Saturation  : is there a queue / waiting work it can't service yet?
+Errors      : any error counts? (drops, retransmits, EIO)</div>
+</div>
+<div class='sec'>Per-resource quick map</div>
+<div class='cmds'>
+  <div class='cmd'>CPU   : util=%us+%sy (top/mpstat); sat=run-queue/load, %st (steal); err=rare
+Memory: util=used vs available; sat=swap activity (si/so), page scan; err=OOM
+Disk  : util=%util (iostat -x); sat=avgqu-sz/await; err=ioerrors, SMART
+Network: util=bandwidth vs link; sat=tx/rx queue drops; err=ip -s link errors</div>
+</div>
+<div class='sec'>Why a method beats poking around</div>
+<p>USE forces you to check every resource systematically instead of fixating on CPU. It quickly rules resources in or out — e.g. high disk <code>await</code> + low CPU points at storage, not the app. Brendan Gregg's USE method is the canonical systematic approach.</p>
+<div class='tip'><b>Interview tip:</b> Naming the <b>USE method</b> (Utilization, Saturation, Errors per resource) signals you debug systematically, not by guessing. The high-value specifics: saturation is the early-warning sign (a queue forming before 100% util), <code>%st</code> steal time reveals a noisy-neighbor/overcommitted hypervisor, and disk <code>await</code>/<code>avgqu-sz</code> catch storage saturation. Pair it with the RED method (Rate/Errors/Duration) for services.</div>`},
+
+  {n:86,tag:'performance',q:'How do you read top/htop correctly? Explain load average, %wa, %st, and the columns.',
+  body:`<div class='sec'>Load average</div>
+<div class='cmds'>
+  <div class='cmd'># 1/5/15-min averages of runnable + UNINTERRUPTIBLE(D) processes.
+# Compare to core count: load 8 on 8 cores = fully busy; on 4 cores = overloaded.
+# KEY: load counts D-state too, so high load can mean stuck I/O, not CPU!
+nproc                          # core count for context</div>
+</div>
+<div class='sec'>The CPU line</div>
+<div class='cmds'>
+  <div class='cmd'>%us user   %sy system(kernel)   %ni niced
+%id idle
+%wa iowait   -> CPU idle WAITING on disk I/O -> storage bottleneck
+%st steal    -> hypervisor took your CPU (noisy neighbor / overcommit) — VM tell
+%si/%hi      -> soft/hard interrupts (high = network/IRQ pressure)</div>
+</div>
+<div class='sec'>Reading it</div>
+<div class='cmds'>
+  <div class='cmd'>High %us              -> app/CPU bound
+High %sy              -> syscall/kernel heavy (context switches? check vmstat)
+High %wa + low %us    -> I/O bound (go to iostat)
+High %st              -> you're being starved by the host (resize / move VM)
+High load, low CPU    -> D-state processes -> disk/NFS stuck</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The two most-missed columns: <code>%wa</code> (CPU idle waiting on disk = it's a storage problem, not CPU) and <code>%st</code> (steal = the hypervisor is taking your cycles, a cloud/VM noisy-neighbor signal). And the load-average subtlety — it includes uninterruptible (D) processes, so high load with low CPU usually means stuck I/O. Always compare load to <code>nproc</code>.</div>`},
+
+  {n:87,tag:'performance',q:'Diagnose a disk I/O bottleneck. What do iostat, await, and %util tell you?',
+  body:`<div class='sec'>The tool</div>
+<div class='cmds'>
+  <div class='cmd'>iostat -xz 1               # extended, skip idle devices, every 1s
+# Key columns per device:
+%util    : how busy the device is (~100% = saturated, but misleading on SSD/RAID
+           which handle parallel I/O — high %util there isn't always bad)
+await    : avg time (ms) per I/O incl. queue — THE latency number that hurts apps
+r_await / w_await : split read vs write latency
+aqu-sz   : average queue depth — requests waiting (saturation)
+r/s w/s rkB/s wkB/s : IOPS and throughput</div>
+</div>
+<div class='sec'>What points where</div>
+<div class='cmds'>
+  <div class='cmd'>High await + high aqu-sz   -> device saturated, requests queueing (the real pain)
+High %util but low await   -> busy but keeping up (esp. SSD/RAID) — often fine
+Which process?  ->  iotop -o    (top I/O consumers)
+                    pidstat -d 1 (per-process disk I/O)</div>
+</div>
+<div class='sec'>Beyond the device</div>
+<p>Correlate with <code>%wa</code> in top (CPU waiting on I/O). Check if it's random vs sequential (random IOPS-bound), the filesystem/scheduler, or a noisy neighbor on shared cloud storage (EBS burst credits exhausted is a classic cloud trap).</p>
+<div class='tip'><b>Interview tip:</b> <code>await</code> is the number that matters (per-I/O latency including queue time) — not <code>%util</code>, which is misleading on SSDs/RAID that service I/O in parallel. High <code>await</code> + growing <code>aqu-sz</code> = saturation. Then attribute it with <code>iotop</code>/<code>pidstat -d</code>. The cloud-savvy bonus: exhausted EBS/burst IOPS credits cause sudden latency cliffs.</div>`},
+
+  {n:88,tag:'performance',q:'How do you diagnose memory pressure? Explain free, swap, available, and the page cache.',
+  body:`<div class='sec'>Read free correctly</div>
+<div class='cmds'>
+  <div class='cmd'>free -h
+# IGNORE the "free" column. Watch "available" — RAM apps can actually get,
+#   counting reclaimable page cache. "buff/cache" is cached file data (good!),
+#   reclaimed automatically under pressure. Low "free" + high "available" = healthy.</div>
+</div>
+<div class='sec'>Real pressure signals</div>
+<div class='cmds'>
+  <div class='cmd'>vmstat 1     -> si/so columns: swap IN/OUT activity = real memory pressure
+              -> high 'r' run queue, low 'free', cache shrinking
+sar -B 1     -> pgscan/majflt: page scanning + MAJOR faults (hitting disk)
+cat /proc/pressure/memory   -> PSI: % time stalled on memory (modern, precise)
+dmesg | grep -i oom         -> OOM kills (you've gone past pressure to failure)</div>
+</div>
+<div class='sec'>Per-process</div>
+<div class='cmds'>
+  <div class='cmd'>ps aux --sort=-%mem | head            # top memory users (RSS)
+# RSS vs VSZ: RSS = real physical RAM used; VSZ = virtual (often huge, misleading).
+smem -tk                              # PSS (shared memory counted fairly)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The #1 correction interviewers want: low <code>free</code> is normal — Linux uses spare RAM for page cache; watch <code>available</code> and swap activity (<code>si/so</code> in <code>vmstat</code>), not <code>free</code>. Real pressure shows as swapping, page scanning, and major faults. Modern bonus: PSI (<code>/proc/pressure/memory</code>) quantifies stall time. RSS (real) vs VSZ (virtual) trips people up — cite RSS for actual usage.</div>`},
+
+  {n:89,tag:'performance',q:'What is CPU steal time, context switching, and run queue? When is each a problem?',
+  body:`<div class='sec'>Steal time (%st)</div>
+<div class='cmds'>
+  <div class='cmd'># %st = time your vCPU was READY to run but the hypervisor ran someone else.
+# Seen only in VMs/cloud. Sustained high %st = overcommitted host / noisy neighbor.
+# You can't fix it from inside — resize, change instance type, or move hosts.
+mpstat -P ALL 1     # per-core %steal</div>
+</div>
+<div class='sec'>Context switches</div>
+<div class='cmds'>
+  <div class='cmd'>vmstat 1   -> 'cs' column (context switches/sec), 'in' (interrupts)
+# Very high cs/sec relative to work done = thrashing: too many threads,
+#   lock contention, or tiny time slices. Voluntary (waiting) vs involuntary
+#   (preempted) switches: pidstat -w shows per-process.</div>
+</div>
+<div class='sec'>Run queue</div>
+<div class='cmds'>
+  <div class='cmd'>vmstat 1   -> 'r' column = processes runnable/running.
+# r consistently > number of cores -> CPU saturation (tasks waiting for CPU).
+# This is "saturation" in the USE method for CPU.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Steal time is the cloud signature — high <code>%st</code> means the hypervisor is starving you, fixable only by resizing/moving, not by tuning your app. A run queue (<code>r</code> in vmstat) persistently above core count = CPU saturation. Excessive context switches (high <code>cs</code>) hint at over-threading or lock contention. These three are exactly the CPU-side USE-method metrics.</div>`},
+
+  {n:90,tag:'performance',q:'How do you profile what a process is spending CPU on? (perf, flame graphs, eBPF)',
+  body:`<div class='sec'>Sample with perf</div>
+<div class='cmds'>
+  <div class='cmd'>perf top                      # live, system-wide hottest functions
+perf record -F 99 -p &lt;pid&gt; -g -- sleep 30   # sample PID at 99Hz with stacks
+perf report                   # interactive breakdown of where CPU went
+# 99Hz (not 100) avoids lock-stepping with periodic timers.</div>
+</div>
+<div class='sec'>Flame graphs</div>
+<div class='cmds'>
+  <div class='cmd'># Turn samples into a visual: width = time on CPU, stacked by call hierarchy.
+perf script | stackcollapse-perf.pl | flamegraph.pl > out.svg
+# Instantly shows the hot path — the widest tower is where the CPU goes.</div>
+</div>
+<div class='sec'>eBPF (low overhead, production)</div>
+<div class='cmds'>
+  <div class='cmd'># bcc/bpftrace tools profile with minimal overhead, safe on prod:
+profile -p &lt;pid&gt; 30           # on-CPU profiler (bcc)
+offcputime -p &lt;pid&gt;           # where it's BLOCKED (off-CPU: locks, I/O, sleep)
+bpftrace -e 'profile:hz:99 /pid==1234/ { @[ustack] = count(); }'</div>
+</div>
+<div class='warn'><b>On-CPU vs off-CPU:</b> <code>perf</code>/flame graphs show where CPU is <i>burned</i>. If the process is slow but NOT using CPU, it's blocked — use off-CPU analysis (<code>offcputime</code>) to find waits on locks, I/O, or sleep. Many "it's slow" cases are off-CPU.</div>
+<div class='tip'><b>Interview tip:</b> <code>perf record -g</code> + flame graphs is the classic CPU-profiling answer; the visual makes the hot path obvious. The senior depth: distinguish on-CPU (perf) from off-CPU (blocked on locks/I/O — use eBPF <code>offcputime</code>), and prefer eBPF/bpftrace on production for its low overhead vs strace. Knowing 99Hz sampling avoids timer aliasing is a nice detail.</div>`},
+
+  {n:91,tag:'performance',q:'Explain cgroups and how systemd uses them to limit CPU, memory, and I/O.',
+  body:`<div class='sec'>What cgroups do</div>
+<div class='cmds'>
+  <div class='cmd'># Control groups limit + account resources for groups of processes.
+# cgroup v2 (unified hierarchy) is the modern default. It's the kernel
+#   primitive behind container resource limits AND systemd service limits.
+systemd-cgtop          # live per-cgroup CPU/mem/IO (like top, by service)
+systemd-cgls           # the cgroup tree</div>
+</div>
+<div class='sec'>Limit a service via systemd</div>
+<div class='cmds'>
+  <div class='cmd'>[Service]
+CPUQuota=50%           # max half a core
+MemoryMax=512M         # hard cap -> cgroup OOM kills inside this service only
+MemoryHigh=400M        # soft throttle before the hard cap
+IOWeight=50            # relative disk I/O share
+TasksMax=100           # limit thread/process count
+# Apply live: systemctl set-property myapp.service MemoryMax=1G</div>
+</div>
+<div class='sec'>Why it matters</div>
+<p>Without limits, one runaway service can starve the whole host. cgroups contain the blast radius: a memory leak hits a per-service OOM (only that service dies) instead of the host OOM killer picking a random victim. CPU limits also explain CFS throttling in containers.</p>
+<div class='tip'><b>Interview tip:</b> Tie it together: cgroups are the kernel mechanism; containers AND systemd both use them. Show you can cap a plain service with <code>MemoryMax</code>/<code>CPUQuota</code>/<code>IOWeight</code> — no container needed. The key benefit is blast-radius containment: a per-cgroup memory limit causes a local OOM kill, protecting the rest of the host. <code>systemd-cgtop</code> is the per-service <code>top</code>.</div>`},
+
+  {n:92,tag:'performance',q:'How do you tune key kernel sysctl parameters for a high-traffic server?',
+  body:`<div class='sec'>Common network tunables</div>
+<div class='cmds'>
+  <div class='cmd'>net.core.somaxconn = 4096               # max accept-queue backlog (raise for high conn rate)
+net.ipv4.tcp_max_syn_backlog = 8192     # half-open queue
+net.ipv4.ip_local_port_range = 1024 65535  # more ephemeral ports
+net.ipv4.tcp_tw_reuse = 1               # reuse TIME_WAIT for outbound
+net.core.netdev_max_backlog = 16384     # NIC -> kernel queue
+net.ipv4.tcp_fin_timeout = 15
+fs.file-max = 2000000                   # system-wide fd limit</div>
+</div>
+<div class='sec'>File descriptors (per-process)</div>
+<div class='cmds'>
+  <div class='cmd'># sysctl fs.file-max is system-wide; per-process is ulimit / systemd LimitNOFILE:
+ulimit -n                               # current
+# /etc/security/limits.conf or systemd [Service] LimitNOFILE=65535
+# "Too many open files" = hit this, not fs.file-max, usually.</div>
+</div>
+<div class='sec'>Apply + persist</div>
+<div class='cmds'>
+  <div class='cmd'>sysctl -w net.core.somaxconn=4096       # now (non-persistent)
+echo 'net.core.somaxconn=4096' >> /etc/sysctl.d/99-tuning.conf
+sysctl --system                         # reload all
+# vm.swappiness=10 (favor RAM over swap), vm.max_map_count (Elasticsearch needs high)</div>
+</div>
+<div class='warn'><b>Don't cargo-cult:</b> measure first, change one thing, re-measure. Blindly copying "tuning guides" can hurt. The most common real fix isn't exotic — it's raising <code>somaxconn</code> and <code>LimitNOFILE</code> (the "too many open files" / connection-drop pair).</div>
+<div class='tip'><b>Interview tip:</b> Know the high-value few rather than reciting dozens: <code>somaxconn</code> + <code>tcp_max_syn_backlog</code> (connection bursts), <code>LimitNOFILE</code>/<code>ulimit -n</code> (the "too many open files" killer), ephemeral port range, and <code>vm.swappiness</code>. Emphasize measuring before/after and persisting via <code>/etc/sysctl.d</code>. The per-process ulimit vs system-wide <code>fs.file-max</code> distinction is commonly confused.</div>`},
+
+  {n:93,tag:'performance',q:'An app is slow but CPU, memory, and disk look fine. How do you find the real bottleneck?',
+  body:`<div class='sec'>It's probably waiting, not working</div>
+<div class='cmds'>
+  <div class='cmd'># Low resource usage + slow = the process is BLOCKED, not busy. Find on what:
+strace -p &lt;pid&gt; -f -T -e trace=network,read,futex   # which syscall stalls (-T = time)
+offcputime -p &lt;pid&gt;          # eBPF: where it's blocked off-CPU (locks/IO/net)
+ss -ti                       # TCP rtt/retransmits to dependencies</div>
+</div>
+<div class='sec'>Usual hidden culprits</div>
+<div class='cmds'>
+  <div class='cmd'>- Downstream latency: a slow DB/API/DNS — your app waits on the network
+- Lock contention: threads blocked on a mutex (futex in strace; off-CPU stacks)
+- DNS: 5s resolver timeouts on every request (check /etc/resolv.conf, ndots)
+- Connection pool exhausted: requests queue waiting for a free connection
+- GC pauses / single-threaded hot section / external rate limiting (429s)</div>
+</div>
+<div class='sec'>Get end-to-end visibility</div>
+<p>Distributed tracing (or just timing each external call) localizes the slow hop. "Resources fine" almost always means the time is spent waiting on something external or on a lock — instrument the boundaries.</p>
+<div class='tip'><b>Interview tip:</b> The reframe is the answer: "resources fine but slow" = it's <b>waiting</b>, so do off-CPU analysis, not resource hunting. Name the suspects — downstream dependency latency, lock contention (futex), DNS 5s timeouts, connection-pool exhaustion. The tools that find waits are <code>offcputime</code> (eBPF), <code>strace -T</code>, and tracing. This off-CPU mindset is exactly what separates senior debugging from "check top."</div>`},
+
+  {n:94,tag:'storage',q:'Explain LVM: physical volumes, volume groups, logical volumes. Why use it?',
+  body:`<div class='sec'>The layers</div>
+<div class='cmds'>
+  <div class='cmd'>PV (Physical Volume) : a disk/partition initialized for LVM (pvcreate /dev/sdb)
+VG (Volume Group)    : a pool of PVs (vgcreate data /dev/sdb /dev/sdc)
+LV (Logical Volume)  : carved from a VG, formatted + mounted (lvcreate -L 50G ...)
+# disks -> pooled into a VG -> sliced into resizable LVs</div>
+</div>
+<div class='sec'>The killer feature: online resize</div>
+<div class='cmds'>
+  <div class='cmd'>lvextend -L +20G /dev/data/web        # grow the LV
+resize2fs /dev/data/web               # grow ext4 filesystem (xfs_growfs for XFS)
+# Or one step:  lvextend -r -L +20G /dev/data/web
+vgextend data /dev/sdd                # add a new disk to the pool first
+# All ONLINE — no unmount, no downtime.</div>
+</div>
+<div class='sec'>Why use it</div>
+<p>Flexible capacity (grow filesystems on the fly, span multiple disks), snapshots (point-in-time, e.g. for consistent backups), and the ability to add disks to a pool without repartitioning. The cost is a layer of complexity vs raw partitions.</p>
+<div class='tip'><b>Interview tip:</b> Explain the PV -> VG -> LV stack and lead with the practical win: <b>online filesystem growth</b> (<code>lvextend -r</code>) without downtime, plus pooling disks and snapshots. Mention XFS grows but can't shrink (so plan LV sizing), and that LVM snapshots enable consistent backups. This is bread-and-butter for anyone who's expanded a full data volume in production.</div>`},
+
+  {n:95,tag:'storage',q:'How do you safely grow a filesystem that\'s running out of space (cloud + LVM)?',
+  body:`<div class='sec'>Cloud disk (e.g. attached volume, no LVM)</div>
+<div class='cmds'>
+  <div class='cmd'>1. Expand the volume in the cloud console/API (e.g. EBS modify).
+2. Tell the kernel about the new size:  (rescan if needed)
+   echo 1 > /sys/class/block/sdb/device/rescan   # or growpart for partitions
+3. growpart /dev/nvme1n1 1        # grow the PARTITION to fill the disk
+4. resize2fs /dev/nvme1n1p1       # ext4   (xfs_growfs /mount for XFS)
+# All online.</div>
+</div>
+<div class='sec'>LVM-backed</div>
+<div class='cmds'>
+  <div class='cmd'>1. (If new disk) pvcreate /dev/sdd ; vgextend vg /dev/sdd
+2. lvextend -r -L +50G /dev/vg/data    # -r resizes the fs in the same step
+# Or grow the underlying disk, then pvresize /dev/sdb, then lvextend -r.</div>
+</div>
+<div class='sec'>Order matters</div>
+<div class='cmds'>
+  <div class='cmd'>disk/volume  ->  partition (growpart)  ->  PV (pvresize)  ->  LV (lvextend)  ->  filesystem (resize2fs/xfs_growfs)
+# You must grow each layer from the bottom up. Skipping a layer = "no space" persists.</div>
+</div>
+<div class='warn'><b>Gotcha:</b> XFS can only grow (never shrink), and <code>xfs_growfs</code> takes the MOUNTPOINT, not the device. ext4 can shrink but only offline. Always have a backup/snapshot before resizing, and verify with <code>df -h</code> after.</div>
+<div class='tip'><b>Interview tip:</b> The structure interviewers want is the bottom-up layer chain: cloud volume -> partition (<code>growpart</code>) -> PV (<code>pvresize</code>) -> LV (<code>lvextend -r</code>) -> filesystem (<code>resize2fs</code>/<code>xfs_growfs</code>). The common failure is growing the disk but forgetting the partition or PV layer, so space never appears. Note it's all online and XFS is grow-only. This is a very common real on-call task.</div>`},
+
+  {n:96,tag:'storage',q:'Explain RAID levels (0,1,5,6,10). What are the trade-offs and the RAID-5 rebuild risk?',
+  body:`<div class='sec'>The levels</div>
+<div class='cmds'>
+  <div class='cmd'>RAID 0  : striping — speed + full capacity, ZERO redundancy (1 disk dies = all lost)
+RAID 1  : mirroring — full redundancy, 50% capacity, survives 1 disk
+RAID 5  : striping + 1 parity disk — survives 1 failure, capacity = (N-1) disks
+RAID 6  : striping + 2 parity — survives 2 failures, capacity = (N-2)
+RAID 10 : mirror then stripe — fast + redundant, 50% capacity (the DB favorite)</div>
+</div>
+<div class='sec'>The RAID-5 rebuild risk</div>
+<div class='cmds'>
+  <div class='cmd'># When a disk fails, rebuild reads EVERY block on ALL remaining disks to
+#   reconstruct parity. On large modern drives this is hours of full-stress reads,
+#   during which a SECOND disk failure (or an unreadable sector) loses everything.
+# -> RAID 5 is discouraged for large disks; prefer RAID 6 or RAID 10.</div>
+</div>
+<div class='sec'>Operational</div>
+<div class='cmds'>
+  <div class='cmd'>cat /proc/mdstat            # md (software RAID) status + rebuild progress
+mdadm --detail /dev/md0
+# RAID is NOT a backup — it protects against disk failure, not deletion/corruption.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Know the trade-off per level (0=speed/no safety, 1=mirror, 5=one-parity, 6=two-parity, 10=mirror+stripe for DBs). The senior point is the <b>RAID-5 rebuild hole</b>: rebuilds stress all disks for hours and a second failure/URE during rebuild is catastrophic, so RAID 6 or 10 is preferred on large drives. And always say "RAID is not a backup" — it doesn't protect against <code>rm</code> or corruption.</div>`},
+
+  {n:97,tag:'storage',q:'What is swap, swappiness, and should a database/Kubernetes node have swap?',
+  body:`<div class='sec'>What swap is</div>
+<div class='cmds'>
+  <div class='cmd'># Disk space used as overflow when RAM is full — lets the system survive
+#   memory spikes instead of OOM-killing, but swapped pages are SLOW (disk).
+swapon --show; free -h
+vm.swappiness = 60 (default)   # 0-100: higher = swap more eagerly
+# Lower (e.g. 10) = prefer keeping things in RAM, swap only when really needed.</div>
+</div>
+<div class='sec'>Databases</div>
+<div class='cmds'>
+  <div class='cmd'># DBs hate swap: a hot page swapped to disk = sudden latency cliff.
+# Common practice: low swappiness (1-10) so swap is a safety net, not routine.
+# Some disable swap entirely and size RAM properly + rely on OOM tuning.</div>
+</div>
+<div class='sec'>Kubernetes</div>
+<div class='cmds'>
+  <div class='cmd'># Historically kubelet REQUIRED swap off (failed to start with swap on) so that
+#   memory limits + OOM behavior were predictable. Newer K8s (1.22+ beta, GA later)
+#   supports swap, but most clusters still run swap off for deterministic limits.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Explain swap as an overflow safety net that trades OOM-death for severe slowness. For latency-sensitive workloads (databases), keep <code>swappiness</code> very low so swap stays a last resort, not routine paging. For Kubernetes, the classic answer is swap off for predictable memory limits/OOM (kubelet historically required it), while noting newer versions can support swap. The principle: swapping hot memory = latency cliff.</div>`},
+
+  {n:98,tag:'storage',q:'How do you check disk health and predict failures? (SMART, dmesg, errors)',
+  body:`<div class='sec'>SMART data</div>
+<div class='cmds'>
+  <div class='cmd'>smartctl -a /dev/sda           # full SMART attributes
+smartctl -H /dev/sda           # overall health PASSED/FAILED
+# Watch these attributes (rising = trouble):
+#   Reallocated_Sector_Ct, Current_Pending_Sector, Offline_Uncorrectable,
+#   Reported_Uncorrect, and (SSD) Wear_Leveling / Percentage_Used / Media_Wearout
+smartctl -t long /dev/sda      # run a self-test</div>
+</div>
+<div class='sec'>Kernel + filesystem errors</div>
+<div class='cmds'>
+  <div class='cmd'>dmesg -T | grep -iE 'I/O error|ata|medium error|reset'   # disk errors
+journalctl -k | grep -i error
+# EXT4-fs errors / "remounting filesystem read-only" = serious corruption signal.</div>
+</div>
+<div class='sec'>Proactive</div>
+<div class='cmds'>
+  <div class='cmd'>smartd (smartmontools daemon)   # schedule self-tests + alert on SMART changes
+# In cloud, you usually don't see SMART (managed storage) — watch volume
+#   metrics, I/O errors in dmesg, and degraded-RAID alerts instead.</div>
+</div>
+<div class='warn'><b>Reality check:</b> SMART catches many but not all failures — disks can die with a clean SMART. Reallocated/pending sectors trending up is the strongest early warning. A filesystem going read-only or repeated I/O errors in <code>dmesg</code> means act now (replace + restore).</div>
+<div class='tip'><b>Interview tip:</b> Lead with <code>smartctl</code> and the meaningful attributes (reallocated/pending sectors, SSD wear) plus <code>dmesg</code> I/O errors and the read-only-remount red flag. The honest senior caveat: SMART isn't a guarantee — disks fail clean — so pair it with proactive <code>smartd</code> alerts and good backups/RAID. The cloud nuance (no SMART on managed volumes; watch metrics/dmesg) shows breadth.</div>`},
+
+  {n:99,tag:'storage',q:'Explain NFS: how it works, common problems (stale handles, hangs), and tuning.',
+  body:`<div class='sec'>What NFS is</div>
+<div class='cmds'>
+  <div class='cmd'># Network filesystem — mount a remote export as if local.
+mount -t nfs server:/export /mnt/data
+# /etc/fstab: server:/export /mnt/data nfs defaults,_netdev 0 0
+showmount -e server            # list exports</div>
+</div>
+<div class='sec'>The classic problems</div>
+<div class='cmds'>
+  <div class='cmd'>"Stale file handle" : the server-side file/export changed/recreated under you
+                      -> remount, or the mount points to a now-invalid inode.
+Hard hang           : with the default 'hard' mount, if the server dies, I/O
+                      BLOCKS FOREVER (processes stuck in D state, load climbs).
+                      'soft' returns errors instead but risks data corruption.
+'intr' (old) / use timeo, retrans, and consider 'soft,timeo=' carefully.</div>
+</div>
+<div class='sec'>Tuning + gotchas</div>
+<div class='cmds'>
+  <div class='cmd'>- NFSv4 (stateful, single port 2049, better security/ID mapping) over v3
+- rsize/wsize for throughput; noatime to cut metadata writes
+- _netdev so it mounts after network; autofs to mount on demand (avoid boot hangs)
+- A dead NFS server is the #1 cause of D-state pileups + unkillable processes.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The two facts that matter most: <b>hard vs soft mounts</b> (hard = block forever if the server dies, causing D-state hangs and rising load; soft = error out but risks corruption), and "stale file handle" meaning the server-side object changed. Tie a hung NFS server to the unkillable-D-state question. Prefer NFSv4, use <code>_netdev</code>/autofs to avoid boot hangs. This is a very common production failure mode.</div>`},
+
+  {n:100,tag:'storage',q:'What\'s the difference between block, file, and object storage? When use each?',
+  body:`<div class='sec'>The three</div>
+<div class='cmds'>
+  <div class='cmd'>Block  : raw volumes (EBS, iSCSI, LVM). You put a filesystem on it. Low latency,
+         attached to ONE host (usually). Like a virtual disk.
+File   : a shared filesystem with a hierarchy (NFS, SMB, EFS). Multiple hosts
+         mount it; POSIX-ish semantics. Like a shared network drive.
+Object : key -> blob + metadata over HTTP (S3, GCS). Infinite scale, durable,
+         NOT a filesystem (no in-place edit, no POSIX). Like a giant key-value store.</div>
+</div>
+<div class='sec'>When to use each</div>
+<div class='cmds'>
+  <div class='cmd'>Block  -> databases, boot disks, anything needing a real filesystem + low latency
+File   -> shared access across many servers (legacy apps, home dirs, shared assets)
+Object -> backups, media, logs, static assets, data lakes, anything web-scale +
+          accessed by URL/API. Cheapest + most durable + most scalable.</div>
+</div>
+<div class='sec'>Key distinctions</div>
+<p>Block = one writer, fast, you manage the fs. File = many writers, POSIX, network latency. Object = HTTP API, versioned, eventually-consistent historically (now strongly consistent on major clouds), but you can't <code>fopen</code>+seek-write it like a file.</p>
+<div class='tip'><b>Interview tip:</b> One line each: block = a virtual disk (DBs, low latency, single attach), file = shared network filesystem (NFS/EFS, many hosts, POSIX), object = HTTP key-blob store (S3, web-scale, durable, no in-place edit). The clarifying point: object storage isn't a filesystem — no partial writes/POSIX semantics — which is why you don't run a database on S3. Map each to a workload to show practical judgment.</div>`},
+
+  {n:101,tag:'storage',q:'How do you design a backup strategy? Explain 3-2-1, RPO/RPO, and testing restores.',
+  body:`<div class='sec'>The 3-2-1 rule</div>
+<div class='cmds'>
+  <div class='cmd'>3 copies of the data
+2 different media/storage types
+1 copy OFF-SITE (and ideally 1 OFFLINE/immutable — ransomware can't encrypt it)
+# Modern extension 3-2-1-1-0: +1 immutable/air-gapped, 0 errors on verified restore.</div>
+</div>
+<div class='sec'>RPO and RTO drive the design</div>
+<div class='cmds'>
+  <div class='cmd'>RPO (Recovery Point Objective): how much DATA LOSS is acceptable?
+   -> dictates backup frequency (hourly snapshots vs daily vs continuous/WAL)
+RTO (Recovery Time Objective): how long to be back UP?
+   -> dictates restore method (hot standby = minutes; cold restore = hours)
+# Tighter RPO/RTO = more cost. Set them per workload by business need.</div>
+</div>
+<div class='sec'>Backup types + the cardinal rule</div>
+<div class='cmds'>
+  <div class='cmd'>Full / incremental / differential; app-consistent (quiesce/snapshot the DB,
+  not just copy files mid-write). Encrypt backups; manage retention.
+# THE RULE: a backup you haven't RESTORED is not a backup. Test restores regularly
+#   (automated restore drills) and measure actual RTO. Untested backups fail silently.</div>
+</div>
+<div class='warn'><b>Common failures:</b> backups that were silently failing for months; file-level copies of a live database that aren't crash-consistent; backups stored only in the same account/region (ransomware/compromise takes them too). Immutable + off-site/offline copies defend against this.</div>
+<div class='tip'><b>Interview tip:</b> Anchor on <b>3-2-1</b> (now 3-2-1-1-0 with immutable + verified), then frame frequency/method by <b>RPO/RTO</b> per workload. The line that lands: "an untested backup isn't a backup" — restore drills are mandatory. Call out app-consistent backups for databases (not raw file copies) and an immutable/air-gapped copy as the ransomware defense. RAID is not a backup, either.</div>`},
+
+  {n:102,tag:'boot',q:'Walk through the Linux boot process from power-on to login prompt.',
+  body:`<div class='sec'>The stages</div>
+<div class='cmds'>
+  <div class='cmd'>1. Firmware (BIOS/UEFI) : POST, find a boot device, load the bootloader
+2. Bootloader (GRUB2)   : loads the kernel + initramfs into memory, passes cmdline
+3. Kernel               : initializes hardware/drivers, mounts initramfs (temp rootfs)
+4. initramfs            : loads modules needed to find + mount the REAL root fs
+5. switch_root          : pivot to the real root filesystem
+6. init = PID 1 (systemd): brings up the system via units/targets
+7. Reaches default.target (graphical/multi-user) -> getty -> login prompt</div>
+</div>
+<div class='sec'>systemd's job (stage 6)</div>
+<div class='cmds'>
+  <div class='cmd'>systemctl get-default          # the target it boots to (multi-user/graphical)
+# systemd activates units in dependency order (not a fixed sequence like SysV),
+#   parallelizing where possible -> faster boot.</div>
+</div>
+<div class='sec'>Where it breaks</div>
+<div class='cmds'>
+  <div class='cmd'>No bootloader/GRUB  -> "no bootable device"
+Bad initramfs/missing driver -> "cannot mount root" / dropped to initramfs shell
+Bad /etc/fstab      -> emergency mode (a mount failed)
+journalctl -b       -> this boot's logs;  journalctl -b -1 -> previous boot</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Hit the chain: firmware -> GRUB -> kernel -> initramfs (loads drivers to find real root) -> switch_root -> systemd (PID 1) -> target -> login. The most useful debugging knowledge is mapping failures to stages: "can't mount root" = initramfs/driver/fstab, emergency mode = a failed mount, and <code>journalctl -b</code> for the current boot. Knowing why initramfs exists (chicken-and-egg: need drivers to mount the disk holding the drivers) is a great detail.</div>`},
+
+  {n:103,tag:'boot',q:'Explain systemd units, targets, and dependencies (Wants, Requires, After).',
+  body:`<div class='sec'>Unit types</div>
+<div class='cmds'>
+  <div class='cmd'>.service  a daemon/process       .socket  socket activation
+.target   a group of units (~runlevel: multi-user.target, graphical.target)
+.timer    cron replacement        .mount/.automount  filesystem mounts
+.path     activate on file change  .slice  cgroup resource grouping</div>
+</div>
+<div class='sec'>Dependency directives</div>
+<div class='cmds'>
+  <div class='cmd'>Requires=b.service  : hard dep — if b fails/stops, this unit is stopped too
+Wants=b.service     : soft dep — start b, but DON'T fail if b fails (preferred)
+After=b.service     : ORDERING only — start after b (does NOT pull b in)
+Before=             : ordering the other way
+BindsTo=            : even stronger than Requires (tied to b's state)
+# KEY: Requires/Wants = "what to pull in"; After/Before = "in what ORDER".
+#   They are independent — you often need BOTH Wants= and After=.</div>
+</div>
+<div class='sec'>Managing</div>
+<div class='cmds'>
+  <div class='cmd'>systemctl list-dependencies myapp.service
+systemctl cat myapp.service          # effective unit file
+systemctl edit myapp.service         # drop-in override (don't edit vendor files)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The classic gotcha interviewers probe: <code>After=</code> controls ORDER, not whether the dependency starts — you need <code>Wants=</code>/<code>Requires=</code> to actually pull it in. Prefer <code>Wants=</code> (soft) over <code>Requires=</code> (hard) to avoid cascading failures. Targets replace SysV runlevels. Use <code>systemctl edit</code> drop-ins rather than editing vendor unit files — a real-world best practice.</div>`},
+
+  {n:104,tag:'boot',q:'How do you create a robust systemd service? Cover Restart, dependencies, and hardening.',
+  body:`<div class='sec'>A solid unit file</div>
+<div class='cmds'>
+  <div class='cmd'>[Unit]
+Description=My API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/myapi --config /etc/myapi.yaml
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5          # stop flapping: max 5 restarts/60s then give up
+Type=notify                # app signals READY (or simple/exec/forking)
+TimeoutStopSec=30          # grace before SIGKILL
+
+[Install]
+WantedBy=multi-user.target</div>
+</div>
+<div class='sec'>Hardening (sandbox the service)</div>
+<div class='cmds'>
+  <div class='cmd'>User=myapi
+NoNewPrivileges=true
+ProtectSystem=strict       # most of / read-only
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/myapi
+MemoryMax=512M  CPUQuota=50%   # cgroup limits</div>
+</div>
+<div class='warn'><b>Restart loops:</b> <code>Restart=always</code> without <code>StartLimitBurst</code> can hammer a crashing service forever, hiding the real failure and burning resources. Bound it so systemd backs off and the failure surfaces.</div>
+<div class='tip'><b>Interview tip:</b> Show you write production units, not just <code>ExecStart</code>: <code>Restart=on-failure</code> + <code>StartLimit*</code> (bounded restarts so flapping is visible), correct <code>Type=</code> (notify/simple/forking — getting this wrong makes systemd mis-track readiness), <code>TimeoutStopSec</code> for graceful stop, and sandboxing (<code>User=</code>, <code>ProtectSystem</code>, <code>NoNewPrivileges</code>, resource limits). That breadth — reliability + security + ordering — is the senior signal.</div>`},
+
+  {n:105,tag:'boot',q:'How do you read and manage logs with journalctl? How do you stop the journal filling disk?',
+  body:`<div class='sec'>Querying</div>
+<div class='cmds'>
+  <div class='cmd'>journalctl -u myapp -f                 # follow one unit (like tail -f)
+journalctl -u myapp --since "1 hour ago" --until "10 min ago"
+journalctl -b                          # this boot;  -b -1 previous boot
+journalctl -p err -b                   # priority err and above this boot
+journalctl -k                          # kernel (dmesg) messages
+journalctl _PID=1234 / _COMM=sshd      # by pid / command
+journalctl -u myapp -o json-pretty     # structured fields</div>
+</div>
+<div class='sec'>Disk usage control</div>
+<div class='cmds'>
+  <div class='cmd'>journalctl --disk-usage                # how big is the journal?
+journalctl --vacuum-size=500M          # trim to 500M now
+journalctl --vacuum-time=7d            # keep only last 7 days
+# Persist limits in /etc/systemd/journald.conf:
+SystemMaxUse=1G
+MaxRetentionSec=2week</div>
+</div>
+<div class='sec'>Persistent vs volatile</div>
+<div class='cmds'>
+  <div class='cmd'># If /var/log/journal/ doesn't exist, the journal is in RAM and lost on reboot.
+mkdir -p /var/log/journal && systemctl restart systemd-journald   # make persistent</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Beyond basic querying, two things stand out: capping journal size (<code>SystemMaxUse</code> in <code>journald.conf</code>, or <code>--vacuum-size/--vacuum-time</code>) since an uncapped journal is a real "disk full" cause, and knowing the journal is volatile (RAM-only) unless <code>/var/log/journal</code> exists — so logs can vanish on reboot. <code>journalctl -b -1</code> to read the previous boot after a crash is invaluable.</div>`},
+
+  {n:106,tag:'boot',q:'A server won\'t boot. How do you recover? (GRUB, rescue/emergency mode, initramfs)',
+  body:`<div class='sec'>Identify the failure stage</div>
+<div class='cmds'>
+  <div class='cmd'>No GRUB / "no bootable device"  -> firmware/bootloader/disk
+GRUB shows but kernel panics     -> kernel/initramfs/root mount
+Boots then drops to emergency    -> a service or fstab mount failed
+"Give root password for maintenance" -> emergency.target (fstab is the usual cause)</div>
+</div>
+<div class='sec'>Recovery techniques</div>
+<div class='cmds'>
+  <div class='cmd'># At GRUB: edit the entry (e) and append a kernel arg:
+systemd.unit=rescue.target     # minimal single-user-ish (or emergency.target)
+init=/bin/bash                 # bypass init entirely -> raw shell (then mount -o remount,rw /)
+# Boot a previous kernel from the GRUB menu if a kernel update broke it.</div>
+</div>
+<div class='sec'>From a rescue/live environment</div>
+<div class='cmds'>
+  <div class='cmd'># Boot live USB / cloud rescue, then chroot into the broken system to fix it:
+mount /dev/sda2 /mnt; mount --bind /dev /mnt/dev; mount --bind /proc /mnt/proc; mount --bind /sys /mnt/sys
+chroot /mnt
+# now fix /etc/fstab, reinstall grub (grub-install), rebuild initramfs (dracut/update-initramfs)
+journalctl -b -1 -p err        # what failed on the last boot</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Structure it by stage (bootloader vs kernel/initramfs vs failed-mount/service), then the toolkit: edit GRUB to add <code>systemd.unit=rescue.target</code> or <code>init=/bin/bash</code>, boot a prior kernel after a bad update, and the <b>chroot-from-rescue</b> flow to repair fstab / reinstall GRUB / rebuild initramfs. Mentioning <code>journalctl -b -1</code> to see why the last boot failed, and that a bad fstab drops you to emergency mode, shows you've done real recoveries.</div>`},
+
+  {n:107,tag:'boot',q:'What changed from SysV init to systemd? Why was systemd adopted despite controversy?',
+  body:`<div class='sec'>SysV init</div>
+<div class='cmds'>
+  <div class='cmd'># Sequential shell scripts in /etc/init.d, ordered by runlevel symlinks (S/K numbers).
+# Slow (serial), no dependency awareness, no built-in process supervision,
+#   each script reinvents start/stop/status. Daemons double-fork to background.</div>
+</div>
+<div class='sec'>What systemd added</div>
+<div class='cmds'>
+  <div class='cmd'>- Parallel startup with real dependency resolution -> much faster boot
+- Process supervision (Restart=), proper readiness (Type=notify)
+- cgroup-based tracking (knows ALL a service's processes — clean stop/limits)
+- Socket + timer + path activation; unified logging (journald)
+- Consistent declarative units instead of bespoke shell scripts
+- Sandboxing directives (ProtectSystem, NoNewPrivileges, ...)</div>
+</div>
+<div class='sec'>The controversy</div>
+<p>Critics argued it violates Unix "do one thing well" (it absorbed logging, networking, login, etc.), increased complexity, and centralized too much in PID 1. It won anyway because the reliability, speed, supervision, and consistency solved real operational pain that SysV scripts couldn't.</p>
+<div class='tip'><b>Interview tip:</b> Contrast concretely: SysV = serial bespoke shell scripts, no dependency/supervision; systemd = parallel, dependency-aware, cgroup-tracked, self-supervising, declarative. The cgroup tracking point is key — systemd reliably knows and controls every process a service spawns (clean stop, resource limits), which SysV's PID-file guessing couldn't. Acknowledging the "too monolithic / un-Unix" criticism shows balanced judgment.</div>`},
+
+  {n:108,tag:'boot',q:'How do systemd timers work, and why prefer them over cron?',
+  body:`<div class='sec'>A timer = two units</div>
+<div class='cmds'>
+  <div class='cmd'># backup.service (what to run) + backup.timer (when):
+# /etc/systemd/system/backup.timer
+[Timer]
+OnCalendar=*-*-* 02:30:00      # daily 02:30 (cron-like calendar syntax)
+Persistent=true               # if missed (machine off), run on next boot
+RandomizedDelaySec=300        # jitter to avoid thundering-herd across hosts
+[Install]
+WantedBy=timers.target
+
+systemctl enable --now backup.timer
+systemctl list-timers          # next/last run for all timers</div>
+</div>
+<div class='sec'>Why over cron</div>
+<div class='cmds'>
+  <div class='cmd'>+ Persistent=true catches missed runs (cron just skips if the box was off — anacron needed)
++ Output goes to the journal (journalctl -u backup) — cron emails/loses output
++ Dependencies + ordering (After=) and resource limits via the .service
++ RandomizedDelaySec spreads load across a fleet
++ Same tooling as everything else (systemctl status, supervision, monotonic timers)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The advantages that matter: <code>Persistent=true</code> (runs a missed job after downtime — cron silently skips, needing anacron), output in the journal (cron's lost/emailed output is a real pain), dependency ordering, resource control, and <code>RandomizedDelaySec</code> to de-synchronize a fleet. Also <code>OnUnitActiveSec=</code> for monotonic intervals. Knowing a timer is a .timer + .service pair, and <code>systemctl list-timers</code>, shows hands-on use.</div>`},
+
+  {n:109,tag:'users',q:'Explain /etc/passwd, /etc/shadow, and /etc/group. What\'s in each field?',
+  body:`<div class='sec'>/etc/passwd (world-readable)</div>
+<div class='cmds'>
+  <div class='cmd'>name:x:UID:GID:GECOS:home:shell
+alice:x:1000:1000:Alice A:/home/alice:/bin/bash
+# 'x' = password is in /etc/shadow (not here). Shell /usr/sbin/nologin or
+#   /bin/false = account can't get an interactive login (service accounts).</div>
+</div>
+<div class='sec'>/etc/shadow (root-only, 0640)</div>
+<div class='cmds'>
+  <div class='cmd'>name:$6$salt$hash:lastchange:min:max:warn:inactive:expire
+# $6$ = SHA-512. A '!' or '*' in the hash field = locked / no password login.
+# Aging fields drive password expiry policy.
+chage -l alice          # view aging;  passwd -l alice  # lock</div>
+</div>
+<div class='sec'>/etc/group</div>
+<div class='cmds'>
+  <div class='cmd'>groupname:x:GID:member1,member2
+# Primary group is in passwd (GID field); supplementary groups listed here.
+id alice                # show uid, primary + supplementary groups
+getent passwd alice     # works whether user is local OR from LDAP/SSSD</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Key facts: passwords live in <code>/etc/shadow</code> (root-only), not <code>passwd</code> (world-readable); <code>$6$</code> = SHA-512; <code>!</code>/<code>*</code> = locked account; and a <code>nologin</code>/<code>false</code> shell is how service accounts are denied interactive login. Use <code>getent</code> (not <code>cat</code>) so it also resolves LDAP/SSSD users. Knowing primary (in passwd) vs supplementary (in group) groups, and <code>chage</code> for aging, rounds it out.</div>`},
+
+  {n:110,tag:'users',q:'How does centralized authentication work (LDAP/AD, SSSD)? Why not local accounts everywhere?',
+  body:`<div class='sec'>The problem with local accounts</div>
+<div class='cmds'>
+  <div class='cmd'># Local /etc/passwd per host = unmanageable at scale: creating/removing users
+#   on 500 boxes, inconsistent UIDs, no central audit, offboarding misses a host
+#   and leaves a live account. Doesn't scale and is a security risk.</div>
+</div>
+<div class='sec'>Centralized auth</div>
+<div class='cmds'>
+  <div class='cmd'># A directory (LDAP / Active Directory / FreeIPA) holds users/groups centrally.
+# SSSD on each host queries it (with caching) and integrates via NSS + PAM:
+#   NSS  -> resolves users/groups (getent sees directory users)
+#   PAM  -> authenticates logins against the directory
+# Add/disable a user once -> effective on every host. Offline cache = login works
+#   even if the directory is briefly unreachable.</div>
+</div>
+<div class='sec'>Modern alternatives</div>
+<div class='cmds'>
+  <div class='cmd'>- SSH certificates (CA-signed, short-lived) — no per-host keys to manage/revoke
+- Just-in-time access / bastions (SSM, Teleport, IAP) — no standing accounts at all
+- Config mgmt (Ansible) can manage local users, but a directory scales better for humans</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Frame it as scale + security + offboarding: local accounts don't scale and leave orphaned access. Centralized directory (AD/LDAP/FreeIPA) + SSSD wires in via <b>NSS</b> (identity resolution) and <b>PAM</b> (authentication), with caching for resilience. The forward-looking answer mentions short-lived SSH certificates and JIT/bastion access (Teleport/SSM) replacing standing accounts entirely — strong for a platform/SRE role.</div>`},
+
+  {n:111,tag:'users',q:'Explain ACLs (setfacl/getfacl) beyond standard permissions. When do you need them?',
+  body:`<div class='sec'>The limit of classic perms</div>
+<div class='cmds'>
+  <div class='cmd'># Standard mode bits give exactly THREE scopes: owner, ONE group, others.
+# That can't express "alice and bob (in different groups) both read-write, but
+#   carol read-only" without contortions. POSIX ACLs add per-user/per-group entries.</div>
+</div>
+<div class='sec'>Using ACLs</div>
+<div class='cmds'>
+  <div class='cmd'>getfacl file                          # view ACLs
+setfacl -m u:alice:rw file            # grant alice rw (in addition to mode bits)
+setfacl -m g:devs:rx dir              # grant a group
+setfacl -x u:alice file               # remove an entry
+# Default (inherited) ACLs on a directory -> new files inherit them:
+setfacl -d -m g:devs:rwx /shared
+ls -l file    # a '+' after the mode (rw-r--r--+) means ACLs are present</div>
+</div>
+<div class='sec'>When to use</div>
+<p>Shared directories where multiple users/groups need different access than the single-owner/single-group model allows — collaborative project dirs, mixed-team file shares. For simple cases, prefer a well-designed group (SGID dir) over ACL sprawl, which gets hard to audit.</p>
+<div class='tip'><b>Interview tip:</b> The core point: classic perms have only owner/group/other — ACLs add arbitrary per-user and per-group grants. Know the <code>+</code> in <code>ls -l</code> signals ACLs present, and default ACLs make a directory propagate permissions to new files. The balanced take: reach for ACLs when group design genuinely can't express the need, but don't over-ACL — it becomes an auditing headache. Prefer SGID-group folders for simple shared-write cases.</div>`},
+
+  {n:112,tag:'users',q:'What is the difference between su, sudo, su -, and a login vs non-login shell?',
+  body:`<div class='sec'>su vs sudo</div>
+<div class='cmds'>
+  <div class='cmd'>su - alice        # become alice (needs ALICE's password) — full switch
+su                # become root (needs ROOT's password)
+sudo cmd          # run ONE command as root (needs YOUR password; audited; scoped)
+# sudo is preferred: no shared root password, per-command authorization, logged.</div>
+</div>
+<div class='sec'>The crucial dash: su vs su -</div>
+<div class='cmds'>
+  <div class='cmd'>su  alice    # NON-login shell: keeps your env, your PWD, partial PATH
+su - alice   # LOGIN shell: clean env as if alice logged in fresh —
+             #   sources /etc/profile + ~/.bash_profile, correct PATH/HOME/umask
+# The "-" (or -l) is why "su root" sometimes can't find sbin commands but "su -" can.</div>
+</div>
+<div class='sec'>Login vs non-login shells</div>
+<div class='cmds'>
+  <div class='cmd'>Login shell    : reads /etc/profile + ~/.bash_profile|~/.profile (real login, ssh, su -)
+Non-login shell: reads ~/.bashrc only (new terminal in a GUI, su without -, subshells)
+# This is why "my PATH/alias works in one but not the other" — different rc files.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Two distinctions interviewers love: (1) prefer <code>sudo</code> over <code>su</code> (no shared root password, per-command scope, audit trail), and (2) the <code>-</code> in <code>su -</code> gives a full <b>login</b> shell with a clean environment, which is why commands/PATH sometimes only work with the dash. Tie it to login (<code>.bash_profile</code>) vs non-login (<code>.bashrc</code>) shells — the root cause of "my env var/alias isn't loaded" confusion.</div>`},
+
+  {n:113,tag:'users',q:'How do you audit and manage user access for security and compliance?',
+  body:`<div class='sec'>Audit who can access what</div>
+<div class='cmds'>
+  <div class='cmd'>getent passwd | awk -F: '$3>=1000'      # human accounts
+awk -F: '($2==""){print $1}' /etc/shadow # accounts with NO password (danger)
+grep -Po '^sudo:.*:\\K.*' /etc/group      # who's in sudo/wheel
+ls -l ~/.ssh/authorized_keys (per user)  # who has key access
+lastlog                                  # last login per user (find stale accounts)
+last / lastb                             # login history / failed logins</div>
+</div>
+<div class='sec'>Find risky configs</div>
+<div class='cmds'>
+  <div class='cmd'>awk -F: '$3==0 {print $1}' /etc/passwd   # any UID 0 besides root = backdoor!
+find / -perm -4000 -type f 2>/dev/null   # SUID-root binaries (attack surface)
+# Review sudoers (visudo -c to validate), check for NOPASSWD: ALL grants.</div>
+</div>
+<div class='sec'>Ongoing hygiene</div>
+<div class='cmds'>
+  <div class='cmd'>- Disable (don't just delete) departed users: usermod -L; expire the account
+- Centralized auth so offboarding is one action (not per-host)
+- auditd to log access to sensitive files; ship logs to a SIEM
+- Regular access reviews; least privilege; rotate/expire credentials</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Show concrete checks, not platitudes: find <b>non-root UID-0 accounts</b> (instant backdoor), passwordless accounts, sudo/wheel membership, SUID binaries, and stale logins (<code>lastlog</code>). Then process: disable-not-delete on offboarding, centralized auth so removal is one action, auditd + SIEM for sensitive-file access, and periodic access reviews. The UID-0-backdoor check and "offboarding must be centralized" are standout points.</div>`},
+
+  {n:114,tag:'users',q:'Explain umask, default permissions, and how to set up a secure shared team directory.',
+  body:`<div class='sec'>How new files get their permissions</div>
+<div class='cmds'>
+  <div class='cmd'># Base: files 666, dirs 777, minus the umask.
+umask 002 -> files 664, dirs 775   (group-writable: good for shared dirs)
+umask 022 -> files 644, dirs 755   (group read-only: typical default)
+umask 077 -> files 600, dirs 700   (private)</div>
+</div>
+<div class='sec'>Secure shared team directory</div>
+<div class='cmds'>
+  <div class='cmd'>groupadd projteam
+chgrp projteam /srv/project
+chmod 2775 /srv/project          # 2 = SGID: new files inherit 'projteam' group
+# (optional) sticky bit so users can't delete each other's files:
+chmod 3775 /srv/project          # 3 = SGID + sticky
+# Ensure members create group-writable files:
+#   set umask 002 for them (so files are 664, group can edit)
+# (optional) default ACL to force inheritance regardless of umask:
+setfacl -d -m g:projteam:rwx /srv/project</div>
+</div>
+<div class='warn'><b>The common breakage:</b> SGID makes new files inherit the group, but if users have <code>umask 022</code>, files are created group-<i>read-only</i> — teammates can read but not edit. You need SGID <b>and</b> a group-writable umask (002), or a default ACL, for true shared write.</div>
+<div class='tip'><b>Interview tip:</b> The full recipe — SGID on the dir (group inheritance) + <code>umask 002</code> (group-writable files) + optional sticky bit (no deleting others' files) + optional default ACL for guaranteed inheritance. The insight that impresses: SGID alone isn't enough because <code>umask 022</code> still makes files group-read-only — the umask is the missing piece people forget. <code>/tmp</code> is the canonical sticky-bit example.</div>`},
+
+  {n:115,tag:'scripting',q:'What makes a bash script robust? Explain set -euo pipefail and common pitfalls.',
+  body:`<div class='sec'>The safety preamble</div>
+<div class='cmds'>
+  <div class='cmd'>#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\\n\\t'
+# -e : exit on any command failure (no silently continuing after an error)
+# -u : error on UNSET variables (catches typos: rm -rf "$prefx/" -> empty -> rm -rf /)
+# -o pipefail : a pipeline fails if ANY stage fails (not just the last)
+# IFS: safer word splitting (spaces in filenames don't explode)</div>
+</div>
+<div class='sec'>Common pitfalls</div>
+<div class='cmds'>
+  <div class='cmd'>- Unquoted variables: rm "$dir"/*  NOT rm $dir/*  (spaces/globs bite)
+- \${var:?msg} to require a var; \${var:-default} for defaults
+- Don't parse \`ls\`; use globs or find -print0 | xargs -0
+- set -e has surprising exceptions (commands in if/&&/||, functions) — test!
+- Trap for cleanup:  trap 'rm -f "$tmp"' EXIT</div>
+</div>
+<div class='sec'>Validate before running</div>
+<div class='cmds'>
+  <div class='cmd'>shellcheck script.sh        # static analysis — catches most bugs before prod
+bash -n script.sh           # syntax check without executing</div>
+</div>
+<div class='warn'><b>The catastrophe pattern:</b> <code>rm -rf "$DIR/"</code> where <code>$DIR</code> is unset/empty becomes <code>rm -rf /</code>. <code>set -u</code> (and quoting + <code>\${DIR:?}</code>) prevents exactly this. Always guard destructive commands.</div>
+<div class='tip'><b>Interview tip:</b> Lead with <code>set -euo pipefail</code> and explain each flag's failure it prevents — especially <code>-u</code> catching the unset-variable-in-<code>rm -rf</code> disaster. Mention quoting variables, <code>trap ... EXIT</code> for cleanup, avoiding <code>ls</code> parsing (use <code>find -print0</code>), and running <code>shellcheck</code>. Knowing <code>set -e</code>'s gotchas (it doesn't fire inside <code>if</code>/<code>||</code>) shows you've been burned by it for real.</div>`},
+
+  {n:116,tag:'scripting',q:'How do you make a script idempotent and safe to re-run? Why does it matter for automation?',
+  body:`<div class='sec'>Idempotent = same result no matter how many times you run it</div>
+<div class='cmds'>
+  <div class='cmd'># NOT idempotent (breaks/duplicates on re-run):
+echo "10.0.0.5 db" >> /etc/hosts          # appends a dup every run
+useradd deploy                            # fails the 2nd time
+mkdir /opt/app                            # fails if it exists
+
+# Idempotent versions (check-then-act / declarative):
+grep -q "db" /etc/hosts || echo "10.0.0.5 db" >> /etc/hosts
+id deploy &>/dev/null || useradd deploy
+mkdir -p /opt/app
+ln -sfn /opt/app/v2 /opt/app/current      # -f overwrite, -n no-deref</div>
+</div>
+<div class='sec'>Why it matters</div>
+<div class='cmds'>
+  <div class='cmd'># Automation re-runs: retries after partial failure, config drift correction,
+#   running the same playbook on 100 hosts in mixed states. A non-idempotent
+#   script that half-ran leaves a mess and can't be safely retried.
+# This is the whole model of Ansible/Terraform: declare desired state, converge.</div>
+</div>
+<div class='warn'><b>Also make it safe:</b> dry-run/<code>--check</code> mode, back up before modifying, and fail loudly (<code>set -e</code>) rather than continuing in a half-applied state. Re-running should never duplicate, error on "already done," or corrupt.</div>
+<div class='tip'><b>Interview tip:</b> Define idempotency (re-runnable to the same end state) and show the check-then-act pattern (<code>grep -q || append</code>, <code>id || useradd</code>, <code>mkdir -p</code>, <code>ln -sfn</code>). The big-picture tie-in: this is exactly why config-management tools (Ansible/Terraform) are declarative — they converge to desired state idempotently. Critical for retries and running across a fleet of hosts in unknown states.</div>`},
+
+  {n:117,tag:'scripting',q:'Explain process substitution, here-docs, xargs, and parallelism in shell.',
+  body:`<div class='sec'>Here-docs / here-strings</div>
+<div class='cmds'>
+  <div class='cmd'>cat <<'EOF' > /etc/myapp.conf       # 'EOF' (quoted) = no variable expansion
+verbatim $not_expanded
+EOF
+grep foo <<< "$mystring"            # here-string: feed a var as stdin</div>
+</div>
+<div class='sec'>Process substitution</div>
+<div class='cmds'>
+  <div class='cmd'># Treat a command's output as a FILE (no temp file needed):
+diff <(sort a.txt) <(sort b.txt)    # compare two sorted streams
+while read l; do ...; done < <(some_cmd)   # avoid subshell var-loss of a pipe</div>
+</div>
+<div class='sec'>xargs + parallelism</div>
+<div class='cmds'>
+  <div class='cmd'>find . -name '*.log' -print0 | xargs -0 -P 8 -n 1 gzip   # 8-way parallel, NUL-safe
+seq 1 100 | xargs -P 16 -I{} ./process.sh {}             # 16 parallel workers
+# GNU parallel for richer control (job logs, retries, --joblog).
+# Always -print0 | xargs -0 to survive filenames with spaces/newlines.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The highest-value items: <code>diff &lt;(cmd1) &lt;(cmd2)</code> (process substitution — comparing command outputs as files), <code>xargs -P</code> / GNU <code>parallel</code> for easy parallelism, and the NUL-safe <code>find -print0 | xargs -0</code> idiom for filenames with spaces. Mentioning the pipe-creates-a-subshell gotcha (use <code>while ... done &lt; &lt;(cmd)</code> so variables persist) is an advanced detail that lands well.</div>`},
+
+  {n:118,tag:'scripting',q:'How do you handle secrets in scripts and automation? What are the anti-patterns?',
+  body:`<div class='sec'>Anti-patterns (don't do these)</div>
+<div class='cmds'>
+  <div class='cmd'>- Hardcoding secrets in the script (ends up in git, shared, logged)
+- Passing secrets as CLI args:  ./app --password hunter2
+    -> visible in \`ps aux\`, shell history, process listing to ALL users!
+- Secrets in environment that get dumped by error handlers / crash reports
+- export VAR=secret in a sourced file that's world-readable</div>
+</div>
+<div class='sec'>Better approaches</div>
+<div class='cmds'>
+  <div class='cmd'>- Fetch at runtime from a secrets manager (Vault, AWS Secrets Manager, SSM
+  Parameter Store) using the host's IAM role/identity — never store the secret
+- Read from a file with tight perms (chmod 600, owned by the service user)
+- Pass via stdin, not argv:  printf '%s' "$secret" | mycmd --password-stdin
+- Mounted secret (tmpfs / K8s secret) rather than baked into the image</div>
+</div>
+<div class='sec'>Hygiene</div>
+<div class='cmds'>
+  <div class='cmd'>set +x near secret handling      # don't echo secrets when tracing (set -x)
+# Avoid logging the secret; scrub it from error output; rotate regularly.
+# git-secrets / gitleaks in CI to block accidental commits.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The strongest specific point: <b>never pass secrets as command-line arguments</b> — they're visible in <code>ps</code> and shell history to other users; use stdin (<code>--password-stdin</code>) or files instead. Then the modern pattern: fetch from a secrets manager at runtime via the host's IAM identity so the secret is never stored. Add <code>set +x</code> around secret handling and gitleaks in CI. Shows real security maturity.</div>`},
+
+  {n:119,tag:'scripting',q:'Compare bash vs Python for automation. When do you reach for each?',
+  body:`<div class='sec'>Bash shines when</div>
+<div class='cmds'>
+  <div class='cmd'>- Gluing CLI tools together (pipes), file/text wrangling, quick one-offs
+- It's already there (no deps), and the task IS running commands
+- Short, linear "do these commands in order" automation
+# Rule of thumb: if it's mostly calling other programs, bash is natural.</div>
+</div>
+<div class='sec'>Python shines when</div>
+<div class='cmds'>
+  <div class='cmd'>- Real logic: data structures, JSON/YAML/API parsing, error handling, retries
+- Anything > ~50-100 lines, or that needs tests/maintenance by a team
+- HTTP/cloud SDK calls, structured data, complex conditionals
+# Bash's arrays, error handling, and string handling get painful fast.</div>
+</div>
+<div class='sec'>The decision</div>
+<div class='cmds'>
+  <div class='cmd'># Reach for Python when you find yourself:
+#   - parsing JSON with grep/sed/awk (use a real parser / jq at minimum)
+#   - building nested data or doing real arithmetic/string manipulation
+#   - needing robust error handling, retries, and unit tests
+# A common smell: "this bash script now has functions and a config parser" -> Python.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> Give a clear heuristic rather than dogma: bash for gluing commands and short linear tasks; Python once there's real logic, JSON/API handling, or it crosses ~100 lines / needs tests. The telltale sign to switch is "parsing structured data with sed/awk" or "bash script growing functions and error handling." Mentioning <code>jq</code> as the middle ground for JSON-in-bash, and maintainability/testing as deciding factors, shows engineering judgment.</div>`},
+
+  {n:120,tag:'scripting',q:'How do you debug a failing shell script? (set -x, trap, exit codes, common gotchas)',
+  body:`<div class='sec'>Trace execution</div>
+<div class='cmds'>
+  <div class='cmd'>bash -x ./script.sh            # print each command + expansions as they run
+set -x ... set +x              # trace just a section
+PS4='+ \${BASH_SOURCE}:\${LINENO}: '   # add file:line to the trace output
+bash -n ./script.sh            # syntax check WITHOUT running</div>
+</div>
+<div class='sec'>Exit codes + error traps</div>
+<div class='cmds'>
+  <div class='cmd'>echo $?                        # exit status of last command (0 = success)
+cmd || echo "failed with $?"   # check explicitly
+# Trap errors with context:
+trap 'echo "ERR line $LINENO: $BASH_COMMAND (exit $?)" >&2' ERR
+set -e                         # then it stops + reports on first failure</div>
+</div>
+<div class='sec'>Common gotchas</div>
+<div class='cmds'>
+  <div class='cmd'>- Unquoted vars / word-splitting; empty var in a path -> wrong target
+- \`cd foo && rm *\` where cd silently failed (without set -e) -> rm in wrong dir!
+- Pipeline hides failure without \`pipefail\` ($? is only the LAST command)
+- Variable set inside a \`cmd | while read\` loop is lost (subshell) -> use < <(cmd)
+- CRLF line endings (edited on Windows) -> "command not found" / weird errors</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The first move is <code>bash -x</code> (with a rich <code>PS4</code> showing line numbers), plus <code>bash -n</code> for syntax. Then exit-code discipline (<code>$?</code>, <code>pipefail</code> so pipeline failures aren't hidden) and an <code>ERR</code> trap printing <code>$LINENO</code>/<code>$BASH_COMMAND</code>. Name a real gotcha or two — the <code>cd && rm *</code> wrong-directory disaster, subshell variable loss in <code>cmd | while</code>, or CRLF endings — to show scar tissue, not theory. <code>shellcheck</code> prevents most of these.</div>`},
+
+  {n:121,tag:'troubleshoot',q:'A production server is unresponsive over SSH but seems \'up\'. How do you diagnose?',
+  body:`<div class='sec'>Can you get in at all?</div>
+<div class='cmds'>
+  <div class='cmd'># Try the out-of-band path FIRST (SSH may be the only thing broken):
+- Cloud serial console / VM console / IPMI/iDRAC — bypasses sshd + network
+- A second host in the same VPC -> ping/ss to see if it's network vs host</div>
+</div>
+<div class='sec'>Why SSH specifically hangs</div>
+<div class='cmds'>
+  <div class='cmd'>Connects but hangs at login   -> disk full (can't write logs/home), or PAM
+                                 stalling on LDAP/DNS, or load so high sshd can't fork
+Connection refused            -> sshd died (but host up) — restart via console
+Connection timeout            -> network/firewall/route, or host wedged
+Slow then in                  -> reverse-DNS lookup on the client IP (UseDNS) stalling</div>
+</div>
+<div class='sec'>Once on the console</div>
+<div class='cmds'>
+  <div class='cmd'>uptime              # load — is it 500? (runaway / fork bomb / I/O storm)
+df -h; df -i        # disk full / inodes? (a full / breaks sshd logins)
+dmesg -T | tail     # OOM kills, I/O errors, kernel issues
+free -h; top         # memory exhaustion / swap death spiral
+ss -s; ip a          # network/socket state</div>
+</div>
+<div class='tip'><b>Interview tip:</b> First instinct should be the <b>out-of-band console</b> (serial/IPMI) — don't keep retrying SSH when SSH might be exactly what's broken. Then decode the failure mode: refused = sshd dead, timeout = network/wedged, hangs-at-login = disk full or PAM/DNS stall, slow-login = reverse-DNS (<code>UseDNS</code>). On the console, check the usual killers: load, disk/inodes full, OOM, swap death-spiral. The disk-full-breaks-login and serial-console points are what distinguish real ops experience.</div>`},
+
+  {n:122,tag:'troubleshoot',q:'Intermittent failures happen only under load. How do you approach this hard class of bug?',
+  body:`<div class='sec'>Why 'under load' is a clue</div>
+<div class='cmds'>
+  <div class='cmd'># Load-only failures usually mean hitting a LIMIT or a RESOURCE that's fine when idle:
+- file descriptors:  ulimit -n / LimitNOFILE  ("too many open files")
+- ephemeral ports / TIME_WAIT pileup ("cannot assign requested address")
+- conntrack table full ("nf_conntrack: table full")
+- connection pool / thread pool exhaustion (requests queue, then time out)
+- memory pressure -> swap/OOM only at peak
+- accept queue overflow (somaxconn) -> SYN drops at peak</div>
+</div>
+<div class='sec'>Catch it in the act</div>
+<div class='cmds'>
+  <div class='cmd'># Continuous sampling so you have data WHEN it happens (it's intermittent):
+sar -A (sysstat)  / node_exporter + Prometheus    # historical metrics
+watch -n1 'ss -s; cat /proc/sys/net/netfilter/nf_conntrack_count'
+dmesg -T -w &     # capture kernel limit messages live
+# Correlate failure timestamps with the metric that spikes/saturates.</div>
+</div>
+<div class='sec'>Method</div>
+<p>Reproduce with load testing if possible, watch the USE metrics (saturation is the giveaway), and check limits before app code. Most "only under load" bugs are a saturated resource or a hit ceiling, not a logic bug.</p>
+<div class='tip'><b>Interview tip:</b> The mental model: "only under load" = a limit/resource that's fine at rest. Rattle off the usual ceilings — fd limits, ephemeral ports/TIME_WAIT, conntrack, pool exhaustion, <code>somaxconn</code>, OOM at peak. The method that impresses: continuous metric collection (you can't debug intermittent issues without historical data) + correlate failure times with saturation, and load-test to reproduce. Emphasize checking limits before suspecting app logic.</div>`},
+
+  {n:123,tag:'troubleshoot',q:'How do you debug a service that works locally but fails in production/containers?',
+  body:`<div class='sec'>Enumerate what differs</div>
+<div class='cmds'>
+  <div class='cmd'>Environment : missing/different env vars, config, secrets (compare actual env)
+Network     : DNS resolves differently, can't reach a dependency, firewall/SG,
+              binding 127.0.0.1 vs 0.0.0.0 (works locally, unreachable in prod)
+Permissions : runs as root locally, non-root in prod -> can't write/bind <1024
+Filesystem  : read-only rootfs, missing volume, different paths, SELinux labels
+Resources   : tighter CPU/memory limits -> OOM/throttle only in prod
+Dependencies: different library/runtime versions, missing package in the image</div>
+</div>
+<div class='sec'>Inspect the running container/host</div>
+<div class='cmds'>
+  <div class='cmd'>docker exec -it &lt;c&gt; sh / kubectl exec -it pod -- sh   # get inside
+env; cat /proc/1/environ                              # what env does it ACTUALLY have
+id; cat /proc/1/limits                                # user + ulimits in effect
+getent hosts dependency; curl -v http://dep:port      # DNS + reachability from INSIDE
+ls -l /data; mount | grep ro                          # volumes / read-only fs
+dmesg | grep -i oom; kubectl describe pod (OOMKilled?) # resource limits</div>
+</div>
+<div class='warn'><b>Top offenders:</b> binding to <code>127.0.0.1</code> (works locally, refuses remotely — bind <code>0.0.0.0</code>), missing env/secret, non-root can't bind low ports or write a path, and tighter memory limits causing prod-only OOM. "Works on my machine" is almost always an environment delta.</div>
+<div class='tip'><b>Interview tip:</b> Frame it as systematically diffing environments: env/config, network (DNS + reachability + 127.0.0.1-vs-0.0.0.0 binding), user/permissions (root local vs non-root prod), filesystem (read-only/volumes/SELinux), and resource limits (prod-only OOM). The move that lands: <code>exec</code> into the actual running container and inspect its real env, limits, and reachability from <i>inside</i> — not from your laptop. The localhost-binding gotcha is a frequent real culprit.</div>`},
+
+  {n:124,tag:'troubleshoot',q:'Describe your end-to-end methodology for triaging a production incident.',
+  body:`<div class='sec'>1. Assess impact + stabilize first</div>
+<div class='cmds'>
+  <div class='cmd'># Mitigate BEFORE root-causing — stop the bleeding:
+- What's the user impact / blast radius? (set severity)
+- Quick stabilizers: roll back the last deploy, scale out, failover, shed load,
+  disable the bad feature flag. Recovery > diagnosis in the moment.</div>
+</div>
+<div class='sec'>2. Correlate with change</div>
+<div class='cmds'>
+  <div class='cmd'># Most incidents follow a CHANGE. "What changed right before it started?"
+- recent deploy / config push / migration / cert expiry / traffic spike /
+  dependency incident / infra change. Check deploy + change logs first.</div>
+</div>
+<div class='sec'>3. Narrow with signals (the four golden signals)</div>
+<div class='cmds'>
+  <div class='cmd'>Latency, Traffic, Errors, Saturation -> which dashboard moved, and when?
+# Follow the signal down: which service, which dependency, which resource.
+# Logs + traces at the boundary that broke. Form a hypothesis, test it cheaply.</div>
+</div>
+<div class='sec'>4. Communicate + close the loop</div>
+<div class='cmds'>
+  <div class='cmd'>- Keep stakeholders updated (status, ETA) on a clear channel
+- After recovery: blameless postmortem -> root cause -> action items
+  (monitoring gap? missing guardrail? add the alert/test/runbook that catches it next time)</div>
+</div>
+<div class='tip'><b>Interview tip:</b> The senior framing is <b>mitigate first, root-cause second</b> — roll back / failover / scale to restore service, THEN investigate. Then "what changed?" (most incidents are change-induced), narrow via the golden signals (latency/traffic/errors/saturation), and communicate throughout. Closing with a <b>blameless postmortem</b> that produces preventive action items (the alert/guardrail that would've caught it) is exactly the SRE maturity interviewers want.</div>`},
+
+  {n:125,tag:'troubleshoot',q:'How do you avoid jumping to conclusions when debugging? Describe a disciplined approach.',
+  body:`<div class='sec'>The trap</div>
+<div class='cmds'>
+  <div class='cmd'># Common failure: pattern-match to a past incident, "fix" the wrong thing,
+#   waste an hour, or change five things at once and never learn what worked.
+# Confirmation bias: looking only for evidence that fits your first guess.</div>
+</div>
+<div class='sec'>A disciplined loop</div>
+<div class='cmds'>
+  <div class='cmd'>1. State the problem precisely (what, since when, who's affected, what's the delta vs normal)
+2. Gather evidence BEFORE theorizing (logs, metrics, recent changes)
+3. Form a hypothesis that EXPLAINS the evidence — and predict what else must be true
+4. Test the cheapest discriminating check first; change ONE variable at a time
+5. Confirm the fix actually addresses the cause (not just correlated)
+6. Write it down -> runbook / postmortem</div>
+</div>
+<div class='sec'>Useful principles</div>
+<div class='cmds'>
+  <div class='cmd'>- "What changed?" usually beats deep theory (correlation with a deploy/change)
+- Bisect: cut the problem space in half (which layer? which host? which commit?)
+- Don't trust assumptions — VERIFY (is it actually resolving DNS? actually reading
+  that config? actually the version you think?). Reproduce if you can.
+- Distinguish correlation from causation before declaring victory.</div>
+</div>
+<div class='tip'><b>Interview tip:</b> This is really about engineering temperament. Emphasize: evidence before hypotheses, change ONE thing at a time (so you know what fixed it), bisect the problem space, and verify assumptions instead of trusting them ("is it <i>actually</i> doing X?"). "What changed?" as the first question, and confirming cause vs mere correlation before closing, signal the calm, methodical debugging that senior/SRE interviewers are really screening for.</div>`}
 ];
 
 // ── Render & Filter ─────────────────────────────────────────────────────────
@@ -1144,7 +2900,7 @@ function badge(tag) {
 }
 
 function render(qs) {
-  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 50 questions`;
+  document.getElementById('count-bar').textContent = `Showing ${qs.length} of 125 questions`;
   document.getElementById('q-list').innerHTML = qs.map(q => `
     <div class="q-card" id="card-${q.n}">
       <div class="q-header" onclick="toggle(${q.n})">
