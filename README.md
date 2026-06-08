@@ -14,12 +14,12 @@
 | # | Guide | File | Questions | Topics |
 | --- | --- | --- | --- | --- |
 | 1 | Terraform Production | `terraform_interview_guide.html` | 30 | State, backends, modules, CI/CD, recovery |
-| 2 | Kubernetes Production | `kubernetes_interview_guide.html` | 35 | Pods, networking, storage, security, HPA |
+| 2 | Kubernetes Production | `kubernetes_interview_guide.html` | 120 | Pods, networking, storage, security, HPA |
 | 3 | GCP Production | `gcp_interview_guide.html` | 40 | IAM, GKE, VPC, Cloud SQL, SCC, FinOps |
 | 4 | AWS Production | `aws_interview_guide.html` | 30 | IAM, VPC, EKS, RDS, Lambda, Cost Explorer |
 | 5 | Azure Production | `azure_interview_guide.html` | 30 | Entra ID, AKS, VNet, Storage, Cost Mgmt |
-| 6 | Networking Fundamentals | `networking_interview_guide.html` | 45 | TCP/DNS, TLS, routing, eBPF, troubleshooting |
-| 7 | Linux Systems Admin | `linux_interview_guide.html` | 50 | Processes, performance, security, systemd |
+| 6 | Networking Fundamentals | `networking_interview_guide.html` | 120 | TCP/DNS, TLS, routing, eBPF, troubleshooting |
+| 7 | Linux Systems Admin | `linux_interview_guide.html` | 125 | Processes, performance, security, systemd |
 | 8 | Database Performance | `database_performance_interview_guide.html` | 45 | Indexing, EXPLAIN, replication, Cloud SQL |
 | 9 | Container Lifecycle & Deployments | `container_lifecycle_interview_guide.html` | 50 | Docker, deployments, Helm, GitOps |
 | 10 | Git in Production | `git_production_interview_guide.html` | 50 | Branching, recovery, CI/CD, governance |
@@ -30,7 +30,7 @@
 | 15 | Technical / Platform Product Management | `product_management_interview_guide.html` | 60 | Product sense, platform metrics, build-vs-buy, API design, RICE prioritization, GTM/adoption, PM behavioral |
 | 16 | Coding & Scripting for SRE / Platform | `coding_scripting_interview_guide.html` | 100 | Bash strict-mode & awk, Python automation, algorithms for log-scale data, API pagination, K8s/cloud scripting, Go basics, live-coding walkthrough |
 | 17 | DevSecOps / Cloud & Supply-Chain Security | `devsecops_security_interview_guide.html` | 100 | Secrets/Vault/KMS, SBOM/Sigstore/SLSA, K8s & container hardening, policy-as-code (OPA/Kyverno), cloud security, AppSec/OWASP, incident response |
-|  | **Total** |  | **800+** |  |
+|  | **Total** |  | **1000+** |  |
 
 ---
 
