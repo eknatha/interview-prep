@@ -22,7 +22,7 @@
 | 7 | Linux Systems Admin | `linux_interview_guide.html` | 125 | Processes, performance, security, systemd |
 | 8 | Database Performance | `database_performance_interview_guide.html` | 45 | Indexing, EXPLAIN, replication, Cloud SQL |
 | 9 | Container Lifecycle & Deployments | `container_lifecycle_interview_guide.html` | 50 | Docker, deployments, Helm, GitOps |
-| 10 | Git in Production | `git_production_interview_guide.html` | 50 | Branching, recovery, CI/CD, governance |
+| 10 | Git in Production | `git_production_interview_guide.html` | 120 | Branching, recovery, CI/CD, governance |
 | 11 | Observability & Monitoring | `observability_interview_guide.html` | 30 | Prometheus, Grafana, SLOs, OTel, alerting |
 | 12 | CI/CD Pipelines | `cicd_interview_guide.html` | 30 | GitHub Actions, ArgoCD, Cloud Build, GitOps |
 | 13 | System Design | `system_design_interview_guide.html` | 30 | URL shortener, rate limiter, distributed cache, multi-region K8s, IDP |
