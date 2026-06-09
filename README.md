@@ -32,6 +32,7 @@
 | 17 | DevSecOps / Cloud & Supply-Chain Security | `devsecops_security_interview_guide.html` | 100 | Secrets/Vault/KMS, SBOM/Sigstore/SLSA, K8s & container hardening, policy-as-code (OPA/Kyverno), cloud security, AppSec/OWASP, incident response |
 | 18 | DevSecOps / Cloud & Supply-Chain Security | `devsecops_security_interview_guide.html` | 100 | Secrets/Vault/KMS, SBOM/Sigstore/SLSA, K8s & container hardening, policy-as-code (OPA/Kyverno), cloud security, AppSec/OWASP, incident response |
 | 19 | Production Scenarios  | `sre_devops_scenarios_guide.html` | 120 | STAR-format incident walkthroughs across SRE/DevOps/Platform — triage, K8s, cloud, network, Linux, CI/CD, data, observability, capacity |
+| 20 | Staff+ Architecture & Trade-offs | `architecture_tradeoffs_interview_guide.html` | 120 | Open-ended architecture decision walkthroughs — build vs buy, multi-region, monolith↔microservices, data store choice, platform/IDP, tech debt, big bets. Clarify → trade-offs → recommendation → reversibility → de-risk. |
 |  | **Total** |  | **1000+** |  |
 
 ---
@@ -47,36 +48,6 @@
 | ← Portal link | Every guide links back to the portal homepage |
 | 📴 Offline-ready | Pure HTML — no build step, no Node.js, works without internet |
 
----
-
-## Repository structure
-
-```
-interview-prep/
-├── index.html                                   ← unified portal homepage
-├── terraform_interview_guide.html               ← 30 questions
-├── kubernetes_interview_guide.html              ← 35 questions
-├── gcp_interview_guide.html                     ← 40 questions
-├── aws_interview_guide.html                     ← 30 questions
-├── azure_interview_guide.html                   ← 30 questions
-├── networking_interview_guide.html              ← 45 questions
-├── linux_interview_guide.html                   ← 50 questions
-├── database_performance_interview_guide.html    ← 45 questions
-├── container_lifecycle_interview_guide.html     ← 50 questions
-├── git_production_interview_guide.html          ← 50 questions
-├── observability_interview_guide.html           ← 30 questions
-├── cicd_interview_guide.html                    ← 30 questions
-├── system_design_interview_guide.html           ← 30 questions
-├── sre_reliability_interview_guide.html         ← 40 questions
-├── product_management_interview_guide.html      ← 60 questions
-├── coding_scripting_interview_guide.html        ← 100 questions
-├── devsecops_security_interview_guide.html      ← 100 questions
-├── behavioral_star_interview_guide.html         ← 100 questions
-├── sre_devops_scenarios_guide.html              ← 100 questions
-└── README.md                                    ← this file
-```
-
-All files are standalone HTML — no build step, no dependencies, no internet required.
 
 ---
 
